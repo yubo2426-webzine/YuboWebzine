@@ -12,19 +12,7 @@ import {
   MousePointer2, Smartphone, Mail, Instagram, MessageCircle, Copy
 } from 'lucide-react';
 
-// ✅ [핵심] Supabase CDN 로드 (빌드 없이 즉시 사용)
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-// --- [Supabase 설정] ---
-const YOUR_SUPABASE_URL = "https://rmlaqmrrkeiplabaikqi.supabase.co";
-const YOUR_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtbGFxbXJya2VpcGxhYmFpa3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MjQ5MTgsImV4cCI6MjA4MzMwMDkxOH0.-W8OO4wJGaZVojfmj9cj-PVpx8BmvZLLiftCf5_yfKA"; 
-
-let supabase = null;
-try {
-  supabase = createClient(YOUR_SUPABASE_URL, YOUR_SUPABASE_KEY);
-} catch (e) {
-  console.error("Supabase 초기화 실패:", e);
-}
+import { supabase } from './lib/supabase';
 
 // --- [유틸리티] 컨테이너 크기 감지 ---
 const useContainerSize = (ref) => {
