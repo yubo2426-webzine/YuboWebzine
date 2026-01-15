@@ -14,6 +14,8 @@ import {
 
 import { supabase } from './lib/supabase';
 
+import BottomNav from './components/BottomNav';
+
 // --- [유틸리티] 컨테이너 크기 감지 ---
 const useContainerSize = (ref) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -903,7 +905,24 @@ const MainApp = () => {
         )}
         {view === 'article' && currentArticle && (<CustomPDFViewer article={currentArticle} onBack={() => { window.location.hash = `#issue/${currentIssue.id}`; }} />)}
       </main>
-      <Footer />
+     {/* 1. PC용 푸터 (모바일 숨김) */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* 2. 모바일용 하단 탭 (PC 숨김) */}
+      <BottomNav 
+        currentView={view} 
+        onViewChange={(v) => {
+          if (v === 'news') window.location.hash = '#news';
+          else window.location.hash = ''; 
+        }}
+        onMenuClick={() => setIsLoginOpen(true)}
+      />
+      
+      {/* 3. 여백 확보 */}
+      <div className="h-16 md:hidden"></div>
+
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} onLogin={() => setIsAdminMode(true)}/>
       <UploadModal isOpen={isUploadOpen} onClose={() => {setIsUploadOpen(false); setEditTarget(null);}} onSubmit={onUploadSubmit} type={uploadType} isUploading={isUploading} initialData={editTarget}/>
     </div>
