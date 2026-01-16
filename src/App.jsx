@@ -656,7 +656,7 @@ const MainApp = () => {
                         <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">The First Step of Education</span>
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
                            아이의 내일을 잇는 <br/>
-                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">프리미엄 지식 플랫폼.</span>
+                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">지식 플랫폼.</span>
                         </h1>
                         <p className="text-slate-500 text-lg font-medium mb-8 max-w-md">현장의 목소리부터 미래 교육의 트렌드까지,<br/>선생님에게 꼭 필요한 깊이 있는 정보를 전합니다.</p>
                         <div className="flex gap-3">
