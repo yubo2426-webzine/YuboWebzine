@@ -1,60 +1,44 @@
 import React from 'react';
-import { Home, Newspaper, BookOpen, Menu } from 'lucide-react';
+import { Home, Newspaper, Calendar, Image as ImageIcon, Book } from 'lucide-react';
 
-const BottomNav = ({ currentView, onViewChange, onMenuClick }) => {
-  // 탭 버튼의 스타일을 결정하는 함수 (활성화되면 주황색, 아니면 회색)
-  const getItemClass = (viewName) => 
-    `flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
-      currentView === viewName 
-        ? 'text-orange-500' 
-        : 'text-gray-400 hover:text-gray-600'
-    }`;
-
-  // 아이콘 두께 조절 (선택된 탭은 좀 더 두껍게)
-  const getStrokeWidth = (viewName) => (currentView === viewName ? 2.5 : 2);
+const BottomNav = ({ currentView, onViewChange }) => {
+  // 모바일 하단 5대 핵심 메뉴
+  const navItems = [
+    { id: 'home', label: '홈', icon: Home },
+    { id: 'news', label: '뉴스', icon: Newspaper },
+    { id: 'notice', label: '소식', icon: Calendar },
+    { id: 'gallery', label: '갤러리', icon: ImageIcon },
+    { id: 'issue_list', label: '자료실', icon: Book },
+  ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-[150] w-full h-16 bg-white border-t border-gray-100 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] md:hidden safe-area-pb">
-      <div className="grid grid-cols-4 h-full max-w-md mx-auto">
-        
-        {/* 1. 홈 탭 */}
-        <button 
-          onClick={() => onViewChange('home')} 
-          className={getItemClass('home')}
-        >
-          <Home size={24} strokeWidth={getStrokeWidth('home')} />
-          <span className="text-[10px] font-bold">홈</span>
-        </button>
-
-        {/* 2. 뉴스 탭 */}
-        <button 
-          onClick={() => onViewChange('news')} 
-          className={getItemClass('news')}
-        >
-          <Newspaper size={24} strokeWidth={getStrokeWidth('news')} />
-          <span className="text-[10px] font-bold">뉴스</span>
-        </button>
-
-        {/* 3. 자료실 탭 (이슈/기사 뷰일 때도 불 켜짐) */}
-        <button 
-          onClick={() => onViewChange('issue_list')} 
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
-            ['issue', 'article'].includes(currentView) ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <BookOpen size={24} strokeWidth={['issue', 'article'].includes(currentView) ? 2.5 : 2} />
-          <span className="text-[10px] font-bold">자료실</span>
-        </button>
-
-        {/* 4. 메뉴(로그인) 탭 */}
-        <button 
-          onClick={onMenuClick} 
-          className="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-400 hover:text-gray-600"
-        >
-          <Menu size={24} strokeWidth={2} />
-          <span className="text-[10px] font-bold">메뉴</span>
-        </button>
-
+    <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 pb-safe z-[100] md:hidden transition-all duration-300">
+      <div className="flex justify-between items-center px-2 h-16 max-w-md mx-auto">
+        {navItems.map((item) => {
+          const isActive = currentView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange(item.id)}
+              className="flex-1 flex flex-col items-center justify-center py-1 transition-all duration-200 active:scale-95 group"
+            >
+              <div
+                className={`p-1.5 rounded-xl mb-0.5 transition-colors ${
+                  isActive ? 'bg-orange-50 text-orange-500' : 'text-gray-400 group-hover:text-gray-600'
+                }`}
+              >
+                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span
+                className={`text-[10px] font-bold transition-colors ${
+                  isActive ? 'text-orange-600' : 'text-gray-400'
+                }`}
+              >
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
