@@ -301,7 +301,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// --- [네비게이션] Apple Style Glassmorphism + Kids Insight Branding ---
+// --- [네비게이션] Kids Insight Branding ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView }) => (
   <nav className="w-full sticky top-0 z-[60] bg-white/80 backdrop-blur-md border-b border-gray-200 transition-all duration-300">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -311,7 +311,6 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
           <Star size={16} fill="currentColor" />
         </div>
         <div className="flex flex-col">
-          {/* ✅ 변경됨: 키즈 인사이트 */}
           <span className="text-lg font-bold tracking-tight text-slate-900 font-sans leading-none">
             키즈 <span className="text-orange-500">인사이트</span>
           </span>
@@ -350,7 +349,7 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
   </nav>
 );
 
-// --- [푸터] Clean Style + Kids Insight Branding ---
+// --- [푸터] Clean Style ---
 const Footer = () => {
   const currentUrl = window.location.href;
   const handleCopyLink = async () => { try { await navigator.clipboard.writeText(currentUrl); alert('🔗 링크가 복사되었습니다.'); } catch (e) { alert('복사 실패'); } };
@@ -359,7 +358,6 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
           <div className="flex items-center gap-2 justify-center md:justify-start mb-2 opacity-80"><div className="w-8 h-8 bg-orange-400 text-white flex items-center justify-center font-bold rounded-lg shadow-sm"><Star size={14} fill="currentColor" /></div><span className="font-bold text-slate-900 text-lg">키즈 <span className="text-orange-500">인사이트</span></span></div>
-          {/* ✅ 변경됨: The First Step of Education */}
           <p className="text-slate-400 text-xs font-medium leading-relaxed">The First Step of Education | 영유아 교육 전문가를 위한 아카이브<br/>Contact: support@kids-insight.com</p>
         </div>
         <div className="flex flex-col items-center md:items-end gap-3">
@@ -454,7 +452,7 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">뉴스룸</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">키즈 인사이트 뉴스룸</h2>
         </div>
         
         <div className="flex items-center gap-3">
@@ -508,27 +506,28 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   );
 };
 
-// --- [메인 카드] Design House Style Minimalist ---
+// --- [메인 카드] ✅ v23.2 Updated (Grid Optimized) ---
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onEdit }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col gap-4 relative">
-    {/* 이미지 영역: Apple Style Zoom Effect */}
-    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-200'} rounded-2xl overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.04)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-500 ease-out`}>
-      <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out">
-        <div className="text-7xl md:text-8xl filter drop-shadow-lg opacity-90 transition-transform group-hover:-translate-y-2">{issue.icon || '📚'}</div>
+  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col gap-3 relative text-left">
+    {/* 이미지 영역: 꽉 찬 느낌 */}
+    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-200'} rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition-all duration-500`}>
+      <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700 ease-out">
+        {/* 아이콘 사이즈 반응형 조정 */}
+        <div className="text-5xl md:text-8xl filter drop-shadow-sm opacity-90 transition-transform">{issue.icon || '📚'}</div>
       </div>
       
-      {/* 뱃지: BoanTokTok Style */}
-      <div className="absolute top-4 left-4 z-10">
-         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/90 backdrop-blur-sm border border-white/20 shadow-sm text-[10px] font-bold tracking-widest uppercase text-slate-900">
-           {issue.date}
+      {/* 뱃지: 깔끔한 글래스 스타일 */}
+      <div className="absolute top-3 left-3 z-10">
+         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-md border border-white/20 shadow-sm text-[10px] font-bold tracking-widest uppercase text-slate-900">
+           Vol. {issue.vol}
          </span>
       </div>
     </div>
 
-    {/* 텍스트 영역: Outside & Clean */}
-    <div className="flex flex-col gap-1 px-1 text-left">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-orange-600 tracking-widest uppercase">Vol. {issue.vol}</span>
+    {/* 텍스트 영역: 모바일 최적화 (2열 배치 시 깔끔하게) */}
+    <div className="flex flex-col px-0.5">
+      <div className="flex justify-between items-start">
+        <span className="text-[10px] font-bold text-slate-400 mb-1 block">{issue.date}</span>
         {isAdmin && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
              <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit size={14}/></button>
@@ -536,10 +535,14 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onEdit }) => (
           </div>
         )}
       </div>
-      <h3 className="text-lg md:text-xl font-bold text-slate-900 leading-snug group-hover:text-orange-600 transition-colors line-clamp-2 break-keep">
+      
+      {/* 제목: 모바일에서는 너무 크지 않게 text-base */}
+      <h3 className="text-base md:text-lg font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-2 break-keep">
         {issue.title}
       </h3>
-      <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed font-medium">
+      
+      {/* 설명글: 모바일(2열)에서는 숨김, 태블릿/PC에서만 노출 */}
+      <p className="hidden md:block text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
         {issue.description}
       </p>
     </div>
@@ -650,17 +653,13 @@ const MainApp = () => {
                   <div className="col-span-12 md:col-span-7 bg-white rounded-[2rem] p-8 md:p-12 flex flex-col justify-center items-start shadow-sm border border-gray-100 relative overflow-hidden group">
                      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-orange-200/50 transition-colors duration-700"></div>
                      <div className="relative z-10 text-left">
-                        {/* ✅ 변경됨: The First Step of Education */}
                         <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">The First Step of Education</span>
-                        {/* ✅ 변경됨: 아이의 내일을 잇는... */}
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
                            아이의 내일을 잇는 <br/>
                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">프리미엄 지식 플랫폼.</span>
                         </h1>
-                        {/* ✅ 변경됨: 설명 문구 */}
                         <p className="text-slate-500 text-lg font-medium mb-8 max-w-md">현장의 목소리부터 미래 교육의 트렌드까지,<br/>선생님에게 꼭 필요한 깊이 있는 정보를 전합니다.</p>
                         <div className="flex gap-3">
-                           {/* ✅ 변경됨: 버튼 문구 */}
                            <button onClick={() => window.location.hash = '#issues'} className="px-8 py-3.5 bg-slate-900 text-white rounded-full font-bold shadow-lg shadow-slate-200 hover:bg-orange-500 hover:shadow-orange-200 transition-all transform active:scale-95 flex items-center gap-2">
                               인사이트 탐색하기 <ArrowRight size={18}/>
                            </button>
@@ -695,7 +694,7 @@ const MainApp = () => {
             {/* News Feed Section (List Style) */}
             <NewsFeed limit={4} onMoreClick={() => window.location.hash = '#news'} isAdmin={isAdminMode}/>
             
-            {/* Latest Issues Section */}
+            {/* Latest Issues Section - ✅ Modified for Mobile 2-col Layout */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
               <div className="flex items-end justify-between mb-8 border-b border-gray-200 pb-6">
                  <div className="text-left">
@@ -708,7 +707,7 @@ const MainApp = () => {
               {displayIssues.length === 0 ? 
                  <div className="text-center py-32 bg-white rounded-[2rem] border border-dashed border-gray-200 text-gray-400 font-bold">아직 발행된 소식이 없습니다.</div> 
                  : 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
                     {displayIssues.slice(0, 4).map(issue => (
                        <IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>
                     ))}
@@ -721,7 +720,7 @@ const MainApp = () => {
         {/* --- 2. 뉴스 뷰 --- */}
         {view === 'news' && <NewsFeed isAdmin={isAdminMode} />}
 
-        {/* --- 3. 자료실 리스트 뷰 --- */}
+        {/* --- 3. 자료실 리스트 뷰 - ✅ Modified for Mobile 2-col Layout --- */}
         {view === 'issue_list' && (
            <div className="animate-in fade-in duration-500 pt-10">
              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
@@ -731,7 +730,7 @@ const MainApp = () => {
                 {isAdminMode && <button onClick={() => { setUploadType('issue'); setEditTarget(null); setIsUploadOpen(true); }} className="mt-8 bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-orange-500 transition-all flex items-center gap-2 mx-auto"><Plus size={18} /> 새 호수 발행</button>}
              </div>
              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 md:gap-x-8">
                   {displayIssues.map(issue => (<IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>))}
                </div>
              </div>
