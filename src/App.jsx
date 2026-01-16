@@ -454,7 +454,7 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">키즈 인사이트 뉴스룸</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">뉴스룸</h2>
         </div>
         
         <div className="flex items-center gap-3">
