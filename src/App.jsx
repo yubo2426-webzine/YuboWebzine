@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Book, FileText, User, Lock, LogOut, ChevronRight, ArrowLeft, 
-  Search, Plus, Trash2, Eye, ChevronLeft, ZoomIn, ZoomOut, Download, 
-  Link as LinkIcon, Share2, X, Newspaper, Calendar as CalendarIcon, 
-  Filter, AlertTriangle, AlertCircle, Zap, Menu, Mail, 
-  MessageCircle, Star, Image as ImageIcon, Check, UserPlus, Grid, List as ListIcon,
-  RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Edit
+  Book, FileText, User, LogOut, ChevronRight, ArrowLeft, 
+  Plus, Trash2, ChevronLeft,  
+  X, Newspaper, Calendar as CalendarIcon, 
+  Star, Image as ImageIcon, List as ListIcon,
+  RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
@@ -19,11 +18,6 @@ const useContainerSize = (ref) => {
     return () => window.removeEventListener('resize', updateSize);
   }, [ref]);
   return size;
-};
-
-const handleShare = async (title, text, url) => {
-  if (navigator.share) { try { await navigator.share({ title, text, url }); } catch (e) {} }
-  else { try { await navigator.clipboard.writeText(url); alert('링크가 복사되었습니다.'); } catch (e) {} }
 };
 
 const loadPdfScript = () => {
@@ -136,32 +130,64 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// --- [뉴스룸 컴포넌트] ---
+// --- [뉴스룸 컴포넌트 (전체 공개 동기화)] ---
 const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchNews = async () => {
+    setLoading(true);
+    if(!supabase) return;
+    const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
+    if(data) setNews(data);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchNews = async () => {
-      if(!supabase) return;
-      const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
-      if(data) setNews(data);
-      setLoading(false);
-    };
     fetchNews();
   }, [limit]);
 
-  if (loading) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-orange-500"/></div>;
+  const handleManualRefresh = async () => {
+    if (!confirm("최신 뉴스를 가져오시겠습니까?\n(잠시 시간이 소요될 수 있습니다)")) return;
+    setIsRefreshing(true);
+    try {
+      setTimeout(() => {
+         fetchNews();
+         setIsRefreshing(false);
+         alert("최신 뉴스로 업데이트되었습니다.");
+      }, 2000);
+    } catch (e) {
+      alert("업데이트 실패: " + e.message);
+      setIsRefreshing(false);
+    }
+  };
+
+  if (loading && !isRefreshing) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-orange-500"/></div>;
 
   return (
     <div className={`max-w-7xl mx-auto px-4 ${limit ? 'py-12' : 'py-16'}`}>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-gray-200 pb-6">
         <div>
-           <div className="flex items-center gap-2 mb-2"><span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span><span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span></div>
-           <h2 className="text-3xl font-black text-slate-900">뉴스룸</h2>
+           <div className="flex items-center gap-2 mb-2">
+             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+             <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
+           </div>
+           <div className="flex items-center gap-3">
+             <h2 className="text-3xl font-black text-slate-900">뉴스룸</h2>
+             <button 
+               onClick={handleManualRefresh} 
+               disabled={isRefreshing}
+               className="p-2 bg-gray-100 rounded-full hover:bg-orange-100 text-gray-400 hover:text-orange-500 transition-all"
+               title="뉴스 수동 동기화"
+             >
+               <RefreshCw size={18} className={isRefreshing ? "animate-spin text-orange-500" : ""}/>
+             </button>
+           </div>
         </div>
         {limit && <button onClick={onMoreClick} className="flex items-center gap-1 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-sm">전체보기 <ArrowRight size={16}/></button>}
       </div>
+      
       <div className={`grid ${limit ? 'grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6' : 'flex flex-col gap-4'}`}>
          {news.map((item, idx) => (
             <a key={idx} href={item.link} target="_blank" className="group flex gap-5 items-start p-5 rounded-2xl hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-xl transition-all">
@@ -175,6 +201,7 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
                </div>
             </a>
          ))}
+         {news.length === 0 && <div className="col-span-full text-center py-10 text-gray-400">최신 뉴스가 없습니다.</div>}
       </div>
     </div>
   );
@@ -286,7 +313,7 @@ const Gallery = ({ userRole, onUploadClick }) => {
 };
 
 // --- [자료실 (Issue Card)] ---
-const IssueCard = ({ issue, onClick, isAdmin, onDelete, onEdit }) => (
+const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col gap-3 relative text-left">
     <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-200'} rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition-all duration-500`}>
       <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700 ease-out">
@@ -437,16 +464,17 @@ const MainApp = () => {
           </div>
        </nav>
 
-       <main className="flex-1 pb-20">
+       <main className="flex-1 pb-24">
           {view === 'home' && (
              <div className="animate-in fade-in space-y-20">
-                {/* 1. Hero Section (Bento Grid - v23.2) */}
+                {/* 1. Hero Section (Bento Grid) */}
                 <section className="pt-10 max-w-7xl mx-auto px-4">
                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[400px]">
                       <div className="col-span-12 md:col-span-7 bg-white rounded-[2rem] p-12 flex flex-col justify-center items-start shadow-sm border border-gray-100 relative overflow-hidden group">
                          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                          <div className="relative z-10">
                             <span className="py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase mb-4 inline-block">The First Step of Education</span>
+                            {/* ✅ [수정] 텍스트 변경: 프리미엄 지식 플랫폼 -> 지식 플랫폼 */}
                             <h1 className="text-5xl font-black text-slate-900 leading-tight mb-6">아이의 내일을 잇는<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">지식 플랫폼.</span></h1>
                             <p className="text-slate-500 font-medium mb-8">선생님에게 꼭 필요한 깊이 있는 정보를 전합니다.</p>
                             <button onClick={() => setView('issue_list')} className="px-8 py-3 bg-slate-900 text-white rounded-full font-bold shadow-lg hover:bg-orange-500 transition-all flex items-center gap-2">인사이트 탐색하기 <ArrowRight size={18}/></button>
@@ -463,10 +491,10 @@ const MainApp = () => {
                    </div>
                 </section>
 
-                {/* 2. News Feed (v23.2) */}
+                {/* 2. News Feed */}
                 <NewsFeed limit={4} onMoreClick={() => setView('news')}/>
 
-                {/* 3. Monthly Archive (Issue Grid - v23.2 Style) */}
+                {/* 3. Monthly Archive */}
                 <section className="max-w-7xl mx-auto px-4 pb-20">
                    <div className="flex items-end justify-between mb-8 border-b border-gray-200 pb-6">
                       <div><h2 className="text-3xl font-black text-slate-900">월간 자료실</h2><p className="text-slate-500 font-medium mt-1">지난 호수들을 확인해보세요.</p></div>
@@ -521,7 +549,9 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
 
-       <BottomNav currentView={view} onViewChange={setView} onMenuClick={() => setIsAuthOpen(true)}/>
+       {/* ✅ [수정] BottomNav에 onMenuClick 제거 (자동 처리) */}
+       <BottomNav currentView={view} onViewChange={setView} />
+       
        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => window.location.reload()}/>
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
     </div>
