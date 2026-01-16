@@ -1,4 +1,3 @@
-// ✅ [v22.0] 홈 화면 미리보기 + 페이지 분리 완성형
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Book, FileText, User, Lock, LogOut, ChevronRight, ArrowLeft, 
@@ -6,9 +5,9 @@ import {
   Link as LinkIcon, ExternalLink, RefreshCw, Star, Heart, Cloud, 
   Paperclip, Server, Database, Image as ImageIcon, Loader2, List, 
   Edit, Share2, X, Newspaper, Calendar, Filter, AlertTriangle, AlertCircle, Zap, Menu, 
-  MousePointer2, Smartphone, Mail, Instagram, MessageCircle, Copy
+  MousePointer2, Smartphone, Mail, Instagram, MessageCircle, Copy,
+  ArrowRight, ArrowUpRight // ✅ v23.0 추가된 아이콘
 } from 'lucide-react';
-
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
 
@@ -37,30 +36,35 @@ const useContainerSize = (ref) => {
 // --- [유틸리티] 공유 기능 ---
 const handleShare = async (title, text, url) => {
   if (navigator.share) {
-    try { await navigator.share({ title, text, url }); } catch (error) { console.log('공유 취소됨'); }
+    try { await navigator.share({ title, text, url });
+    } catch (error) { console.log('공유 취소됨'); }
   } else {
-    try { await navigator.clipboard.writeText(url); alert('주소가 클립보드에 복사되었습니다.'); } catch (err) { alert('공유하기를 지원하지 않는 환경입니다.'); }
+    try { await navigator.clipboard.writeText(url);
+    alert('주소가 클립보드에 복사되었습니다.'); } catch (err) { alert('공유하기를 지원하지 않는 환경입니다.'); }
   }
 };
 
 // --- [유틸리티] 조회수 증가 ---
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
-  try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } catch (e) { console.error("조회수 증가 실패:", e); }
+  try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } catch (e) { console.error("조회수 증가 실패:", e);
+  }
 };
 
 // --- [에러 방어막] ---
 class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false }; }
+  constructor(props) { super(props); this.state = { hasError: false };
+  }
   static getDerivedStateFromError(error) { return { hasError: true }; }
-  componentDidCatch(error, errorInfo) { console.error("앱 렌더링 오류:", error, errorInfo); }
+  componentDidCatch(error, errorInfo) { console.error("앱 렌더링 오류:", error, errorInfo);
+  }
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#FFF9F0]">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#F5F5F7]">
           <AlertCircle size={48} className="text-orange-500 mb-4" />
-          <h1 className="text-xl font-bold mb-2 text-gray-800">앱을 불러오는 중입니다.</h1>
-          <button onClick={() => window.location.reload()} className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-colors">새로고침</button>
+          <h1 className="text-xl font-bold mb-2 text-slate-800">앱을 불러오는 중입니다.</h1>
+          <button onClick={() => window.location.reload()} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition-colors">새로고침</button>
         </div>
       );
     }
@@ -87,7 +91,7 @@ const loadPdfScript = () => {
 
 const generatePDFThumbnail = async (file) => {
   try {
-    const pdfjs = await loadPdfScript(); 
+    const pdfjs = await loadPdfScript();
     if (!pdfjs) return null;
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
@@ -106,7 +110,7 @@ const getTouchDistance = (touches) => {
   return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
 };
 
-// --- [PDF 뷰어] ---
+// --- [PDF 뷰어] (기존 로직 유지) ---
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -120,7 +124,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const [error, setError] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [libReady, setLibReady] = useState(false);
-  
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const lastTapTime = useRef(0); 
@@ -130,7 +133,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const tempPinchScaleRef = useRef(1);
 
   const containerSize = useContainerSize(containerRef);
-
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
@@ -141,7 +143,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!pdfDoc) return;
@@ -151,7 +152,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pdfDoc]);
-
   useEffect(() => {
     let isMounted = true;
     const initLibrary = async () => {
@@ -160,7 +160,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     initLibrary();
     return () => { isMounted = false; };
   }, []);
-
   useEffect(() => {
     if (!libReady || !article.fileUrl) return;
     let isMounted = true;
@@ -179,7 +178,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     loadPdf();
     return () => { isMounted = false; };
   }, [libReady, article.fileUrl]);
-
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current || !containerSize.width) return;
     let renderTask = null;
@@ -213,7 +211,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     renderPage();
     return () => { if (renderTask) renderTask.cancel(); };
   }, [pdfDoc, pageNum, scale, containerSize, isMobile]);
-
   const handleOutlineClick = async (dest) => {
     if (!pdfDoc) return;
     try {
@@ -227,15 +224,15 @@ const CustomPDFViewer = ({ article, onBack }) => {
       }
     } catch(e) { console.warn("이동 실패:", e); }
   };
-
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches); pinchStartScale.current = scale; } 
+    if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches);
+    pinchStartScale.current = scale; } 
     else { isPinching.current = false; touchStartX.current = e.changedTouches[0].screenX; }
   };
   const handleTouchMove = (e) => { if (isPinching.current && e.touches.length === 2) e.preventDefault(); };
   const handlePinchMove = (e) => {
       if (e.touches.length === 2 && contentWrapperRef.current) {
-        e.preventDefault(); 
+        e.preventDefault();
         const currentDist = getTouchDistance(e.touches);
         const ratio = currentDist / pinchStartDist.current;
         tempPinchScaleRef.current = Math.min(Math.max(pinchStartScale.current * ratio, 0.5), 4.0);
@@ -243,24 +240,29 @@ const CustomPDFViewer = ({ article, onBack }) => {
         contentWrapperRef.current.style.transformOrigin = 'center top';
       }
   };
-  const handlePinchEnd = () => { if (contentWrapperRef.current) { contentWrapperRef.current.style.transform = 'none'; setScale(tempPinchScaleRef.current); } isPinching.current = false; };
+  const handlePinchEnd = () => { if (contentWrapperRef.current) { contentWrapperRef.current.style.transform = 'none'; setScale(tempPinchScaleRef.current);
+  } isPinching.current = false; };
   const handleTouchEnd = (e) => {
-    if (isPinching.current) { if (e.touches.length < 2) handlePinchEnd(); } else {
+    if (isPinching.current) { if (e.touches.length < 2) handlePinchEnd();
+    } else {
       touchEndX.current = e.changedTouches[0].screenX;
       const currentTime = new Date().getTime();
       const tapLength = currentTime - lastTapTime.current;
-      if (tapLength < 300 && tapLength > 0) { e.preventDefault(); setScale(scale > 1.2 ? 1.0 : 2.0); } 
-      else { if (scale <= 1.2) { const distance = touchStartX.current - touchEndX.current; if (distance > 50 && pageNum < pdfDoc.numPages) setPageNumber(p => p + 1); else if (distance < -50 && pageNum > 1) setPageNumber(p => p - 1); } }
+      if (tapLength < 300 && tapLength > 0) { e.preventDefault();
+      setScale(scale > 1.2 ? 1.0 : 2.0); } 
+      else { if (scale <= 1.2) { const distance = touchStartX.current - touchEndX.current;
+      if (distance > 50 && pageNum < pdfDoc.numPages) setPageNumber(p => p + 1);
+      else if (distance < -50 && pageNum > 1) setPageNumber(p => p - 1);
+      } }
       lastTapTime.current = currentTime;
     }
   };
-
   return (
-    <div className="fixed inset-0 bg-[#FDF8F0] z-[110] flex flex-col h-screen w-screen animate-in fade-in duration-300 text-left">
-      <div className="h-16 bg-white border-b border-orange-100 flex items-center justify-between px-4 shrink-0 shadow-sm z-[120]">
+    <div className="fixed inset-0 bg-[#F5F5F7] z-[110] flex flex-col h-screen w-screen animate-in fade-in duration-300 text-left">
+      <div className="h-16 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-[120]">
         <div className="flex items-center gap-3 overflow-hidden">
-          <button onClick={onBack} className="p-2 hover:bg-orange-50 rounded-full text-slate-600 transition-colors"><ArrowLeft size={20} /></button>
-          <button onClick={() => setIsOutlineOpen(!isOutlineOpen)} className={`p-2 rounded-lg transition-colors ${isOutlineOpen ? 'bg-orange-100 text-orange-600' : 'text-slate-500 hover:bg-gray-50'}`}>
+          <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"><ArrowLeft size={20} /></button>
+          <button onClick={() => setIsOutlineOpen(!isOutlineOpen)} className={`p-2 rounded-lg transition-colors ${isOutlineOpen ? 'bg-orange-50 text-orange-600' : 'text-slate-500 hover:bg-slate-50'}`}>
             {isOutlineOpen ? <X size={20}/> : <List size={20}/>}
           </button>
           <h3 className="font-bold truncate text-sm md:text-lg text-slate-800">{article.title}</h3>
@@ -272,12 +274,12 @@ const CustomPDFViewer = ({ article, onBack }) => {
              <span className="w-12 text-center text-xs text-slate-600 font-mono font-bold">{Math.round(scale * 100)}%</span>
              <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-1.5 hover:bg-white rounded text-slate-500"><ZoomIn size={16}/></button>
            </div>
-           {article.fileUrl && <a href={article.fileUrl} target="_blank" download className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg transition-colors hidden sm:flex shadow-md shadow-orange-200"><Download size={18}/></a>}
+           {article.fileUrl && <a href={article.fileUrl} target="_blank" download className="bg-slate-900 hover:bg-orange-500 text-white p-2 rounded-lg transition-colors hidden sm:flex shadow-sm"><Download size={18}/></a>}
         </div>
       </div>
-      <div className="flex-1 flex relative overflow-hidden bg-slate-100">
-        <div className={`absolute md:relative left-0 top-0 bottom-0 w-72 bg-white border-r border-orange-100 transition-all duration-300 z-[115] flex flex-col shadow-xl md:shadow-none ${isOutlineOpen ? 'translate-x-0' : '-translate-x-full md:w-0 md:border-none'}`}>
-            <div className="p-4 border-b border-orange-50 flex justify-between items-center text-slate-700 bg-orange-50/30"><span className="font-bold text-sm">목차</span></div>
+      <div className="flex-1 flex relative overflow-hidden bg-[#F5F5F7]">
+        <div className={`absolute md:relative left-0 top-0 bottom-0 w-72 bg-white border-r border-gray-200 transition-all duration-300 z-[115] flex flex-col shadow-xl md:shadow-none ${isOutlineOpen ? 'translate-x-0' : '-translate-x-full md:w-0 md:border-none'}`}>
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center text-slate-700 bg-gray-50/50"><span className="font-bold text-sm">목차</span></div>
             <div className="overflow-y-auto flex-1 p-2 custom-scrollbar bg-white">
               {outline.length > 0 ? (
                 <ul className="space-y-1">{outline.map((item, idx) => (<li key={idx} onClick={() => handleOutlineClick(item.dest)} className="text-sm text-slate-600 hover:bg-orange-50 hover:text-orange-700 py-2.5 px-3 rounded cursor-pointer truncate transition-colors border-b border-gray-50 last:border-0 font-medium">{item.title}</li>))}</ul>
@@ -294,50 +296,72 @@ const CustomPDFViewer = ({ article, onBack }) => {
            ) : (<div className="flex flex-col items-center justify-center h-full text-gray-400"><LinkIcon size={48} className="mx-auto mb-4 opacity-30"/><p>외부 링크 자료입니다.</p></div>)}
         </div>
       </div>
-      {pdfDoc && (<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-orange-100 px-6 py-2 rounded-full shadow-xl flex items-center gap-6 z-[130]"><button onClick={() => setPageNumber(p => Math.max(1, p-1))} disabled={pageNum <= 1} className="p-2 rounded-full text-orange-600 hover:bg-orange-100 disabled:opacity-20 transition-colors"><ChevronLeft size={24}/></button><span className="text-slate-800 font-mono font-black text-lg min-w-[60px] text-center">{pageNum} <span className="text-gray-300 text-sm">/</span> {pdfDoc.numPages}</span><button onClick={() => setPageNumber(p => Math.min(pdfDoc.numPages, p+1))} disabled={pageNum >= pdfDoc.numPages} className="p-2 rounded-full text-orange-600 hover:bg-orange-100 disabled:opacity-20 transition-colors"><ChevronRight size={24}/></button></div>)}
+      {pdfDoc && (<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-gray-200 px-6 py-2 rounded-full shadow-xl flex items-center gap-6 z-[130]"><button onClick={() => setPageNumber(p => Math.max(1, p-1))} disabled={pageNum <= 1} className="p-2 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-20 transition-colors"><ChevronLeft size={24}/></button><span className="text-slate-800 font-mono font-black text-lg min-w-[60px] text-center">{pageNum} <span className="text-gray-300 text-sm">/</span> {pdfDoc.numPages}</span><button onClick={() => setPageNumber(p => Math.min(pdfDoc.numPages, p+1))} disabled={pageNum >= pdfDoc.numPages} className="p-2 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-20 transition-colors"><ChevronRight size={24}/></button></div>)}
     </div>
   );
 };
 
-// --- [네비게이션] ---
+// --- [네비게이션] Apple Style Glassmorphism (v23.0) ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView }) => (
-  <nav className="w-full bg-[#FFF9F0] border-b-4 border-orange-100 sticky top-0 z-[60] backdrop-blur-sm shadow-sm">
-    <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
-      <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
-        <div className="w-11 h-11 bg-orange-400 text-white flex items-center justify-center font-bold rounded-full shadow-md transform group-hover:scale-110 transition-transform border-4 border-white">
-          <Star size={20} fill="currentColor" />
+  <nav className="w-full sticky top-0 z-[60] bg-white/80 backdrop-blur-md border-b border-gray-200 transition-all duration-300">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* 로고 영역 */}
+      <div className="flex items-center gap-2 cursor-pointer group" onClick={onHomeClick}>
+        <div className="w-8 h-8 bg-gradient-to-tr from-orange-400 to-orange-500 text-white flex items-center justify-center rounded-lg shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
+          <Star size={16} fill="currentColor" />
         </div>
-        <div className="flex flex-col text-left">
-          <span className="text-xl md:text-2xl font-black tracking-tight text-gray-800 font-sans leading-tight">유보통합 <span className="text-orange-500">웹진</span></span>
-          <span className="text-[10px] md:text-[11px] font-bold text-gray-400 tracking-wider uppercase">Together Edu-Care</span>
+        <div className="flex flex-col">
+          <span className="text-lg font-bold tracking-tight text-slate-900 font-sans leading-none">
+            유보통합 <span className="text-orange-500">웹진</span>
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 md:gap-4">
-        <button onClick={() => onViewChange('news')} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs md:text-sm font-black transition-all ${currentView === 'news' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}><Newspaper size={16}/> 뉴스</button>
-        <button onClick={() => onViewChange('issue_list')} className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs md:text-sm font-black transition-all ${currentView === 'issue_list' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}><Book size={16}/> 자료실</button>
+
+      {/* 메뉴 영역 */}
+      <div className="flex items-center gap-1 md:gap-2">
+        <button 
+          onClick={() => onViewChange('news')} 
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${currentView === 'news' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+        >
+          <Newspaper size={16}/> <span className="hidden md:inline">뉴스룸</span>
+        </button>
+        <button 
+          onClick={() => onViewChange('issue_list')} 
+          className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${currentView === 'issue_list' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+        >
+          <Book size={16}/> <span>자료실</span>
+        </button>
+
+        <div className="w-px h-4 bg-gray-300 mx-2 hidden md:block"></div>
+
         {isAdmin ? (
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border-2 border-orange-200 shadow-sm"><span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-full whitespace-nowrap">관리자</span><button onClick={onLogout} className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"><LogOut size={14} /></button></div>
+          <div className="flex items-center gap-2 pl-2">
+            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full ring-1 ring-orange-100">ADMIN</span>
+            <button onClick={onLogout} className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-red-500 transition-colors"><LogOut size={16} /></button>
+          </div>
         ) : (
-          <button onClick={onLoginClick} className="px-4 py-2 bg-white border-2 border-orange-400 text-orange-600 rounded-full text-xs md:text-sm font-black hover:bg-orange-50 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap"><Lock size={14} /> <span className="hidden md:inline">로그인</span><span className="md:hidden">로그인</span></button>
+          <button onClick={onLoginClick} className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm active:scale-95 flex items-center gap-2">
+            <Lock size={14} /> <span>로그인</span>
+          </button>
         )}
       </div>
     </div>
   </nav>
 );
 
-// --- [푸터] ---
+// --- [푸터] Clean Style ---
 const Footer = () => {
   const currentUrl = window.location.href;
   const handleCopyLink = async () => { try { await navigator.clipboard.writeText(currentUrl); alert('🔗 링크가 복사되었습니다.'); } catch (e) { alert('복사 실패'); } };
   return (
-    <footer className="bg-white border-t-4 border-orange-100 py-12 pb-24 md:pb-12 mt-auto">
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
+    <footer className="bg-white border-t border-gray-200 py-12 pb-24 md:pb-12 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
-          <div className="flex items-center gap-2 justify-center md:justify-start mb-2 opacity-80"><div className="w-8 h-8 bg-orange-400 text-white flex items-center justify-center font-bold rounded-full shadow-sm"><Star size={14} fill="currentColor" /></div><span className="font-black text-gray-800 text-lg">유보통합 <span className="text-orange-500">웹진</span></span></div>
-          <p className="text-gray-400 text-xs font-bold leading-relaxed">Together Edu-Care | 유치원·어린이집 교사를 위한 아카이브<br/>Contact: support@educare-webzine.com</p>
+          <div className="flex items-center gap-2 justify-center md:justify-start mb-2 opacity-80"><div className="w-8 h-8 bg-orange-400 text-white flex items-center justify-center font-bold rounded-lg shadow-sm"><Star size={14} fill="currentColor" /></div><span className="font-bold text-slate-900 text-lg">유보통합 <span className="text-orange-500">웹진</span></span></div>
+          <p className="text-slate-400 text-xs font-medium leading-relaxed">Together Edu-Care | 유치원·어린이집 교사를 위한 아카이브<br/>Contact: support@educare-webzine.com</p>
         </div>
         <div className="flex flex-col items-center md:items-end gap-3">
-          <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-full">Share with Friends</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full">Share with Friends</span>
           <div className="flex items-center gap-3">
             <button onClick={handleCopyLink} className="w-10 h-10 bg-[#FEE500] rounded-full flex items-center justify-center text-[#3b1e1e] hover:scale-110 transition-transform shadow-sm" title="링크 복사"><MessageCircle size={20} fill="currentColor" className="opacity-90"/></button>
             <button className="w-10 h-10 bg-[#00C300] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-sm" title="밴드로 공유"><span className="font-black text-sm">b</span></button>
@@ -358,13 +382,13 @@ const UploadModal = ({ isOpen, onClose, onSubmit, type, isUploading, initialData
   const isEdit = !!initialData;
   return (
     <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-200 border-8 border-white ring-4 ring-yellow-100">
-        <h2 className="text-2xl font-black mb-6 text-gray-800 text-left">{isEdit ? '✏️ 정보 수정' : (type === 'issue' ? '✨ 새 호수 발행' : '📝 새 자료 등록')}</h2>
-        {isUploading ? (<div className="flex flex-col items-center justify-center py-10 space-y-4"><div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div><p className="font-bold text-gray-500">업로드 중...</p></div>) : (
-            <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...formData, file }); }} className="space-y-5 text-left">
-            {type === 'issue' ? (<><div className="flex gap-3 text-left"><div className="w-1/3"><label className="block text-xs font-bold text-gray-400 mb-1">호수</label><input required className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-400 font-bold outline-none" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div><div className="flex-1 text-left"><label className="block text-xs font-bold text-gray-400 mb-1">제목</label><input required className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-400 font-bold outline-none" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div></div><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">설명</label><textarea className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-400 font-medium h-24 outline-none resize-none" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div></>) : (
-                <><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">자료 제목</label><input required className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-orange-400" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">발행처</label><input required className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-orange-400 font-medium" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})}/></div><div className="bg-gray-50 p-4 rounded-2xl border-2 border-gray-100 text-left"><p className="text-[11px] font-black text-gray-500 mb-2">연결 방식</p><div className="space-y-3"><div><label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 mb-1"><LinkIcon size={12}/> 웹 링크</label><input type="url" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl outline-none text-sm" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})}/></div><div><label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 mb-1"><Paperclip size={12}/> PDF 파일 업로드</label><input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} className="w-full text-[11px] text-gray-500 file:border-0 file:bg-orange-50 file:text-orange-600 file:rounded-full file:px-4 file:py-1 file:font-black"/></div></div></div></>)}
-            <div className="flex gap-3 pt-2"><button type="button" onClick={onClose} className="flex-1 py-3 text-gray-500 hover:bg-gray-100 rounded-2xl font-black transition-colors">취소</button><button type="submit" className="flex-1 py-3 bg-orange-500 text-white rounded-2xl hover:bg-orange-600 font-black shadow-md shadow-orange-200">확인</button></div>
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-200 border border-gray-100">
+        <h2 className="text-2xl font-black mb-6 text-slate-900 text-left">{isEdit ? '✏️ 정보 수정' : (type === 'issue' ? '✨ 새 호수 발행' : '📝 새 자료 등록')}</h2>
+        {isUploading ? (<div className="flex flex-col items-center justify-center py-10 space-y-4"><Loader2 className="animate-spin text-orange-500" size={40} /><p className="font-bold text-gray-500">업로드 중...</p></div>) : (
+             <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...formData, file }); }} className="space-y-5 text-left">
+            {type === 'issue' ? (<><div className="flex gap-3 text-left"><div className="w-1/3"><label className="block text-xs font-bold text-gray-400 mb-1">호수</label><input required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-orange-400 font-bold outline-none" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div><div className="flex-1 text-left"><label className="block text-xs font-bold text-gray-400 mb-1">제목</label><input required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-orange-400 font-bold outline-none" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div></div><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">설명</label><textarea className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-orange-400 font-medium h-24 outline-none resize-none" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div></>) : (
+                <><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">자료 제목</label><input required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-orange-400" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div><div className="text-left"><label className="block text-xs font-bold text-gray-400 mb-1">발행처</label><input required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-orange-400 font-medium" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})}/></div><div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-left"><p className="text-[11px] font-black text-gray-500 mb-2">연결 방식</p><div className="space-y-3"><div><label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 mb-1"><LinkIcon size={12}/> 웹 링크</label><input type="url" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})}/></div><div><label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 mb-1"><Paperclip size={12}/> PDF 파일 업로드</label><input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} className="w-full text-[11px] text-gray-500 file:border-0 file:bg-orange-50 file:text-orange-600 file:rounded-full file:px-4 file:py-1 file:font-black"/></div></div></div></>)}
+            <div className="flex gap-3 pt-2"><button type="button" onClick={onClose} className="flex-1 py-3 text-gray-500 hover:bg-gray-100 rounded-xl font-bold transition-colors">취소</button><button type="submit" className="flex-1 py-3 bg-slate-900 text-white rounded-xl hover:bg-orange-600 font-bold shadow-md">확인</button></div>
             </form>)}
       </div>
     </div>
@@ -377,18 +401,17 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
   const [error, setError] = useState(false);
   const handleSubmit = (e) => { e.preventDefault(); if (password === 'admin') { onLogin(); setPassword(''); setError(false); onClose(); } else { setError(true); } };
   return (
-    <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm text-center"><div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm p-8 border-4 border-white ring-4 ring-orange-100 animate-in zoom-in-95 text-center"><div className="mb-6 flex flex-col items-center"><div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4 text-orange-500"><Lock size={32} /></div><h2 className="text-2xl font-black text-gray-800">선생님 접속</h2></div><form onSubmit={handleSubmit} className="space-y-4"><input type="password" className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold text-center tracking-widest outline-none focus:border-orange-400" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••"/>{error && <p className="text-red-500 text-xs font-bold">비밀번호가 일치하지 않습니다.</p>}<button type="submit" className="w-full py-3 bg-orange-500 text-white rounded-2xl font-black shadow-lg shadow-orange-200 active:scale-95">로그인</button><button type="button" onClick={onClose} className="w-full py-2 text-gray-400 text-sm font-bold">닫기</button></form></div></div>
+    <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm text-center"><div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm p-8 border border-gray-100 animate-in zoom-in-95 text-center"><div className="mb-6 flex flex-col items-center"><div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4 text-orange-500"><Lock size={32} /></div><h2 className="text-2xl font-black text-slate-900">선생님 접속</h2></div><form onSubmit={handleSubmit} className="space-y-4"><input type="password" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center tracking-widest outline-none focus:border-orange-400" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••"/>{error && <p className="text-red-500 text-xs font-bold">비밀번호가 일치하지 않습니다.</p>}<button type="submit" className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg active:scale-95 hover:bg-slate-800">로그인</button><button type="button" onClick={onClose} className="w-full py-2 text-gray-400 text-sm font-bold">닫기</button></form></div></div>
   );
 };
 
-// --- [뉴스 피드] ---
+// --- [뉴스 피드] BoanTokTok Style List ---
 const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [backfillOpen, setBackfillOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
   const fetchStoredNews = async () => {
     if (!supabase) { setLoading(false); return; }
     try {
@@ -396,7 +419,6 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
       if (!error && data) setNews(data);
     } catch (e) { console.error("뉴스 로드 오류:", e); } finally { setLoading(false); }
   };
-
   const scrapeAndSyncNews = async (startDate = null, endDate = null) => {
     if (!supabase) return;
     setIsUpdating(true);
@@ -420,70 +442,124 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   useEffect(() => { fetchStoredNews(); if (!limit) scrapeAndSyncNews(); }, [limit]);
   const displayNews = (Array.isArray(news) ? news : []).filter(item => searchTerm === '' || item.title.toLowerCase().includes(searchTerm.toLowerCase()));
   if (loading) return <div className="py-20 text-center text-orange-400 font-bold text-sm"><Loader2 className="animate-spin inline mr-2"/> 뉴스 로딩 중...</div>;
-
+  
   return (
-    <div className={`max-w-6xl mx-auto px-4 ${limit ? 'py-10' : 'py-12'} animate-in fade-in duration-500`}>
-      <div className={`flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 ${limit ? 'border-b border-gray-100 pb-4' : 'border-b-4 border-orange-100 pb-6'}`}>
-        <div className="flex items-center gap-3 text-left">
-          {!limit && <div className="p-4 bg-orange-100 text-orange-600 rounded-3xl shadow-sm"><Newspaper size={32}/></div>}
-          <div><h2 className={`${limit ? 'text-2xl' : 'text-4xl'} font-black text-gray-800`}>{limit && '📰'} 유보통합 뉴스룸</h2>{!limit && <p className="text-sm text-gray-500 font-bold mt-1 text-orange-500 uppercase">Live Insight Feed</p>}</div>
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${limit ? 'py-12' : 'py-16'} animate-in fade-in duration-500`}>
+      {/* 헤더 섹션 */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-gray-200 pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+             <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">유보통합 뉴스룸</h2>
         </div>
-        <div className="flex flex-col md:flex-row items-end md:items-center gap-2">
-          {!limit && (<div className="relative w-full md:w-64"><input type="text" placeholder="키워드 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-orange-400 font-bold"/><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /></div>)}
-           <button onClick={() => scrapeAndSyncNews()} disabled={isUpdating} className={`flex items-center gap-1 px-3 py-2 bg-gray-100 rounded-full text-xs font-bold text-gray-500 hover:bg-gray-200 transition-all ${isUpdating ? 'opacity-50' : ''}`}>{isUpdating ? <Loader2 size={14} className="animate-spin"/> : <Zap size={14} className="text-yellow-500"/>} {isUpdating ? ' 수집 중...' : ' 최신 뉴스 동기화'}</button>
-           {limit ? (<button onClick={onMoreClick} className="flex items-center gap-1 px-4 py-2 bg-white border-2 border-orange-100 rounded-full text-xs font-black text-gray-400 hover:text-orange-500 transition-all shadow-sm">전체보기 <ChevronRight size={16}/></button>) : (isAdmin && <button onClick={() => setBackfillOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-xs font-black hover:bg-orange-200 transition-colors shadow-sm"><Filter size={14}/> 과거 수집</button>)}
+        
+        <div className="flex items-center gap-3">
+           {!limit && (
+             <div className="relative group w-full md:w-64">
+                <input type="text" placeholder="뉴스 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2.5 bg-gray-100 border-none rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all w-full"/>
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+             </div>
+           )}
+           <button onClick={() => scrapeAndSyncNews()} disabled={isUpdating} className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-slate-600 transition-colors disabled:opacity-50">
+             {isUpdating ? <Loader2 size={18} className="animate-spin"/> : <RefreshCw size={18} />}
+           </button>
+           {limit ? (
+             <button onClick={onMoreClick} className="flex items-center gap-1 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-sm">
+               전체보기 <ArrowRight size={16}/>
+             </button>
+           ) : (
+             isAdmin && <button onClick={() => setBackfillOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-orange-100 text-orange-700 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"><Filter size={16}/> 과거 수집</button>
+           )}
         </div>
       </div>
-      {backfillOpen && (<div className="mb-8 p-6 bg-white border-4 border-orange-100 rounded-[2.5rem] shadow-xl text-left animate-in slide-in-from-top-2"><h4 className="font-black text-gray-800 mb-4 flex items-center gap-2 text-left"><Calendar size={18}/> 날짜별 뉴스 수집 (관리자용)</h4><div className="flex flex-col md:flex-row gap-4 items-center"><input id="start-date" type="date" className="flex-1 w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-orange-400"/><input id="end-date" type="date" className="flex-1 w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-orange-400"/><button onClick={() => { const s = document.getElementById('start-date').value; const e = document.getElementById('end-date').value; if(s && e) scrapeAndSyncNews(s, e); else alert('기간 선택 필요'); }} className="w-full md:w-auto px-8 py-3 bg-orange-500 text-white rounded-2xl font-black shadow-lg">수집 시작</button></div></div>)}
-      <div className={`grid ${limit ? 'grid-cols-1 md:grid-cols-2 gap-5' : 'flex flex-col gap-3'}`}>
+      {backfillOpen && (<div className="mb-8 p-6 bg-white border border-gray-100 rounded-[2rem] shadow-xl text-left animate-in slide-in-from-top-2"><h4 className="font-black text-slate-900 mb-4 flex items-center gap-2 text-left"><Calendar size={18}/> 날짜별 뉴스 수집 (관리자용)</h4><div className="flex flex-col md:flex-row gap-4 items-center"><input id="start-date" type="date" className="flex-1 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-orange-400"/><input id="end-date" type="date" className="flex-1 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none focus:border-orange-400"/><button onClick={() => { const s = document.getElementById('start-date').value; const e = document.getElementById('end-date').value; if(s && e) scrapeAndSyncNews(s, e); else alert('기간 선택 필요'); }} className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-xl font-black shadow-lg">수집 시작</button></div></div>)}
+      {/* 뉴스 리스트 */}
+      <div className={`grid ${limit ? 'grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6' : 'grid-cols-1 gap-4'}`}>
         {displayNews.map((item, index) => (
-          <a key={index} href={item.link} target="_blank" rel="noopener noreferrer" className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col md:flex-row items-center gap-4 relative text-left overflow-hidden">
-            {!limit && <div className="hidden md:flex flex-col items-center justify-center bg-gray-50 rounded-xl w-20 h-20 shrink-0 text-gray-400 group-hover:bg-orange-50 transition-colors border border-gray-100"><span className="text-[10px] font-black uppercase">{new Date(item.pub_date).toLocaleString('en-US', { month: 'short' })}</span><span className="text-xl font-black">{new Date(item.pub_date).getDate()}</span></div>}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${item.author.includes('Google') ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{item.author.includes('Google') ? 'G' : 'N'} | {item.author.replace('Google News', '뉴스')}</span><span className="text-[10px] font-bold text-gray-400">{new Date(item.pub_date).toLocaleDateString()}</span></div>
-              <h3 className="text-lg font-bold text-gray-800 group-hover:text-orange-600 transition-colors leading-tight break-keep">{item.title.replace(/<[^>]*>?/gm, '')}</h3>
-              {!limit && <p className="text-sm text-gray-400 line-clamp-1 mt-1">{item.description}</p>}
+          <a key={index} href={item.link} target="_blank" rel="noopener noreferrer" className="group flex gap-5 items-start p-5 rounded-2xl hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300">
+            {/* 날짜 박스 */}
+            <div className="hidden sm:flex flex-col items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+              <span className="text-[10px] font-bold uppercase opacity-70">{new Date(item.pub_date).toLocaleString('en-US', { month: 'short' })}</span>
+              <span className="text-xl font-black leading-none mt-0.5">{new Date(item.pub_date).getDate()}</span>
             </div>
-            {!limit && <ChevronRight size={20} className="hidden md:block text-gray-300 group-hover:text-orange-400 group-hover:translate-x-1 transition-all"/>}
+            {/* 텍스트 정보 */}
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="flex items-center gap-2 mb-2">
+                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${item.author.includes('Google') ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
+                   {item.author.includes('Google') ? 'Google' : 'Naver'}
+                 </span>
+                 <span className="text-xs text-slate-400 font-medium sm:hidden">{new Date(item.pub_date).toLocaleDateString()}</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-orange-600 transition-colors line-clamp-2 break-keep mb-2">
+                {item.title.replace(/<[^>]*>?/gm, '')}
+              </h3>
+              {!limit && <p className="text-sm text-slate-500 line-clamp-1 group-hover:text-slate-600">{item.description}</p>}
+            </div>
+            {!limit && <ChevronRight size={20} className="hidden sm:block text-gray-300 self-center group-hover:text-orange-500 group-hover:translate-x-1 transition-all"/>}
           </a>
         ))}
-        {displayNews.length === 0 && <div className="col-span-full py-20 text-gray-400 font-bold text-center">{searchTerm ? '검색 결과가 없습니다.' : '저장된 기사가 없습니다.'}</div>}
+        {displayNews.length === 0 && <div className="col-span-full py-20 text-gray-400 font-bold text-center bg-white rounded-3xl border border-dashed border-gray-200">데이터가 없습니다.</div>}
       </div>
     </div>
   );
 };
 
-// --- 메인 카드/아이템 ---
+// --- [메인 카드] Design House Style Minimalist ---
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onEdit }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col relative transform transition-all duration-200 hover:-translate-y-2 active:scale-95 h-full text-left">
-    <div className={`aspect-[3/4] ${issue.cover_color || 'bg-orange-400'} rounded-[2.5rem] shadow-xl relative overflow-hidden p-8 flex flex-col justify-between border-8 border-white group-hover:shadow-2xl transition-all`}>
-      <span className="bg-white/95 text-gray-800 text-[11px] font-black px-4 py-2 rounded-full shadow-sm w-fit">{issue.date}</span>
-      <div className="relative z-10 mt-auto text-left">
-        <div className="text-6xl mb-4 filter drop-shadow-md">{issue.icon || '📚'}</div>
-        <h3 className="text-2xl font-black text-white leading-tight mb-3 drop-shadow-md line-clamp-2">{issue.title}</h3>
-        <p className="text-white/90 text-sm font-bold line-clamp-2 leading-relaxed h-10">{issue.description}</p>
+  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col gap-4 relative">
+    {/* 이미지 영역: Apple Style Zoom Effect */}
+    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-200'} rounded-2xl overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.04)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-500 ease-out`}>
+      <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out">
+        <div className="text-7xl md:text-8xl filter drop-shadow-lg opacity-90 transition-transform group-hover:-translate-y-2">{issue.icon || '📚'}</div>
+      </div>
+      
+      {/* 뱃지: BoanTokTok Style */}
+      <div className="absolute top-4 left-4 z-10">
+         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/90 backdrop-blur-sm border border-white/20 shadow-sm text-[10px] font-bold tracking-widest uppercase text-slate-900">
+           {issue.date}
+         </span>
       </div>
     </div>
-    {isAdmin && <div className="absolute top-4 right-4 flex gap-2 scale-0 group-hover:scale-100 transition-all z-20"><button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="bg-white p-2 rounded-full text-blue-400 shadow-lg border border-blue-100 hover:bg-blue-50"><Edit size={18} /></button><button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="bg-white p-2 rounded-full text-red-400 shadow-lg border border-red-100 hover:bg-red-50"><Trash2 size={18} /></button></div>}
+
+    {/* 텍스트 영역: Outside & Clean */}
+    <div className="flex flex-col gap-1 px-1 text-left">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold text-orange-600 tracking-widest uppercase">Vol. {issue.vol}</span>
+        {isAdmin && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+             <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit size={14}/></button>
+             <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+          </div>
+        )}
+      </div>
+      <h3 className="text-lg md:text-xl font-bold text-slate-900 leading-snug group-hover:text-orange-600 transition-colors line-clamp-2 break-keep">
+        {issue.title}
+      </h3>
+      <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed font-medium">
+        {issue.description}
+      </p>
+    </div>
   </div>
 );
 
 const ArticleItem = ({ article, onClick, isAdmin, onDelete, onEdit }) => (
-  <div className="group bg-white rounded-[2rem] border-4 border-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full relative text-left" onClick={() => onClick(article)}>
-    <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden border-b border-gray-100 flex items-center justify-center">
-      {article.thumbnailUrl ? (<img src={article.thumbnailUrl} alt="표지" className="w-full h-full object-cover transition-transform group-hover:scale-105" />) : (<div className="w-full h-full flex flex-col items-center justify-center text-orange-200 bg-orange-50/50 group-hover:bg-orange-100 transition-colors"><FileText size={64} className="mb-2"/><span className="text-[10px] font-black uppercase text-orange-300">PDF Document</span></div>)}
-      {article.fileUrl && <div className="absolute top-3 left-3 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm">PDF</div>}
+  <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-gray-200 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full relative text-left" onClick={() => onClick(article)}>
+    <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden flex items-center justify-center">
+      {article.thumbnailUrl ? (<img src={article.thumbnailUrl} alt="표지" className="w-full h-full object-cover transition-transform group-hover:scale-105" />) : (<div className="w-full h-full flex flex-col items-center justify-center text-orange-200 bg-orange-50/50 group-hover:bg-orange-100 transition-colors"><FileText size={48} className="mb-2"/><span className="text-[10px] font-black uppercase text-orange-300">PDF</span></div>)}
+      {article.fileUrl && <div className="absolute top-3 left-3 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-sm">PDF</div>}
     </div>
-    <div className="p-5 flex flex-col flex-1 bg-white text-left">
-      <h4 className="text-lg font-black text-gray-800 leading-snug mb-3 line-clamp-2 group-hover:text-orange-500">{article.title}</h4>
-      <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between"><span className="text-xs font-bold text-gray-500 truncate flex items-center gap-1">{article.author}{article.views > 0 && <span className="flex items-center text-gray-400 ml-2"><Eye size={10} className="mr-0.5"/> {article.views}</span>}</span><div className="flex gap-1"><button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShare(article.title, '자료 공유', window.location.href); }} className="w-7 h-7 bg-gray-50 hover:bg-orange-50 text-gray-300 hover:text-orange-500 rounded-full flex items-center justify-center transition-colors"><Share2 size={12} /></button>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(article.id); }} className="w-7 h-7 bg-gray-50 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-full flex items-center justify-center transition-colors"><Trash2 size={12} /></button>}</div></div>
+    <div className="p-4 flex flex-col flex-1 bg-white text-left">
+      <h4 className="text-base font-bold text-slate-900 leading-snug mb-2 line-clamp-2 group-hover:text-orange-500">{article.title}</h4>
+      <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between"><span className="text-xs font-bold text-gray-400 truncate flex items-center gap-1">{article.author}{article.views > 0 && <span className="flex items-center ml-2"><Eye size={10} className="mr-0.5"/> {article.views}</span>}</span><div className="flex gap-1"><button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShare(article.title, '자료 공유', window.location.href); }} className="w-7 h-7 bg-gray-50 hover:bg-orange-50 text-gray-300 hover:text-orange-500 rounded-full flex items-center justify-center transition-colors"><Share2 size={12} /></button>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(article.id); }} className="w-7 h-7 bg-gray-50 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-full flex items-center justify-center transition-colors"><Trash2 size={12} /></button>}</div></div>
     </div>
   </div>
 );
 
-// --- 메인 앱 로직 ---
+// --- [메인 앱 로직] ---
 const MainApp = () => {
-  const [isAdminMode, setIsAdminMode] = useState(false); 
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [view, setView] = useState('home'); 
   const [issues, setIssues] = useState([]);
   const [currentIssue, setCurrentIssue] = useState(null);
@@ -506,7 +582,7 @@ const MainApp = () => {
         const issueFound = issues.find(i => i.id === issueId);
         if (issueFound) { setCurrentIssue(issueFound); setView('issue'); }
       } else if (hash === '#news') { setView('news'); }
-      else if (hash === '#issues') { setView('issue_list'); } // ✅ 자료실 리스트 뷰 추가
+      else if (hash === '#issues') { setView('issue_list'); }
       else { setView('home'); setCurrentIssue(null); setCurrentArticle(null); }
     };
     handleHashChange();
@@ -528,7 +604,6 @@ const MainApp = () => {
         const { data: refreshed } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(refreshed || []); setIsUploadOpen(false);
     } catch (e) { alert('오류 발생'); } finally { setIsUploading(false); }
   };
-
   const handleAddArticle = async (data) => {
     if (!currentIssue || !supabase) return; setIsUploading(true);
     try {
@@ -545,10 +620,11 @@ const MainApp = () => {
         const { data: refreshed } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(refreshed || []); setIsUploadOpen(false); setEditTarget(null);
     } catch (e) { alert("업로드 실패: " + e.message); } finally { setIsUploading(false); }
   };
-
-  const handleDeleteIssue = async (issueId) => { if (!window.confirm("삭제하시겠습니까?")) return; await supabase.from('issues').delete().eq('id', issueId); const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(data || []); if(currentIssue?.id === issueId) window.location.hash = '#issues'; };
-  const handleDeleteArticle = async (articleId) => { if (!window.confirm("삭제하시겠습니까?")) return; const updatedArticles = currentIssue.articles.filter(a => a.id !== articleId); await supabase.from('issues').update({ articles: updatedArticles }).eq('id', currentIssue.id); setCurrentIssue({ ...currentIssue, articles: updatedArticles }); const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(data || []); };
-
+  const handleDeleteIssue = async (issueId) => { if (!window.confirm("삭제하시겠습니까?")) return; await supabase.from('issues').delete().eq('id', issueId);
+  const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(data || []); if(currentIssue?.id === issueId) window.location.hash = '#issues'; };
+  const handleDeleteArticle = async (articleId) => { if (!window.confirm("삭제하시겠습니까?")) return; const updatedArticles = currentIssue.articles.filter(a => a.id !== articleId);
+  await supabase.from('issues').update({ articles: updatedArticles }).eq('id', currentIssue.id); setCurrentIssue({ ...currentIssue, articles: updatedArticles });
+  const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); setIssues(data || []); };
   const handleEditIssue = (issue) => { setEditTarget(issue); setUploadType('issue'); setIsUploadOpen(true); };
   const handleEditArticle = (article) => { setEditTarget(article); setUploadType('article'); setIsUploadOpen(true); };
   const onUploadSubmit = (data) => { if (uploadType === 'issue') handleCreateIssue(data); else handleAddArticle(data); };
@@ -556,79 +632,143 @@ const MainApp = () => {
   const displayIssues = Array.isArray(issues) ? issues : [];
 
   return (
-    <div className="min-h-screen bg-[#FFF9F0] font-sans text-slate-800 overflow-x-hidden text-center select-none flex flex-col">
+    <div className="min-h-screen bg-[#F5F5F7] font-sans text-slate-900 overflow-x-hidden selection:bg-orange-100 selection:text-orange-600 flex flex-col">
       <Navbar isAdmin={isAdminMode} onLoginClick={() => setIsLoginOpen(true)} onLogout={() => setIsAdminMode(false)} onHomeClick={() => window.location.hash = ''} onViewChange={(v) => window.location.hash = (v === 'news' ? '#news' : (v === 'issue_list' ? '#issues' : ''))} currentView={view} />
-      <main className="flex-1 pb-10">
+      
+      <main className="flex-1 pb-20">
         
-        {/* --- 1. 홈 뷰 (대문) --- */}
+        {/* --- 1. 홈 뷰 (Bento Grid Dashboard) --- */}
         {view === 'home' && (
-          <div className="animate-in fade-in duration-500">
-            <div className="bg-yellow-50 py-16 md:py-24 relative overflow-hidden border-b-4 border-yellow-100">
-              <div className="max-w-6xl mx-auto px-4 text-center relative z-10">
-                <span className="inline-block bg-orange-100 text-orange-600 font-black px-4 py-1.5 rounded-full text-xs mb-4 shadow-sm uppercase tracking-widest leading-none">Together Edu-Care</span>
-                <h1 className="text-4xl md:text-6xl font-black text-gray-800 mb-6 leading-tight">유보통합<br/><span className="text-yellow-500 drop-shadow-sm">웹 매거진</span></h1>
-                <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg leading-relaxed text-balance">선생님을 위한 교육 정보 아카이브</p>
-                <button onClick={() => window.location.hash = '#issues'} className="mt-8 bg-white border-2 border-orange-200 text-orange-500 px-8 py-3 rounded-full font-black shadow-sm hover:bg-orange-50 transition-all flex items-center gap-2 mx-auto">
-                    자료실 바로가기 <ChevronRight size={18}/>
-                </button>
-              </div>
-            </div>
-            {/* 홈에서는 뉴스 4개만 깔끔하게 */}
+           <div className="animate-in fade-in duration-500 space-y-20">
+            
+            {/* Hero Section: Bento Grid Style */}
+            <section className="pt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[400px]">
+                  {/* 왼쪽: 환영 메시지 및 메인 액션 */}
+                  <div className="col-span-12 md:col-span-7 bg-white rounded-[2rem] p-8 md:p-12 flex flex-col justify-center items-start shadow-sm border border-gray-100 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 w-64 h-64 bg-orange-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-orange-200/50 transition-colors duration-700"></div>
+                     <div className="relative z-10 text-left">
+                        <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">Together Edu-Care</span>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
+                           선생님을 위한 <br/>
+                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">교육 아카이브.</span>
+                        </h1>
+                        <p className="text-slate-500 text-lg font-medium mb-8 max-w-md">유보통합 최신 뉴스부터 현장 자료까지,<br/>전문가가 큐레이션한 정보를 만나보세요.</p>
+                        <div className="flex gap-3">
+                           <button onClick={() => window.location.hash = '#issues'} className="px-8 py-3.5 bg-slate-900 text-white rounded-full font-bold shadow-lg shadow-slate-200 hover:bg-orange-500 hover:shadow-orange-200 transition-all transform active:scale-95 flex items-center gap-2">
+                              자료실 바로가기 <ArrowRight size={18}/>
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* 오른쪽 상단: 최신 이슈 미리보기 (Bento Box) */}
+                  <div onClick={() => displayIssues[0] && (window.location.hash = `#issue/${displayIssues[0].id}`)} className="col-span-12 md:col-span-5 bg-orange-500 rounded-[2rem] p-8 relative overflow-hidden cursor-pointer group shadow-lg shadow-orange-200">
+                     {displayIssues[0] ? (
+                        <>
+                           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/10 z-10"/>
+                           <div className="relative z-20 h-full flex flex-col justify-between text-white text-left">
+                              <div className="flex justify-between items-start">
+                                 <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold border border-white/10">NEW ISSUE</span>
+                                 <div className="p-2 bg-white/10 rounded-full group-hover:bg-white group-hover:text-orange-500 transition-colors"><ArrowUpRight size={24}/></div>
+                              </div>
+                              <div>
+                                 <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-500 origin-bottom-left">{displayIssues[0].icon}</div>
+                                 <h3 className="text-2xl font-black leading-tight line-clamp-2">{displayIssues[0].title}</h3>
+                                 <p className="text-white/80 text-sm mt-2 font-medium line-clamp-1">{displayIssues[0].description}</p>
+                              </div>
+                           </div>
+                        </>
+                     ) : (
+                        <div className="h-full flex items-center justify-center text-white/50 font-bold">발행된 소식이 없습니다.</div>
+                     )}
+                  </div>
+               </div>
+            </section>
+
+            {/* News Feed Section (List Style) */}
             <NewsFeed limit={4} onMoreClick={() => window.location.hash = '#news'} isAdmin={isAdminMode}/>
             
-            {/* ✅ [추가] 홈 화면용 최신 자료 3개 미리보기 */}
-            <div className="max-w-6xl mx-auto px-4 py-12 md:py-20 text-left">
-              <div className="flex items-center justify-between mb-8 border-b-4 border-orange-100 pb-4">
-                 <h2 className="text-3xl font-black text-gray-800"><span className="text-4xl">📚</span> 월간 발행 소식</h2>
-                 <button onClick={() => window.location.hash = '#issues'} className="flex items-center gap-1 px-4 py-2 bg-white border-2 border-orange-100 rounded-full text-xs font-black text-gray-400 hover:text-orange-500 transition-all shadow-sm">전체보기 <ChevronRight size={16}/></button>
+            {/* Latest Issues Section */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+              <div className="flex items-end justify-between mb-8 border-b border-gray-200 pb-6">
+                 <div className="text-left">
+                    <h2 className="text-3xl font-black text-slate-900">월간 자료실</h2>
+                    <p className="text-slate-500 font-medium mt-1">지난 호수들을 확인해보세요.</p>
+                 </div>
+                 <button onClick={() => window.location.hash = '#issues'} className="text-sm font-bold text-slate-400 hover:text-orange-500 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
               </div>
-              {displayIssues.length === 0 ? <div className="text-center py-20 bg-white rounded-[3rem] border-4 border-dashed border-gray-100 text-gray-400 font-black">아직 발행된 소식이 없습니다.</div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">{displayIssues.slice(0, 3).map(issue => (<IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>))}</div>}
-            </div>
-
+              
+              {displayIssues.length === 0 ? 
+                 <div className="text-center py-32 bg-white rounded-[2rem] border border-dashed border-gray-200 text-gray-400 font-bold">아직 발행된 소식이 없습니다.</div> 
+                 : 
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {displayIssues.slice(0, 4).map(issue => (
+                       <IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>
+                    ))}
+                 </div>
+              }
+            </section>
           </div>
         )}
 
         {/* --- 2. 뉴스 뷰 --- */}
         {view === 'news' && <NewsFeed isAdmin={isAdminMode} />}
 
-        {/* --- 3. 자료실 리스트 뷰 (독립 페이지) --- */}
+        {/* --- 3. 자료실 리스트 뷰 --- */}
         {view === 'issue_list' && (
-           <div className="animate-in fade-in duration-500">
-             <div className="bg-white border-b-4 border-orange-100 py-10 mb-8">
-                <h2 className="text-3xl font-black text-gray-800 flex items-center justify-center gap-3"><span className="text-4xl">📚</span> 월간 발행 소식</h2>
-                <p className="text-gray-400 font-bold mt-2">유보통합 관련 교육 자료를 확인하세요.</p>
-                {isAdminMode && <button onClick={() => { setUploadType('issue'); setEditTarget(null); setIsUploadOpen(true); }} className="mt-6 bg-orange-500 text-white px-8 py-3 rounded-full font-black shadow-lg hover:bg-orange-600 active:scale-95 transition-all flex items-center gap-2 mx-auto"><Plus size={20} /> 새 소식 발행하기</button>}
+           <div className="animate-in fade-in duration-500 pt-10">
+             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
+                <span className="text-orange-500 font-bold tracking-widest uppercase text-xs mb-2 block">Archive</span>
+                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">월간 자료실</h2>
+                <p className="text-slate-500 text-lg max-w-2xl mx-auto">유보통합 실무에 필요한 핵심 자료들을 모았습니다.</p>
+                {isAdminMode && <button onClick={() => { setUploadType('issue'); setEditTarget(null); setIsUploadOpen(true); }} className="mt-8 bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-orange-500 transition-all flex items-center gap-2 mx-auto"><Plus size={18} /> 새 호수 발행</button>}
              </div>
-             <div className="max-w-6xl mx-auto px-4 pb-20">
-               {displayIssues.length === 0 ? <div className="text-center py-32 bg-white rounded-[3rem] border-4 border-dashed border-gray-100 text-gray-400 font-black">아직 발행된 소식이 없습니다.</div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">{displayIssues.map(issue => (<IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>))}</div>}
+             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                  {displayIssues.map(issue => (<IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>))}
+               </div>
              </div>
            </div>
         )}
 
         {/* --- 4. 상세 뷰 (이슈/기사) --- */}
         {view === 'issue' && currentIssue && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="max-w-5xl mx-auto px-4 pt-8 pb-12 text-left"><button onClick={() => window.location.hash = '#issues'} className="mb-8 bg-white text-gray-500 px-6 py-3 rounded-full shadow-md font-black text-sm flex items-center gap-2 w-fit hover:text-orange-500 transition-colors"><ArrowLeft size={18} /> 목록으로</button><div className={`relative ${currentIssue.cover_color} rounded-[3rem] p-8 md:p-12 shadow-2xl border-8 border-white overflow-hidden text-left`}><div className="relative z-10 flex flex-col md:flex-row items-center gap-10 text-white"><div className="shrink-0 w-32 h-32 md:w-48 md:h-48 bg-white rounded-full flex items-center justify-center text-8xl shadow-lg -rotate-6 border-4 border-white/50">{currentIssue.icon || '📚'}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-3 mb-4"><span className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-xs font-black leading-none">{currentIssue.date}</span><span className="bg-black/20 px-4 py-2 rounded-full text-xs font-black leading-none">Vol.{currentIssue.vol}</span></div><h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight break-keep text-balance">{currentIssue.title}</h1><p className="text-white/95 text-lg leading-relaxed text-balance">{currentIssue.description}</p></div></div></div></div>
-            <div className="max-w-6xl mx-auto px-6 pb-20 text-left">
-               <div className="flex items-center justify-between mb-10 border-b-4 border-orange-100 pb-6"><h2 className="text-3xl font-black text-gray-800 flex items-center gap-3"><span className="text-4xl leading-none">📑</span> 자료 리스트</h2>{isAdminMode && <button onClick={() => { setUploadType('article'); setEditTarget(null); setIsUploadOpen(true); }} className="bg-orange-500 text-white px-6 py-3 rounded-full font-black shadow-lg hover:bg-orange-600 transition-all active:scale-95 flex items-center gap-2"><Plus size={20} /> 자료 추가</button>}</div>
-               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">{(!currentIssue.articles || currentIssue.articles.length === 0) ? <div className="col-span-full text-center py-20 bg-white rounded-[3rem] text-gray-400 font-black border-4 border-dashed border-orange-50">자료가 아직 없습니다.</div> : currentIssue.articles.map(article => (<ArticleItem key={article.id} article={article} onClick={(art) => window.location.hash = `#article/${art.id}`} isAdmin={isAdminMode} onDelete={handleDeleteArticle} onEdit={handleEditArticle}/>))}</div>
-            </div>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300 bg-white min-h-screen">
+             <div className="max-w-5xl mx-auto px-4 pt-10 pb-20">
+                <button onClick={() => window.location.hash = '#issues'} className="mb-8 flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"><ArrowLeft size={20}/> 목록으로 돌아가기</button>
+                <div className={`w-full ${currentIssue.cover_color} rounded-[2.5rem] p-10 md:p-16 text-white shadow-2xl relative overflow-hidden mb-16 text-left`}>
+                    <div className="relative z-10 flex flex-col md:flex-row items-start gap-8">
+                        <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-5xl shadow-inner border border-white/10">{currentIssue.icon}</div>
+                        <div>
+                           <div className="flex gap-3 mb-4 text-xs font-bold tracking-widest uppercase opacity-80">
+                              <span>Vol. {currentIssue.vol}</span>
+                              <span>•</span>
+                              <span>{currentIssue.date}</span>
+                           </div>
+                           <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">{currentIssue.title}</h1>
+                           <p className="text-lg opacity-90 leading-relaxed max-w-2xl">{currentIssue.description}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
+                   <h3 className="text-2xl font-bold text-slate-900">포함된 자료</h3>
+                   {isAdminMode && <button onClick={() => { setUploadType('article'); setEditTarget(null); setIsUploadOpen(true); }} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-orange-500 transition-colors">자료 추가 +</button>}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                   {currentIssue.articles?.map(article => (
+                      <ArticleItem key={article.id} article={article} onClick={(art) => window.location.hash = `#article/${art.id}`} isAdmin={isAdminMode} onDelete={handleDeleteArticle} onEdit={handleEditArticle}/>
+                   ))}
+                </div>
+             </div>
           </div>
         )}
         {view === 'article' && currentArticle && (<CustomPDFViewer article={currentArticle} onBack={() => { window.location.hash = `#issue/${currentIssue.id}`; }} />)}
       </main>
 
-      <div className="hidden md:block"><Footer /></div>
-
-      <BottomNav 
-        currentView={view} 
-        onViewChange={(v) => {
-            if (v === 'news') window.location.hash = '#news';
-            else if (v === 'issue_list') window.location.hash = '#issues'; // ✅ 자료실 주소로 명확히 이동
-            else window.location.hash = ''; 
-        }}
-        onMenuClick={() => setIsLoginOpen(true)}
-      />
+      <div className="hidden md:block bg-white"><Footer /></div>
+      <BottomNav currentView={view} onViewChange={(v) => { if (v === 'news') window.location.hash = '#news'; else if (v === 'issue_list') window.location.hash = '#issues'; else window.location.hash = ''; }} onMenuClick={() => setIsLoginOpen(true)} />
       
       <div className="h-16 md:hidden"></div>
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} onLogin={() => setIsAdminMode(true)}/>
