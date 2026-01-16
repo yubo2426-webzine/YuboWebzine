@@ -6,7 +6,7 @@ import {
   Paperclip, Server, Database, Image as ImageIcon, Loader2, List, 
   Edit, Share2, X, Newspaper, Calendar, Filter, AlertTriangle, AlertCircle, Zap, Menu, 
   MousePointer2, Smartphone, Mail, Instagram, MessageCircle, Copy,
-  ArrowRight, ArrowUpRight // ✅ v23.0 추가된 아이콘
+  ArrowRight, ArrowUpRight 
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
@@ -110,7 +110,7 @@ const getTouchDistance = (touches) => {
   return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
 };
 
-// --- [PDF 뷰어] (기존 로직 유지) ---
+// --- [PDF 뷰어] ---
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -301,7 +301,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// --- [네비게이션] Apple Style Glassmorphism (v23.0) ---
+// --- [네비게이션] Apple Style Glassmorphism + Kids Insight Branding ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView }) => (
   <nav className="w-full sticky top-0 z-[60] bg-white/80 backdrop-blur-md border-b border-gray-200 transition-all duration-300">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -311,8 +311,9 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
           <Star size={16} fill="currentColor" />
         </div>
         <div className="flex flex-col">
+          {/* ✅ 변경됨: 키즈 인사이트 */}
           <span className="text-lg font-bold tracking-tight text-slate-900 font-sans leading-none">
-            유보통합 <span className="text-orange-500">웹진</span>
+            키즈 <span className="text-orange-500">인사이트</span>
           </span>
         </div>
       </div>
@@ -349,7 +350,7 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
   </nav>
 );
 
-// --- [푸터] Clean Style ---
+// --- [푸터] Clean Style + Kids Insight Branding ---
 const Footer = () => {
   const currentUrl = window.location.href;
   const handleCopyLink = async () => { try { await navigator.clipboard.writeText(currentUrl); alert('🔗 링크가 복사되었습니다.'); } catch (e) { alert('복사 실패'); } };
@@ -357,8 +358,9 @@ const Footer = () => {
     <footer className="bg-white border-t border-gray-200 py-12 pb-24 md:pb-12 mt-auto">
       <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
-          <div className="flex items-center gap-2 justify-center md:justify-start mb-2 opacity-80"><div className="w-8 h-8 bg-orange-400 text-white flex items-center justify-center font-bold rounded-lg shadow-sm"><Star size={14} fill="currentColor" /></div><span className="font-bold text-slate-900 text-lg">유보통합 <span className="text-orange-500">웹진</span></span></div>
-          <p className="text-slate-400 text-xs font-medium leading-relaxed">Together Edu-Care | 유치원·어린이집 교사를 위한 아카이브<br/>Contact: support@educare-webzine.com</p>
+          <div className="flex items-center gap-2 justify-center md:justify-start mb-2 opacity-80"><div className="w-8 h-8 bg-orange-400 text-white flex items-center justify-center font-bold rounded-lg shadow-sm"><Star size={14} fill="currentColor" /></div><span className="font-bold text-slate-900 text-lg">키즈 <span className="text-orange-500">인사이트</span></span></div>
+          {/* ✅ 변경됨: The First Step of Education */}
+          <p className="text-slate-400 text-xs font-medium leading-relaxed">The First Step of Education | 영유아 교육 전문가를 위한 아카이브<br/>Contact: support@kids-insight.com</p>
         </div>
         <div className="flex flex-col items-center md:items-end gap-3">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full">Share with Friends</span>
@@ -452,7 +454,7 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">유보통합 뉴스룸</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">키즈 인사이트 뉴스룸</h2>
         </div>
         
         <div className="flex items-center gap-3">
@@ -641,22 +643,26 @@ const MainApp = () => {
         {view === 'home' && (
            <div className="animate-in fade-in duration-500 space-y-20">
             
-            {/* Hero Section: Bento Grid Style */}
+            {/* Hero Section: Bento Grid Style + New Branding */}
             <section className="pt-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[400px]">
                   {/* 왼쪽: 환영 메시지 및 메인 액션 */}
                   <div className="col-span-12 md:col-span-7 bg-white rounded-[2rem] p-8 md:p-12 flex flex-col justify-center items-start shadow-sm border border-gray-100 relative overflow-hidden group">
                      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-orange-200/50 transition-colors duration-700"></div>
                      <div className="relative z-10 text-left">
-                        <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">Together Edu-Care</span>
+                        {/* ✅ 변경됨: The First Step of Education */}
+                        <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">The First Step of Education</span>
+                        {/* ✅ 변경됨: 아이의 내일을 잇는... */}
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
-                           선생님을 위한 <br/>
-                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">교육 아카이브.</span>
+                           아이의 내일을 잇는 <br/>
+                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">프리미엄 지식 플랫폼.</span>
                         </h1>
-                        <p className="text-slate-500 text-lg font-medium mb-8 max-w-md">유보통합 최신 뉴스부터 현장 자료까지,<br/>전문가가 큐레이션한 정보를 만나보세요.</p>
+                        {/* ✅ 변경됨: 설명 문구 */}
+                        <p className="text-slate-500 text-lg font-medium mb-8 max-w-md">현장의 목소리부터 미래 교육의 트렌드까지,<br/>선생님에게 꼭 필요한 깊이 있는 정보를 전합니다.</p>
                         <div className="flex gap-3">
+                           {/* ✅ 변경됨: 버튼 문구 */}
                            <button onClick={() => window.location.hash = '#issues'} className="px-8 py-3.5 bg-slate-900 text-white rounded-full font-bold shadow-lg shadow-slate-200 hover:bg-orange-500 hover:shadow-orange-200 transition-all transform active:scale-95 flex items-center gap-2">
-                              자료실 바로가기 <ArrowRight size={18}/>
+                              인사이트 탐색하기 <ArrowRight size={18}/>
                            </button>
                         </div>
                      </div>
