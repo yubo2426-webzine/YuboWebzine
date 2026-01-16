@@ -1,4 +1,4 @@
-// ✅ [v21.0] 페이지 분리 버전 (홈 / 뉴스 / 자료실 독립)
+// ✅ [v22.0] 홈 화면 미리보기 + 페이지 분리 완성형
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Book, FileText, User, Lock, LogOut, ChevronRight, ArrowLeft, 
@@ -575,6 +575,16 @@ const MainApp = () => {
             </div>
             {/* 홈에서는 뉴스 4개만 깔끔하게 */}
             <NewsFeed limit={4} onMoreClick={() => window.location.hash = '#news'} isAdmin={isAdminMode}/>
+            
+            {/* ✅ [추가] 홈 화면용 최신 자료 3개 미리보기 */}
+            <div className="max-w-6xl mx-auto px-4 py-12 md:py-20 text-left">
+              <div className="flex items-center justify-between mb-8 border-b-4 border-orange-100 pb-4">
+                 <h2 className="text-3xl font-black text-gray-800"><span className="text-4xl">📚</span> 월간 발행 소식</h2>
+                 <button onClick={() => window.location.hash = '#issues'} className="flex items-center gap-1 px-4 py-2 bg-white border-2 border-orange-100 rounded-full text-xs font-black text-gray-400 hover:text-orange-500 transition-all shadow-sm">전체보기 <ChevronRight size={16}/></button>
+              </div>
+              {displayIssues.length === 0 ? <div className="text-center py-20 bg-white rounded-[3rem] border-4 border-dashed border-gray-100 text-gray-400 font-black">아직 발행된 소식이 없습니다.</div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">{displayIssues.slice(0, 3).map(issue => (<IssueCard key={issue.id} issue={issue} onClick={(iss) => window.location.hash = `#issue/${iss.id}`} isAdmin={isAdminMode} onDelete={handleDeleteIssue} onEdit={handleEditIssue}/>))}</div>}
+            </div>
+
           </div>
         )}
 
