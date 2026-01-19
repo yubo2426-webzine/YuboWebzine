@@ -493,8 +493,7 @@ const MainApp = () => {
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('home')}>
              <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
              <div className="flex flex-col justify-center">
-               <span className="font-bold text-xl text-gray-900 leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">Kids Insight</span>
-               <span className="text-[11px] font-bold text-gray-500 mt-0.5 tracking-wide">유보통합 지식 플랫폼</span>
+               <span className="font-bold text-xl text-gray-900 leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">아이들의 내일을 잇는 지식 플랫폼</span>
              </div>
           </div>
           <nav className="hidden md:flex items-center h-full">
@@ -523,7 +522,7 @@ const MainApp = () => {
                          <span className="inline-block py-1 px-3 rounded bg-blue-100 text-blue-700 text-xs font-bold mb-4">Beta v1.0</span>
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-6">
                             아이들의 내일을 잇는<br/>
-                            <span className="text-[#2563EB]">신뢰할 수 있는 지식.</span>
+                            <span className="text-[#2563EB]">지식 플랫폼.</span>
                          </h1>
                          <p className="text-gray-600 text-lg mb-8 leading-relaxed">
                             키즈 인사이트는 선생님과 부모님을 위한<br/>
