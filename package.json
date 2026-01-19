@@ -9,16 +9,17 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-"dependencies": {
+  "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-pdf": "^10.3.0",
     "rss-parser": "^3.13.0"
-  },  
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@krds-ui/tailwindcss-plugin": "^0.6.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
