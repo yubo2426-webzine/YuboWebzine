@@ -4,7 +4,7 @@ import {
   Plus, Trash2, ChevronLeft,  
   X, Newspaper, Calendar as CalendarIcon, 
   Star, Image as ImageIcon, List as ListIcon,
-  RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home
+  RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, Menu
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
@@ -30,7 +30,7 @@ const loadPdfScript = () => {
   });
 };
 
-// --- [인증 컴포넌트] ---
+// --- [KRDS 스타일 모달 컴포넌트] ---
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -56,20 +56,121 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm p-8 border border-gray-100 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20}/></button>
-        <h2 className="text-2xl font-black text-slate-900 mb-6 text-center">{isSignUp ? '회원가입' : '로그인'}</h2>
-        <form onSubmit={handleAuth} className="space-y-4">
-          <input type="email" placeholder="이메일" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none" value={email} onChange={e => setEmail(e.target.value)} required/>
-          <input type="password" placeholder="비밀번호" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none" value={password} onChange={e => setPassword(e.target.value)} required/>
-          {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-orange-500 transition-colors">{loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}</button>
-        </form>
-        <button onClick={() => setIsSignUp(!isSignUp)} className="w-full mt-4 text-xs font-bold text-slate-400 hover:text-slate-900">
-          {isSignUp ? '로그인하기' : '회원가입하기'}
-        </button>
+    <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+      {/* KRDS Modal Style: 흰색 배경, 직각에 가까운 라운드, 명확한 헤더 */}
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden border border-gray-200">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-900">{isSignUp ? '회원가입' : '로그인'}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-900"><X size={20}/></button>
+        </div>
+        <div className="p-6">
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">이메일</label>
+              <input 
+                type="email" 
+                placeholder="example@korea.kr" 
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">비밀번호</label>
+              <input 
+                type="password" 
+                placeholder="********" 
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required
+              />
+            </div>
+            {error && <p className="text-red-600 text-xs font-bold bg-red-50 p-2 rounded">{error}</p>}
+            
+            {/* KRDS Primary Button */}
+            <button type="submit" disabled={loading} className="w-full py-2.5 bg-[#2563EB] text-white rounded-md font-bold text-sm hover:bg-[#1d4ed8] transition-colors shadow-sm disabled:opacity-50">
+              {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
+            </button>
+          </form>
+          <div className="mt-4 text-center">
+             <button onClick={() => setIsSignUp(!isSignUp)} className="text-xs text-gray-500 underline hover:text-blue-600">
+              {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
+            </button>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+};
+
+// --- [KRDS 스타일 업로드 모달] ---
+const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) => {
+  if (!isOpen) return null;
+  const [file, setFile] = useState(null);
+  const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
+
+  const getInputClass = "w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400";
+  const getLabelClass = "block text-sm font-bold text-gray-700 mb-1 flex items-center gap-1";
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
+       <div className="bg-white rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 flex flex-col">
+          {/* Modal Header */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center sticky top-0">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+               {type === 'notice' && <><MegaphoneIcon className="text-blue-600" size={20}/> 공지사항 작성</>}
+               {type === 'gallery' && <><ImageIcon className="text-blue-600" size={20}/> 갤러리 업로드</>}
+               {type === 'issue' && <><Book className="text-blue-600" size={20}/> 월간호 발행</>}
+               {type === 'article' && <><FileText className="text-blue-600" size={20}/> 자료 등록</>}
+            </h2>
+            <button onClick={onClose}><X className="text-gray-400 hover:text-gray-900"/></button>
+          </div>
+
+          <div className="p-6">
+            {isUploading ? <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600">데이터를 전송 중입니다...</p></div> : (
+               <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
+                  {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol) <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
+                  
+                  <div><label className={getLabelClass}>제목 <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
+                  
+                  {type === 'notice' && (
+                     <>
+                        <div><label className={getLabelClass}>내용 <span className="text-red-500">*</span></label><textarea className={`${getInputClass} h-32 resize-none`} placeholder="공지 내용을 입력하세요" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/></div>
+                        <div><label className={getLabelClass}>행사 일정 (선택)</label><input type="date" className={getInputClass} value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
+                     </>
+                  )}
+                  
+                  {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className={`${getInputClass} h-24 resize-none`} placeholder="이번 호에 대한 간단한 설명을 입력하세요" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
+                  
+                  {(type === 'article' || type === 'gallery') && (
+                     <div>
+                        <label className={getLabelClass}>첨부 파일 <span className="text-red-500">*</span></label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 hover:border-blue-400 transition-colors relative cursor-pointer group">
+                           <div className="space-y-1 text-center">
+                              <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
+                              <div className="flex text-sm text-gray-600 justify-center">
+                                 <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                    <span>파일 업로드</span>
+                                    <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/>
+                                 </label>
+                              </div>
+                              <p className="text-xs text-gray-500">{file ? file.name : (type === 'gallery' ? 'PNG, JPG up to 10MB' : 'PDF only')}</p>
+                           </div>
+                           <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => setFile(e.target.files[0])}/>
+                        </div>
+                     </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
+                     <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-bold rounded-md hover:bg-gray-50 transition-colors text-sm">취소</button>
+                     <button type="submit" className="flex-1 py-2.5 bg-[#2563EB] text-white font-bold rounded-md hover:bg-[#1d4ed8] transition-colors shadow-sm text-sm">등록 완료</button>
+                  </div>
+               </form>
+            )}
+         </div>
+       </div>
     </div>
   );
 };
@@ -110,20 +211,20 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [pdfDoc, pageNum, scale, containerSize]);
 
   return (
-    <div className="fixed inset-0 bg-[#F5F5F7] z-[150] flex flex-col h-screen w-screen animate-in slide-in-from-right">
-       <div className="h-16 bg-white flex items-center justify-between px-4 border-b border-gray-200 shrink-0">
-          <button onClick={onBack}><ArrowLeft/></button>
-          <span className="font-bold truncate px-4">{article.title}</span>
+    <div className="fixed inset-0 bg-gray-100 z-[150] flex flex-col h-screen w-screen animate-in slide-in-from-right">
+       <div className="h-16 bg-white flex items-center justify-between px-4 border-b border-gray-200 shrink-0 shadow-sm">
+          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ArrowLeft className="text-gray-700"/></button>
+          <span className="font-bold text-gray-900 truncate px-4">{article.title}</span>
           <div className="w-6"/>
        </div>
        <div className="flex-1 overflow-auto p-4 flex justify-center" ref={containerRef}>
-          <canvas ref={canvasRef} className="bg-white shadow-lg"/>
+          <canvas ref={canvasRef} className="bg-white shadow-md border border-gray-200"/>
        </div>
        {pdfDoc && (
-         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 px-6 py-2 rounded-full shadow-xl flex items-center gap-4">
-            <button onClick={() => setPageNumber(p => Math.max(1, p-1))}><ChevronLeft/></button>
-            <span className="font-bold">{pageNum} / {pdfDoc.numPages}</span>
-            <button onClick={() => setPageNumber(p => Math.min(pdfDoc.numPages, p+1))}><ChevronRight/></button>
+         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-4">
+            <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="p-1 hover:bg-gray-100 rounded"><ChevronLeft size={20}/></button>
+            <span className="font-mono text-sm font-bold text-gray-700">{pageNum} / {pdfDoc.numPages}</span>
+            <button onClick={() => setPageNumber(p => Math.min(pdfDoc.numPages, p+1))} className="p-1 hover:bg-gray-100 rounded"><ChevronRight size={20}/></button>
          </div>
        )}
     </div>
@@ -134,7 +235,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
 const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const fetchNews = async () => {
     setLoading(true);
@@ -146,55 +246,36 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   
   useEffect(() => { fetchNews(); }, [limit]);
 
-  const handleManualRefresh = async () => {
-    if (!confirm("최신 뉴스를 가져오시겠습니까?\n(잠시 시간이 소요될 수 있습니다)")) return;
-    setIsRefreshing(true);
-    try {
-      setTimeout(() => {
-         fetchNews();
-         setIsRefreshing(false);
-         alert("최신 뉴스로 업데이트되었습니다.");
-      }, 2000);
-    } catch (e) {
-      alert("업데이트 실패: " + e.message);
-      setIsRefreshing(false);
-    }
-  };
-
-  if (loading && !isRefreshing) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-orange-500"/></div>;
+  if (loading) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-600"/></div>;
 
   return (
     <div className={`max-w-7xl mx-auto px-4 ${limit ? 'py-12' : 'py-16'}`}>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-gray-200 pb-6">
-        <div>
-           <div className="flex items-center gap-2 mb-2">
-             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-             <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">News Room</span>
-           </div>
-           <div className="flex items-center gap-3">
-             <h2 className="text-3xl font-black text-slate-900">뉴스룸</h2>
-             <button onClick={handleManualRefresh} disabled={isRefreshing} className="p-2 bg-gray-100 rounded-full hover:bg-orange-100 text-gray-400 hover:text-orange-500 transition-all" title="뉴스 수동 동기화">
-               <RefreshCw size={18} className={isRefreshing ? "animate-spin text-orange-500" : ""}/>
-             </button>
-           </div>
-        </div>
-        {limit && <button onClick={onMoreClick} className="flex items-center gap-1 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-sm">전체보기 <ArrowRight size={16}/></button>}
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+           <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+           뉴스룸
+        </h2>
+        {limit && <button onClick={onMoreClick} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>}
       </div>
       
-      <div className={`grid ${limit ? 'grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6' : 'flex flex-col gap-4'}`}>
+      {/* KRDS List Style */}
+      <div className="flex flex-col border-t border-gray-200">
          {news.map((item, idx) => (
-            <a key={idx} href={item.link} target="_blank" className="group flex gap-5 items-start p-5 rounded-2xl hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-xl transition-all">
-               <div className="hidden sm:flex flex-col items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                  <span className="text-[10px] font-bold uppercase opacity-70">{new Date(item.pub_date).toLocaleString('en-US', { month: 'short' })}</span>
-                  <span className="text-xl font-black leading-none mt-0.5">{new Date(item.pub_date).getDate()}</span>
-               </div>
+            <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 hover:bg-blue-50/50 transition-colors">
                <div className="flex-1">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.author?.includes('Google') ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{item.author}</span>
-                  <h3 className="font-bold text-slate-900 mt-2 line-clamp-2 group-hover:text-orange-600">{item.title}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${item.author?.includes('Google') ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-green-50 border-green-100 text-green-600'}`}>{item.author || '뉴스'}</span>
+                     <span className="text-xs text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
+                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
+               </div>
+               <div className="hidden md:flex items-center text-gray-300 group-hover:text-blue-400">
+                  <ArrowUpRight size={20}/>
                </div>
             </a>
          ))}
-         {news.length === 0 && <div className="col-span-full text-center py-10 text-gray-400">최신 뉴스가 없습니다.</div>}
+         {news.length === 0 && <div className="text-center py-10 text-gray-400 border-b border-gray-200">등록된 뉴스가 없습니다.</div>}
       </div>
     </div>
   );
@@ -217,48 +298,54 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
   const getEvents = (date) => notices.filter(n => n.event_date && new Date(n.event_date).toDateString() === date.toDateString());
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16 animate-in fade-in">
-      <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-6">
-         <div><span className="text-orange-500 font-bold text-xs tracking-widest uppercase mb-1 block">Community</span><h2 className="text-3xl font-black text-slate-900">소식 & 일정</h2></div>
+    <div className="max-w-7xl mx-auto px-4 py-16">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+            소식 & 일정
+         </h2>
          <div className="flex gap-2">
-            <div className="bg-gray-100 p-1 rounded-xl flex">
-               <button onClick={() => setMode('list')} className={`p-2 rounded-lg ${mode === 'list' ? 'bg-white shadow text-slate-900' : 'text-slate-400'}`}><ListIcon size={18}/></button>
-               <button onClick={() => setMode('calendar')} className={`p-2 rounded-lg ${mode === 'calendar' ? 'bg-white shadow text-slate-900' : 'text-slate-400'}`}><CalendarIcon size={18}/></button>
+            <div className="bg-gray-100 p-1 rounded-md flex border border-gray-200">
+               <button onClick={() => setMode('list')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}><ListIcon size={16}/> 목록</button>
+               <button onClick={() => setMode('calendar')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'calendar' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}><CalendarIcon size={16}/> 달력</button>
             </div>
-            {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onWriteClick('notice')} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"><Plus size={16}/> 글쓰기</button>}
+            {(userRole === 'team' || userRole === 'admin') && 
+               <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><Plus size={16}/> 글쓰기</button>
+            }
          </div>
       </div>
       
       {mode === 'list' ? (
-        <div className="space-y-3">
+        <div className="grid gap-4">
            {notices.map(n => (
-              <div key={n.id} className="bg-white p-6 rounded-2xl border border-gray-100 hover:shadow-md transition-all">
+              <div key={n.id} className="bg-white p-5 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors shadow-sm">
                  <div className="flex justify-between mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${n.category === 'event' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
-                    <span className="text-xs text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${n.category === 'event' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                    <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
-                 <h3 className="text-lg font-bold text-slate-900 mb-2">{n.title}</h3>
-                 <p className="text-sm text-slate-500 whitespace-pre-wrap">{n.content}</p>
-                 {n.event_date && <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg"><CalendarIcon size={14}/> 일정: {n.event_date}</div>}
+                 <h3 className="text-lg font-bold text-gray-900 mb-2">{n.title}</h3>
+                 <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{n.content}</p>
+                 {n.event_date && <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-100"><CalendarIcon size={14}/> 일정: {n.event_date}</div>}
               </div>
            ))}
         </div>
       ) : (
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100">
-           <div className="flex justify-between items-center mb-6">
-              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)))} className="p-2 hover:bg-gray-50 rounded-full"><ChevronLeft/></button>
-              <h3 className="text-xl font-black">{currentDate.getFullYear()}년 {currentDate.getMonth()+1}월</h3>
-              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)))} className="p-2 hover:bg-gray-50 rounded-full"><ChevronRight/></button>
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+           <div className="flex justify-center items-center mb-6 gap-8">
+              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)))} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft/></button>
+              <h3 className="text-xl font-bold text-gray-900">{currentDate.getFullYear()}년 {currentDate.getMonth()+1}월</h3>
+              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)))} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight/></button>
            </div>
-           <div className="grid grid-cols-7 gap-2">
-              {['일','월','화','수','목','금','토'].map(d => <div key={d} className="text-center text-xs font-bold text-gray-400 mb-2">{d}</div>)}
+           <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded overflow-hidden">
+              {['일','월','화','수','목','금','토'].map(d => <div key={d} className="bg-gray-50 text-center text-xs font-bold text-gray-500 py-2">{d}</div>)}
               {Array.from({length: 35}).map((_, i) => {
                  const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), i - new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() + 1);
                  const isToday = d.toDateString() === new Date().toDateString();
+                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
                  return (
-                    <div key={i} className={`min-h-[80px] border border-gray-50 rounded-xl p-2 ${d.getMonth() !== currentDate.getMonth() ? 'opacity-30' : ''}`}>
-                       <span className={`text-sm font-bold ${isToday ? 'bg-slate-900 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}`}>{d.getDate()}</span>
-                       <div className="mt-1 flex flex-col gap-1">{getEvents(d).map(ev => <div key={ev.id} className="text-[9px] bg-blue-100 text-blue-700 px-1 rounded truncate font-bold">{ev.title}</div>)}</div>
+                    <div key={i} className={`min-h-[100px] bg-white p-2 ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300' : ''}`}>
+                       <span className={`text-sm font-bold inline-block w-6 h-6 text-center leading-6 rounded-full ${isToday ? 'bg-blue-600 text-white' : ''}`}>{d.getDate()}</span>
+                       <div className="mt-1 flex flex-col gap-1">{getEvents(d).map(ev => <div key={ev.id} className="text-[10px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate font-bold">{ev.title}</div>)}</div>
                     </div>
                  );
               })}
@@ -283,23 +370,31 @@ const Gallery = ({ userRole, onUploadClick }) => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16 animate-in fade-in">
-      <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-6">
-         <div><span className="text-orange-500 font-bold text-xs tracking-widest uppercase mb-1 block">Gallery</span><h2 className="text-3xl font-black text-slate-900">활동 갤러리</h2></div>
-         {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"><ImageIcon size={16}/> 사진 올리기</button>}
+    <div className="max-w-7xl mx-auto px-4 py-16">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+            활동 갤러리
+         </h2>
+         {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><ImageIcon size={16}/> 사진 올리기</button>}
       </div>
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
          {images.map(img => (
-            <div key={img.id} onClick={() => setSelected(img)} className="break-inside-avoid bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-zoom-in group relative border border-gray-100">
-               <img src={img.image_url} className="w-full h-auto object-cover"/>
-               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-white"><h4 className="font-bold text-sm truncate">{img.title}</h4></div>
+            <div key={img.id} onClick={() => setSelected(img)} className="bg-white rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group">
+               <div className="aspect-square overflow-hidden bg-gray-100">
+                  <img src={img.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+               </div>
+               <div className="p-3">
+                  <h4 className="font-bold text-sm text-gray-900 truncate">{img.title}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(img.created_at).toLocaleDateString()}</p>
+               </div>
             </div>
          ))}
       </div>
       {selected && (
-         <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setSelected(null)}>
-            <img src={selected.image_url} className="max-w-full max-h-[85vh] rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}/>
-            <button className="absolute top-5 right-5 text-white/50 hover:text-white"><X size={32}/></button>
+         <div className="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelected(null)}>
+            <img src={selected.image_url} className="max-w-full max-h-[90vh] rounded shadow-2xl bg-white" onClick={e => e.stopPropagation()}/>
+            <button className="absolute top-5 right-5 text-white/70 hover:text-white"><X size={32}/></button>
          </div>
       )}
     </div>
@@ -308,71 +403,22 @@ const Gallery = ({ userRole, onUploadClick }) => {
 
 // --- [자료실 (Issue Card)] ---
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col gap-3 relative text-left">
-    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-200'} rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition-all duration-500`}>
-      <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700 ease-out">
-        <div className="text-5xl md:text-8xl filter drop-shadow-sm opacity-90 transition-transform">{issue.icon || '📚'}</div>
-      </div>
-      <div className="absolute top-3 left-3 z-10"><span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-md border border-white/20 shadow-sm text-[10px] font-bold tracking-widest uppercase text-slate-900">Vol.{issue.vol}</span></div>
+  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg hover:border-blue-400 transition-all">
+    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-gray-100'} relative flex items-center justify-center`}>
+      <div className="text-6xl transform group-hover:scale-110 transition-transform duration-500">{issue.icon || '📚'}</div>
+      <div className="absolute top-0 left-0 w-full h-full bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity"/>
+      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold border border-gray-200 text-gray-900">Vol.{issue.vol}</div>
     </div>
-    <div className="flex flex-col px-0.5">
-      <div className="flex justify-between items-start">
-        <span className="text-[10px] font-bold text-slate-400 mb-1 block">{issue.date}</span>
-        {isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>}
+    <div className="p-4 flex-1 flex flex-col">
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{issue.date}</span>
+        {isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>}
       </div>
-      <h3 className="text-base md:text-lg font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-2 break-keep">{issue.title}</h3>
-      <p className="hidden md:block text-xs text-slate-500 mt-1 line-clamp-2">{issue.description}</p>
+      <h3 className="text-lg font-bold text-gray-900 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{issue.title}</h3>
+      <p className="text-xs text-gray-500 line-clamp-2 mt-auto">{issue.description}</p>
     </div>
   </div>
 );
-
-// --- [통합 업로드 모달] ---
-const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) => {
-  if (!isOpen) return null;
-  const [file, setFile] = useState(null);
-  const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
-
-  return (
-    <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
-       <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-100">
-          <h2 className="text-2xl font-black mb-6 text-slate-900">
-             {type === 'notice' && '📢 공지 작성'}
-             {type === 'gallery' && '🖼️ 사진 업로드'}
-             {type === 'issue' && '📚 새 호수 발행'}
-             {type === 'article' && '📝 자료 등록'}
-          </h2>
-          {isUploading ? <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-orange-500"/> 업로드 중...</div> : (
-             <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-4">
-                {type === 'issue' && <div><label className="text-xs font-bold text-gray-400">호수 (Vol)</label><input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
-                <div><label className="text-xs font-bold text-gray-400">제목</label><input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
-                
-                {type === 'notice' && (
-                   <>
-                      <div><label className="text-xs font-bold text-gray-400">내용</label><textarea className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl h-24" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/></div>
-                      <div><label className="text-xs font-bold text-gray-400">일정 (선택)</label><input type="date" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
-                   </>
-                )}
-                
-                {type === 'issue' && <div><label className="text-xs font-bold text-gray-400">설명</label><textarea className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl h-20" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
-                
-                {(type === 'article' || type === 'gallery') && (
-                   <div className="p-4 bg-orange-50 rounded-xl text-center border border-orange-100 cursor-pointer relative">
-                      <input type="file" onChange={e => setFile(e.target.files[0])} className="absolute inset-0 opacity-0"/>
-                      <Paperclip className="mx-auto text-orange-400 mb-2"/>
-                      <span className="text-xs font-bold text-orange-600">{file ? file.name : (type === 'gallery' ? '사진 선택' : 'PDF 선택')}</span>
-                   </div>
-                )}
-
-                <div className="flex gap-2 pt-4">
-                   <button type="button" onClick={onClose} className="flex-1 py-3 text-gray-400 font-bold hover:bg-gray-100 rounded-xl transition-colors">취소</button>
-                   <button type="submit" className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-orange-500 transition-colors shadow-lg">완료</button>
-                </div>
-             </form>
-          )}
-       </div>
-    </div>
-  );
-};
 
 // --- [메인 앱 로직] ---
 const MainApp = () => {
@@ -419,7 +465,7 @@ const MainApp = () => {
           const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fn);
           await supabase.from('gallery').insert([{ title: data.title, image_url: publicUrl, author_id: user.id }]);
        } else if (data.type === 'issue') {
-          await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-orange-400', icon: '📚' }]);
+          await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-blue-100', icon: '📘' }]);
        } else if (data.type === 'article' && currentIssue) {
           let fileUrl = '';
           if (data.file) {
@@ -440,61 +486,78 @@ const MainApp = () => {
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-sans text-slate-900 flex flex-col">
-       {/* 네비게이션 */}
-       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
-                <div className="w-8 h-8 bg-gradient-to-tr from-orange-400 to-orange-500 rounded-lg flex items-center justify-center text-white"><Star size={16} fill="currentColor"/></div>
-                <span className="font-bold text-lg">키즈 <span className="text-orange-500">인사이트</span></span>
-             </div>
-             <div className="flex items-center gap-4">
-                {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
-                   <button key={key} onClick={() => setView(key)} className={`hidden md:block capitalize text-sm font-bold ${view === key ? 'text-slate-900' : 'text-gray-400 hover:text-slate-600'}`}>
-                      {key === 'home' ? '홈' : key === 'news' ? '뉴스' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}
-                   </button>
-                ))}
-                {user ? <button onClick={() => {supabase.auth.signOut(); window.location.reload();}}><LogOut size={18} className="text-gray-400 hover:text-red-500"/></button> : <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-3 py-1.5 rounded-full text-xs font-bold hover:bg-slate-800 transition-colors">로그인</button>}
+    <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col">
+       {/* --- [KRDS 표준 GNB] --- */}
+       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 h-[70px] flex items-center shadow-sm">
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('home')}>
+             <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
+             <div className="flex flex-col justify-center">
+               <span className="font-bold text-xl text-gray-900 leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">Kids Insight</span>
+               <span className="text-[11px] font-bold text-gray-500 mt-0.5 tracking-wide">유보통합 지식 플랫폼</span>
              </div>
           </div>
-       </nav>
+          <nav className="hidden md:flex items-center h-full">
+            {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
+              <button key={key} onClick={() => setView(key)} className={`h-full px-6 text-[16px] font-medium transition-all relative flex items-center ${view === key ? 'text-[#2563EB] font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[4px] after:bg-[#2563EB]' : 'text-gray-600 hover:text-[#2563EB] hover:bg-gray-50'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식·일정' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
+            ))}
+          </nav>
+          <div className="flex items-center gap-3">
+            <button className="p-2 text-gray-400 hover:text-[#2563EB] transition-colors hidden sm:block"><Search size={20}/></button>
+            {user || role === 'admin' ? (
+              <button onClick={() => {if(supabase) supabase.auth.signOut(); window.location.reload();}} className="px-3 py-1.5 border border-gray-300 rounded-md text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors">로그아웃</button>
+            ) : (
+              <button onClick={() => setIsAuthOpen(true)} className="px-5 py-2.5 bg-[#2563EB] text-white rounded-md text-sm font-bold hover:bg-[#1d4ed8] hover:shadow-lg transition-all">로그인</button>
+            )}
+          </div>
+        </div>
+      </header>
 
        <main className="flex-1 pb-24">
           {view === 'home' && (
              <div className="animate-in fade-in space-y-20">
-                {/* 1. Hero Section (Bento Grid) */}
-                <section className="pt-10 max-w-7xl mx-auto px-4">
-                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[400px]">
-                      <div className="col-span-12 md:col-span-7 bg-white rounded-[2rem] p-12 flex flex-col justify-center items-start shadow-sm border border-gray-100 relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                         <div className="relative z-10">
-                            <span className="py-1 px-3 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase mb-4 inline-block">The First Step of Education</span>
-                            <h1 className="text-5xl font-black text-slate-900 leading-tight mb-6">아이의 내일을 잇는<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">지식 플랫폼.</span></h1>
-                            <p className="text-slate-500 font-medium mb-8">선생님에게 꼭 필요한 깊이 있는 정보를 전합니다.</p>
-                            <button onClick={() => setView('issue_list')} className="px-8 py-3 bg-slate-900 text-white rounded-full font-bold shadow-lg hover:bg-orange-500 transition-all flex items-center gap-2">인사이트 탐색하기 <ArrowRight size={18}/></button>
+                {/* --- [KRDS Hero Section] --- */}
+                <section className="bg-gray-50 py-16 md:py-24 border-b border-gray-200">
+                   <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                      <div>
+                         <span className="inline-block py-1 px-3 rounded bg-blue-100 text-blue-700 text-xs font-bold mb-4">Beta v1.0</span>
+                         <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-6">
+                            아이들의 내일을 잇는<br/>
+                            <span className="text-[#2563EB]">신뢰할 수 있는 지식.</span>
+                         </h1>
+                         <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                            키즈 인사이트는 선생님과 부모님을 위한<br/>
+                            깊이 있는 교육 정보를 공신력 있게 전달합니다.
+                         </p>
+                         <div className="flex gap-4">
+                            <button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] transition-all flex items-center gap-2">
+                               자료실 바로가기 <ArrowRight size={18}/>
+                            </button>
+                            <button onClick={() => setView('news')} className="px-8 py-4 bg-white border border-gray-300 text-gray-700 rounded-md font-bold hover:bg-gray-50 transition-all">
+                               뉴스룸 탐색
+                            </button>
                          </div>
                       </div>
-                      <div onClick={() => issues[0] && (setCurrentIssue(issues[0]), setView('issue_detail'))} className="col-span-12 md:col-span-5 bg-orange-500 rounded-[2rem] p-8 relative overflow-hidden cursor-pointer group shadow-lg shadow-orange-200 text-white">
+                      <div className="relative h-[300px] md:h-[400px] bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden flex items-center justify-center p-10">
                          {issues[0] ? (
-                            <div className="h-full flex flex-col justify-between relative z-10">
-                               <div className="flex justify-between"><span className="bg-white/20 px-3 py-1 rounded-lg text-xs font-bold">NEW ISSUE</span><ArrowUpRight size={24}/></div>
-                               <div><div className="text-8xl mb-4 group-hover:scale-110 transition-transform">{issues[0].icon}</div><h3 className="text-2xl font-black line-clamp-2">{issues[0].title}</h3></div>
+                            <div className="text-center">
+                               <div className="text-xs font-bold text-gray-400 mb-2">LATEST ISSUE</div>
+                               <div className="text-9xl mb-4 animate-bounce-slow">{issues[0].icon}</div>
+                               <h3 className="text-2xl font-black text-gray-900">{issues[0].title}</h3>
                             </div>
-                         ) : <div className="h-full flex items-center justify-center font-bold">발행된 소식이 없습니다.</div>}
+                         ) : <div className="text-gray-300 font-bold">발행된 호수가 없습니다.</div>}
                       </div>
                    </div>
                 </section>
 
-                {/* 2. News Feed */}
                 <NewsFeed limit={4} onMoreClick={() => setView('news')}/>
 
-                {/* 3. Monthly Archive */}
                 <section className="max-w-7xl mx-auto px-4 pb-20">
-                   <div className="flex items-end justify-between mb-8 border-b border-gray-200 pb-6">
-                      <div><h2 className="text-3xl font-black text-slate-900">월간 자료실</h2><p className="text-slate-500 font-medium mt-1">지난 호수들을 확인해보세요.</p></div>
-                      <button onClick={() => setView('issue_list')} className="text-sm font-bold text-slate-400 hover:text-orange-500 flex items-center gap-1">전체보기 <ChevronRight size={16}/></button>
+                   <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+                      <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>월간 자료실</h2>
+                      <button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       {issues.slice(0, 4).map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}
                    </div>
                 </section>
@@ -507,44 +570,48 @@ const MainApp = () => {
           
           {view === 'issue_list' && (
              <div className="pt-10 max-w-7xl mx-auto px-4">
-                <div className="text-center mb-12"><h2 className="text-4xl font-black mb-4">월간 자료실</h2>{role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-orange-500">+ 새 호수 발행</button>}</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div>
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+                   <h2 className="text-3xl font-bold text-gray-900">월간 자료실</h2>
+                   {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-[#2563EB] text-white px-5 py-2.5 rounded-md font-bold shadow-sm hover:bg-[#1d4ed8] flex items-center gap-2"><Plus size={18}/> 호수 발행</button>}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div>
              </div>
           )}
           
           {view === 'issue_detail' && currentIssue && (
              <div className="max-w-5xl mx-auto px-4 py-10 animate-in slide-in-from-right">
-                <button onClick={() => setView('issue_list')} className="mb-6 flex items-center gap-2 font-bold text-gray-400 hover:text-slate-900"><ArrowLeft size={20}/> 목록으로</button>
-                <div className={`p-10 rounded-[2.5rem] ${currentIssue.cover_color} text-white mb-10 shadow-2xl relative overflow-hidden`}>
-                   <div className="relative z-10 flex gap-8 items-start">
-                      <div className="w-24 h-24 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-5xl">{currentIssue.icon}</div>
-                      <div>
-                         <div className="text-xs font-bold tracking-widest mb-2 opacity-80">Vol.{currentIssue.vol}</div>
-                         <h1 className="text-4xl font-black mb-4 leading-tight">{currentIssue.title}</h1>
-                         <p className="opacity-90 max-w-xl">{currentIssue.description}</p>
-                      </div>
+                <button onClick={() => setView('issue_list')} className="mb-6 flex items-center gap-2 font-bold text-gray-500 hover:text-blue-600 transition-colors"><ArrowLeft size={20}/> 목록으로 돌아가기</button>
+                <div className="bg-white border border-gray-200 rounded-lg p-8 md:p-12 mb-10 shadow-sm flex flex-col md:flex-row gap-8 items-start">
+                   <div className="w-24 h-24 bg-blue-50 rounded-lg flex items-center justify-center text-5xl border border-blue-100 text-blue-600">{currentIssue.icon}</div>
+                   <div>
+                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded mb-3">Vol.{currentIssue.vol}</span>
+                      <h1 className="text-3xl font-black mb-4 text-gray-900">{currentIssue.title}</h1>
+                      <p className="text-gray-600 leading-relaxed max-w-2xl">{currentIssue.description}</p>
                    </div>
                 </div>
-                <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
-                   <h3 className="text-xl font-bold text-slate-900">수록 자료</h3>
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>수록 자료 목록</h3>
                    {role === 'admin' && (
                       <button 
                          onClick={() => { setUploadType('article'); setIsUploadOpen(true); }} 
-                         // ✅ KRDS Style Button Applied
-                         className="btn btn-primary btn-md flex items-center gap-2 shadow-sm"
+                         className="btn btn-primary btn-md flex items-center gap-2 shadow-sm bg-[#2563EB] text-white px-4 py-2 rounded-md font-bold hover:bg-[#1d4ed8]"
                       >
-                         <Plus size={18} />
-                         자료 추가
+                         <Plus size={18} /> 자료 추가
                       </button>
                    )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {currentIssue.articles?.map(art => (
-                      <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-lg cursor-pointer transition-all">
-                         <div className="aspect-[4/5] bg-slate-50 rounded-xl mb-3 flex items-center justify-center text-orange-200 group-hover:bg-orange-50 transition-colors"><FileText size={32}/></div>
-                         <div className="font-bold text-slate-900 line-clamp-1 group-hover:text-orange-600">{art.title}</div>
+                      <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-5 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md cursor-pointer transition-all flex items-center gap-4">
+                         <div className="w-12 h-12 bg-gray-50 rounded-md flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><FileText size={24}/></div>
+                         <div>
+                            <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{art.title}</div>
+                            <div className="text-xs text-gray-400 mt-1">PDF 문서</div>
+                         </div>
+                         <ArrowRight className="ml-auto text-gray-300 group-hover:text-blue-400"/>
                       </div>
                    ))}
+                   {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-10 text-center text-gray-400 border border-dashed border-gray-300 rounded-lg">등록된 자료가 없습니다.</div>}
                 </div>
              </div>
           )}
