@@ -11,9 +11,10 @@ import {
 // ✅ [Fix 1] Supabase 클라이언트 직접 통합 (CDN 방식 사용)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// 환경 변수 또는 하드코딩된 값 사용 (보안상 환경변수 권장)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://rmlaqmrrkeiplabaikqi.supabase.co"; 
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""; // ⚠️ 여기에 실제 키가 필요할 수 있습니다.
+// ✅ [Fix 3] Canvas 환경 호환성 수정: import.meta 제거 및 직접 할당
+// (실제 배포 시에는 환경 변수로 다시 변경해야 하지만, 캔버스 미리보기를 위해 직접 할당합니다)
+const supabaseUrl = "https://rmlaqmrrkeiplabaikqi.supabase.co"; 
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtbGFxbXJya2VpcGxhYmFpa3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MjQ5MTgsImV4cCI6MjA4MzMwMDkxOH0.-W8OO4wJGaZVojfmj9cj-PVpx8BmvZLLiftCf5_yfKA";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- [유틸리티 & PDF 헬퍼] ---
@@ -319,13 +320,21 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
         {limit && <button onClick={onMoreClick} className="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>}
       </div>
       
-      {/* KRDS List Style + Dark Mode */}
+      {/* KRDS List Style + Dark Mode + High Contrast Badges */}
       <div className="flex flex-col border-t border-gray-200 dark:border-gray-700">
          {news.map((item, idx) => (
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${item.author?.includes('Google') ? 'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-green-50 border-green-100 text-green-600 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400'}`}>{item.author || '뉴스'}</span>
+                     {/* ✅ [Fix] 가독성 개선: 흰색 텍스트 제거 -> 연한 배경에 진한 텍스트 적용 (Badge High Contrast) */}
+                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border 
+                        ${item.author?.includes('Google') 
+                            ? 'bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300' 
+                            : 'bg-green-100 border-green-200 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300'
+                        }`}
+                     >
+                        {item.author || '뉴스'}
+                     </span>
                      <span className="text-xs text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
@@ -487,15 +496,16 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
-// --- [네비게이션 (Navbar)] ---
+// --- [네비게이션 (Navbar) - Brand Renaming] ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm transition-colors">
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
+         {/* ✅ [Fix] 브랜드명 교체: Kids Insight -> 아이들의 미래를 잇는 지식 플랫폼 */}
          <div className="flex flex-col justify-center">
-           <span className="font-bold text-xl text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">Kids Insight</span>
-           <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">유보통합 지식 플랫폼</span>
+           <span className="font-bold text-lg md:text-xl text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">아이들의 미래를 잇는</span>
+           <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">지식 플랫폼</span>
          </div>
       </div>
       
@@ -617,13 +627,14 @@ const MainApp = () => {
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                       <div>
                          <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v1.0</span>
+                         {/* ✅ [Fix] 메인 카피 브랜드명 교체 */}
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
-                            아이들의 내일을 잇는<br/>
+                            아이들의 미래를 잇는<br/>
                             <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
                          </h1>
                          <p className="text-gray-600 dark:text-gray-300 text-lg mb-8 leading-relaxed">
-                            아이들의 내일을 잇는 지식 플랫폼은 선생님과 부모님을 위한<br/>
-                            정보를 전달합니다.
+                            이 플랫폼은 선생님과 부모님을 위한<br/>
+                            깊이 있는 교육 정보를 공신력 있게 전달합니다.
                          </p>
                          <div className="flex gap-4">
                             <button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] transition-all flex items-center gap-2">
