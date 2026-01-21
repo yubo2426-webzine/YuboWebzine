@@ -8,14 +8,12 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
-// ✅ [Supabase 클라이언트] CDN 방식 (Canvas 호환)
+// ✅ [Supabase 클라이언트] CDN 방식
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// 🚀 [Production 설정] 배포 환경(Vercel)에서는 환경 변수를 사용합니다.
+// 🚀 [Production 설정]
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// ✅ 클라이언트 생성 (키가 없으면 null 처리하여 크래시 방지)
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 // --- [유틸리티] 컨테이너 크기 감지 ---
@@ -76,16 +74,16 @@ const BottomNav = ({ currentView, onViewChange }) => {
   );
 };
 
-// --- [컴포넌트] PC 푸터 (신규) ---
+// --- [컴포넌트] PC 푸터 ---
 const Footer = () => (
-  <footer className="hidden md:block bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 mt-auto">
+  <footer className="hidden md:block w-full bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-12 mt-auto z-10 relative">
     <div className="max-w-7xl mx-auto px-4 text-center">
-       <div className="flex justify-center gap-6 mb-6">
-          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">이용약관</button>
-          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">개인정보처리방침</button>
-          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">운영 정책</button>
+       <div className="flex justify-center gap-8 mb-6">
+          <button className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">이용약관</button>
+          <button className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">개인정보처리방침</button>
+          <button className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">운영 정책</button>
        </div>
-       <p className="text-sm text-gray-400 dark:text-gray-500 leading-relaxed">
+       <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
           © 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>
           Contact: help@korea-kids-platform.kr
        </p>
@@ -237,7 +235,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
       try {
         await loadPdfScript(); 
         if (!window.pdfjsLib) return;
-        
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const doc = await window.pdfjsLib.getDocument(article.fileUrl || article.file_url).promise;
         setPdfDoc(doc);
@@ -250,26 +247,19 @@ const CustomPDFViewer = ({ article, onBack }) => {
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
     let isCancelled = false;
-
     const renderPage = async () => {
       try {
         const page = await pdfDoc.getPage(pageNum);
-        
-        // ✅ [수정] 컨테이너 너비 기준 자동 맞춤 (Fit to Width)
         const unscaledViewport = page.getViewport({ scale: 1.0 });
         const containerWidth = containerRef.current.clientWidth;
-        const autoScale = (containerWidth / unscaledViewport.width) * 0.98; // 98% for safe margin
-        
+        const autoScale = (containerWidth / unscaledViewport.width) * 0.98;
         const finalScale = scale * autoScale; 
         const viewport = page.getViewport({ scale: finalScale });
         
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-  
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        
-        // CSS로도 꽉 차게 명시
         canvas.style.width = '100%';
         canvas.style.height = '100%';
 
@@ -278,7 +268,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
     };
     renderPage();
     return () => { isCancelled = true; };
-  }, [pdfDoc, pageNum, scale, size]); // size 의존성 추가
+  }, [pdfDoc, pageNum, scale, size]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -290,7 +280,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [pdfDoc]);
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-  
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
       isPinching.current = true;
@@ -301,7 +290,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
       touchStartX.current = e.changedTouches[0].screenX;
     }
   };
-
   const handleTouchMove = (e) => {
     if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) {
         e.preventDefault();
@@ -310,7 +298,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
         contentWrapperRef.current.style.transform = `scale(${ratio})`;
     }
   };
-
   const handleTouchEnd = (e) => {
     if (isPinching.current) {
         if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none';
@@ -338,7 +325,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
             <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
             <h2 className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
           </div>
-   
           <div className="flex items-center gap-1 md:gap-2">
              <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg mr-2">
                 <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-gray-200"><ZoomOut size={18}/></button>
@@ -377,7 +363,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
           >
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
-             {/* ✅ [추가] 모바일 전용 좌우 반투명 페이지 넘김 버튼 */}
+             {/* 모바일 전용 좌우 반투명 페이지 넘김 버튼 */}
              <div className="absolute left-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-start pl-2" onClick={(e) => { e.stopPropagation(); setPageNumber(p => Math.max(1, p - 1)); }}>
                 <ChevronLeft className="text-gray-400/50" size={32} />
              </div>
@@ -400,8 +386,8 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// --- [뉴스룸] ✅ 가독성 패치 적용 (고대비 배지) ---
-const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
+// --- [뉴스룸] ---
+const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -629,7 +615,7 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
          </div>
       </div>
       
-      {/* ✅ [수정] 버튼 스타일 네비게이션 */}
+      {/* ✅ [수정] PC 메뉴 버튼 가시성 확보 */}
       <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
           <button 
@@ -638,7 +624,7 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 currentView === key 
                 ? 'bg-[#2563EB] text-white shadow-md' 
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#2563EB] dark:hover:text-blue-300'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#2563EB] dark:hover:text-blue-300'
              }`}
           >
              {key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}
@@ -677,7 +663,16 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const toggleTheme = () => setIsDarkMode(p => !p);
+  
+  // ✅ [수정] 테마 토글 로직: documentElement에 직접 class 적용
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      if (next) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+      return next;
+    });
+  };
 
   if (!supabase) {
     return (
@@ -750,13 +745,10 @@ const MainApp = () => {
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''}`}>
-       <div className="min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300">
-       
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
        <Navbar 
           isAdmin={role === 'admin' || user} 
           onLoginClick={() => setIsAuthOpen(true)}
-          // ✅ [수정] 로그아웃 비동기 처리
           onLogout={async () => {if(supabase) { await supabase.auth.signOut(); window.location.reload(); }}}
           onHomeClick={() => setView('home')}
           onViewChange={setView}
@@ -765,14 +757,15 @@ const MainApp = () => {
           toggleTheme={toggleTheme}
        />
 
-       <main className="flex-1 pb-24">
+       {/* ✅ [수정] Main 영역 flex-1을 주어 푸터가 하단으로 밀리도록 보장 */}
+       <main className="flex-1 pb-24 w-full">
           {view === 'home' && (
              <div className="animate-in fade-in space-y-12 pb-20">
                 {/* 1. 히어로 섹션 */}
                 <section className="bg-gray-50 dark:bg-slate-800 py-12 md:py-20 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                       <div>
-                         <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v25.7</span>
+                         <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v25.7.1</span>
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
                             아이들의 내일을 잇는<br/>
                             <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
@@ -799,41 +792,50 @@ const MainApp = () => {
                    </div>
                 </section>
 
-                {/* ✅ [수정] 3단 구성 그리드 (뉴스 / 일정 / 갤러리) */}
-                <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* ✅ [수정] 3단 구성 그리드 (헤더 가독성 강화 + 더보기 버튼 추가) */}
+                <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-10">
                    
-                   {/* 1) 뉴스룸 (축소: 10개 스크롤) */}
-                   <div className="lg:col-span-5 flex flex-col h-[500px]">
-                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                         <Newspaper size={20} className="text-blue-600"/> 뉴스룸
-                      </h3>
-                      <div className="flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800">
+                   {/* 1) 뉴스룸 */}
+                   <div className="lg:col-span-5 flex flex-col h-[520px]">
+                      <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
+                         <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <Newspaper size={24} className="text-blue-600"/> 뉴스룸
+                         </h3>
+                         <button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 shadow-sm">
                          <NewsFeed limit={10} isAdmin={false} />
                       </div>
                    </div>
 
-                   {/* 2) 일정 (달력 모드 고정) */}
-                   <div className="lg:col-span-4 flex flex-col h-[500px]">
-                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                         <CalendarIcon size={20} className="text-blue-600"/> 이달의 일정
-                      </h3>
-                      <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
+                   {/* 2) 일정 */}
+                   <div className="lg:col-span-4 flex flex-col h-[520px]">
+                      <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
+                         <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <CalendarIcon size={24} className="text-blue-600"/> 이달의 일정
+                         </h3>
+                         <button onClick={() => setView('notice')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
+                      </div>
+                      <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
                          <NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' />
                       </div>
                    </div>
 
-                   {/* 3) 갤러리 (위젯 형태) */}
-                   <div className="lg:col-span-3 flex flex-col h-[500px]">
-                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                         <ImageIcon size={20} className="text-blue-600"/> 갤러리
-                      </h3>
+                   {/* 3) 갤러리 */}
+                   <div className="lg:col-span-3 flex flex-col h-[520px]">
+                      <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
+                         <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <ImageIcon size={24} className="text-blue-600"/> 갤러리
+                         </h3>
+                         <button onClick={() => setView('gallery')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
+                      </div>
                       <div className="flex-1 overflow-y-auto">
                          <Gallery userRole={role} onUploadClick={()=>{}} limit={4} isWidget={true} />
                       </div>
                    </div>
                 </section>
 
-                {/* ✅ [수정] 월간 자료실 (사이즈 축소) */}
+                {/* 월간 자료실 */}
                 <section className="max-w-7xl mx-auto px-4">
                    <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">월간 자료실</h2>
@@ -906,13 +908,12 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
 
-       {/* ✅ [추가] PC 푸터 / 모바일 바텀 내비게이션 */}
+       {/* PC 푸터 / 모바일 바텀 내비게이션 */}
        <Footer />
        <BottomNav currentView={view} onViewChange={setView} />
        
        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => window.location.reload()}/>
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
-       </div>
     </div>
   );
 };
