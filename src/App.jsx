@@ -5,19 +5,26 @@ import {
   X, Newspaper, Calendar as CalendarIcon, 
   Star, Image as ImageIcon, List as ListIcon,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, Menu,
-  Sun, Moon, Eye, Megaphone
+  Sun, Moon, Eye, Megaphone,
+  ZoomIn, ZoomOut, Download, Share2, Check // ✅ [복구] 뷰어용 아이콘 추가
 } from 'lucide-react';
 
-// ✅ [Fix 1] Supabase 클라이언트 직접 통합 (CDN 방식 사용)
+// ✅ [Supabase 클라이언트] CDN 방식 (Canvas 호환)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// ✅ [Fix 3] Canvas 환경 호환성 수정: import.meta 제거 및 직접 할당
-// (실제 배포 시에는 환경 변수로 다시 변경해야 하지만, 캔버스 미리보기를 위해 직접 할당합니다)
-const supabaseUrl = "https://rmlaqmrrkeiplabaikqi.supabase.co"; 
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtbGFxbXJya2VpcGxhYmFpa3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MjQ5MTgsImV4cCI6MjA4MzMwMDkxOH0.-W8OO4wJGaZVojfmj9cj-PVpx8BmvZLLiftCf5_yfKA";
+// ⚠️ [Canvas 오류 수정] import.meta.env 대신 전역 변수 체크 또는 하드코딩된 값 사용
+// 실제 배포 시에는 .env 파일을 사용하지만, 데모 환경에서는 아래와 같이 처리합니다.
+const supabaseUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL 
+  ? import.meta.env.VITE_SUPABASE_URL 
+  : "https://rmlaqmrrkeiplabaikqi.supabase.co";
+
+const supabaseKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY 
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY 
+  : ""; // ⚠️ [주의] 실제 키가 없다면 데모 데이터가 로드되지 않을 수 있습니다.
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- [유틸리티 & PDF 헬퍼] ---
+// --- [유틸리티] 컨테이너 크기 감지 ---
 const useContainerSize = (ref) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {
@@ -28,6 +35,7 @@ const useContainerSize = (ref) => {
   return size;
 };
 
+// --- [유틸리티] PDF 라이브러리 로드 ---
 const loadPdfScript = () => {
   return new Promise((resolve, reject) => {
     if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
@@ -38,14 +46,14 @@ const loadPdfScript = () => {
   });
 };
 
-// --- [조회수 증가 함수] ---
+// --- [유틸리티] 조회수 증가 ---
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } 
   catch (e) { console.error("조회수 업데이트 실패:", e); }
 };
 
-// ✅ [Fix 2] BottomNav 컴포넌트 통합
+// --- [컴포넌트] 하단 네비게이션 (모바일) ---
 const BottomNav = ({ currentView, onViewChange }) => {
   const navItems = [
     { id: 'home', label: '홈', icon: Home },
@@ -75,7 +83,7 @@ const BottomNav = ({ currentView, onViewChange }) => {
   );
 };
 
-// --- [KRDS 스타일 모달 컴포넌트] ---
+// --- [컴포넌트] 인증 모달 (KRDS 스타일) ---
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -111,28 +119,13 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
-              <input 
-                type="email" 
-                placeholder="example@korea.kr" 
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required
-              />
+              <input type="email" placeholder="example@korea.kr" className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white" value={email} onChange={e => setEmail(e.target.value)} required/>
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
-              <input 
-                type="password" 
-                placeholder="********" 
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required
-              />
+              <input type="password" placeholder="********" className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white" value={password} onChange={e => setPassword(e.target.value)} required/>
             </div>
             {error && <p className="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded">{error}</p>}
-            
             <button type="submit" disabled={loading} className="w-full py-2.5 bg-[#2563EB] text-white rounded-md font-bold text-sm hover:bg-[#1d4ed8] transition-colors shadow-sm disabled:opacity-50">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
             </button>
@@ -148,7 +141,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   );
 };
 
-// --- [KRDS 스타일 업로드 모달] ---
+// --- [컴포넌트] 업로드 모달 (KRDS 스타일) ---
 const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) => {
   if (!isOpen) return null;
   const [file, setFile] = useState(null);
@@ -160,7 +153,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 flex flex-col">
-          {/* Modal Header */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center sticky top-0">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                {type === 'notice' && <><Megaphone className="text-blue-600" size={20}/> 공지사항 작성</>}
@@ -170,23 +162,18 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             </h2>
             <button onClick={onClose}><X className="text-gray-400 hover:text-gray-900 dark:hover:text-white"/></button>
           </div>
-
           <div className="p-6">
             {isUploading ? <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 전송 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol) <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
-                  
                   <div><label className={getLabelClass}>제목 <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
-                  
                   {type === 'notice' && (
                      <>
                         <div><label className={getLabelClass}>내용 <span className="text-red-500">*</span></label><textarea className={`${getInputClass} h-32 resize-none`} placeholder="공지 내용을 입력하세요" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/></div>
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><input type="date" className={getInputClass} value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
-                  
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className={`${getInputClass} h-24 resize-none`} placeholder="이번 호에 대한 간단한 설명을 입력하세요" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
-                  
                   {(type === 'article' || type === 'gallery') && (
                      <div>
                         <label className={getLabelClass}>첨부 파일 <span className="text-red-500">*</span></label>
@@ -194,10 +181,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                            <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
                               <div className="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
-                                 <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                    <span>파일 업로드</span>
-                                    <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/>
-                                 </label>
+                                 <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"><span>파일 업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-500">{file ? file.name : (type === 'gallery' ? 'PNG, JPG up to 10MB' : 'PDF only')}</p>
                            </div>
@@ -205,7 +189,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         </div>
                      </div>
                   )}
-
                   <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
                      <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm">취소</button>
                      <button type="submit" className="flex-1 py-2.5 bg-[#2563EB] text-white font-bold rounded-md hover:bg-[#1d4ed8] transition-colors shadow-sm text-sm">등록 완료</button>
@@ -218,60 +201,200 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
-// --- [PDF 뷰어] ---
+// --- [핵심 복구] PC/Mobile 하이브리드 PDF 뷰어 (v25.4) ---
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const contentWrapperRef = useRef(null);
+
+  // --- 상태 관리 ---
   const [pdfDoc, setPdfDoc] = useState(null);
   const [pageNum, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const containerSize = useContainerSize(containerRef);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // --- 제스처(모바일) Refs ---
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const lastTapTime = useRef(0);
+  const pinchStartDist = useRef(0);
+  const pinchStartScale = useRef(1);
+  const isPinching = useRef(false);
+  const tempPinchScaleRef = useRef(1);
+
+  // --- PDF 문서 로드 ---
   useEffect(() => {
     const loadPdf = async () => {
       try {
-        await loadPdfScript();
-        const pdfjs = window.pdfjsLib;
-        const loadingTask = pdfjs.getDocument(article.fileUrl);
-        const doc = await loadingTask.promise;
+        await loadPdfScript(); // 라이브러리 로드
+        if (!window.pdfjsLib) return;
+        
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const doc = await window.pdfjsLib.getDocument(article.fileUrl || article.file_url).promise;
         setPdfDoc(doc);
-        // ✅ 조회수 증가 로직 복구
+        
+        // ✅ 조회수 증가 로직 (복구)
         incrementViewCount('articles', article.id, article.views);
-      } catch (e) { console.error(e); }
+      } catch (err) {
+        console.error("PDF Load Error:", err);
+        alert("문서를 불러올 수 없습니다.");
+      }
     };
-    if (article.fileUrl) loadPdf();
-  }, [article.fileUrl]);
+    loadPdf();
+  }, [article]);
 
+  // --- 페이지 렌더링 ---
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current || !containerSize.width) return;
+    if (!pdfDoc || !canvasRef.current) return;
+    let isCancelled = false;
+
     const renderPage = async () => {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale: scale * (containerSize.width / page.getViewport({ scale: 1 }).width) });
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height; canvas.width = viewport.width;
-      await page.render({ canvasContext: context, viewport }).promise;
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        // PC/Mobile 환경에 따른 기본 해상도 보정
+        const pixelRatio = window.devicePixelRatio || 1;
+        const viewport = page.getViewport({ scale: scale * (window.innerWidth < 768 ? 1.5 : 2.0) });
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // CSS 스타일로 크기 조정 (선명도 유지)
+        canvas.style.width = `${viewport.width / (window.innerWidth < 768 ? 1.5 : 2.0)}px`; 
+        canvas.style.height = `${viewport.height / (window.innerWidth < 768 ? 1.5 : 2.0)}px`;
+
+        if (!isCancelled) {
+          await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+      } catch (err) { console.error(err); }
     };
     renderPage();
-  }, [pdfDoc, pageNum, scale, containerSize]);
+    return () => { isCancelled = true; };
+  }, [pdfDoc, pageNum, scale]);
+
+  // --- ⌨️ [복구] 키보드 단축키 (방향키) ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') setPageNumber(p => Math.max(1, p - 1));
+      if (e.key === 'ArrowRight') setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1));
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pdfDoc]);
+
+  // --- 📱 [복구] 모바일 제스처 핸들러 ---
+  const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      isPinching.current = true;
+      pinchStartDist.current = getTouchDistance(e.touches);
+      pinchStartScale.current = scale;
+    } else {
+      isPinching.current = false;
+      touchStartX.current = e.changedTouches[0].screenX;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) {
+        e.preventDefault();
+        const dist = getTouchDistance(e.touches);
+        const ratio = dist / pinchStartDist.current;
+        contentWrapperRef.current.style.transform = `scale(${ratio})`;
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (isPinching.current) {
+        if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none';
+        isPinching.current = false;
+    } else {
+        touchEndX.current = e.changedTouches[0].screenX;
+        const diff = touchStartX.current - touchEndX.current;
+        if (Math.abs(diff) > 50) {
+             if (diff > 0) setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1));
+             else setPageNumber(p => Math.max(1, p - 1));
+        }
+    }
+  };
+
+  // --- 🛠️ 툴바 기능 ---
+  const handleDownload = () => window.open(article.fileUrl || article.file_url, '_blank');
+  const handleShareURL = async () => {
+     try { await navigator.share({ title: article.title, url: window.location.href }); } 
+     catch { alert("주소가 복사되었습니다."); }
+  };
 
   return (
-    <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen animate-in slide-in-from-right">
-       <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shrink-0 shadow-sm">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
-          <span className="font-bold text-gray-900 dark:text-white truncate px-4">{article.title}</span>
-          <div className="w-6"/>
+    <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right">
+       
+       {/* 1. 상단 툴바 */}
+       <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shrink-0 shadow-sm z-50">
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
+            <h2 className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
+          </div>
+          
+          {/* 우측 툴바 버튼들 */}
+          <div className="flex items-center gap-1 md:gap-2">
+             <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg mr-2">
+                <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-gray-200"><ZoomOut size={18}/></button>
+                <span className="text-xs w-10 text-center font-bold text-gray-600 dark:text-gray-200">{Math.round(scale * 100)}%</span>
+                <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-gray-200"><ZoomIn size={18}/></button>
+             </div>
+             
+             <button onClick={handleDownload} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-600 dark:text-gray-200" title="다운로드"><Download size={20}/></button>
+             <button onClick={handleShareURL} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-600 dark:text-gray-200" title="공유"><Share2 size={20}/></button>
+             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full transition-colors ${isSidebarOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-200'}`}><ListIcon size={20}/></button>
+          </div>
        </div>
-       <div className="flex-1 overflow-auto p-4 flex justify-center" ref={containerRef}>
-          <canvas ref={canvasRef} className="bg-white shadow-md border border-gray-200"/>
+
+       {/* 2. 메인 컨텐츠 영역 */}
+       <div className="flex-1 overflow-hidden flex relative">
+          
+          {/* 🗂️ 사이드바 (목차/썸네일) */}
+          <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 z-40 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
+             <div className="p-4 font-bold border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white">목차 ({pdfDoc?.numPages}p)</div>
+             <div className="overflow-y-auto h-full p-2 space-y-1 pb-20">
+                {pdfDoc && Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1).map((num) => (
+                   <button 
+                      key={num} 
+                      onClick={() => { setPageNumber(num); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+                      className={`w-full text-left p-3 rounded-md text-sm flex items-center justify-between ${pageNum === num ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
+                   >
+                      <span>Page {num}</span>
+                      {pageNum === num && <Check size={14}/>}
+                   </button>
+                ))}
+             </div>
+          </div>
+
+          {/* 뷰어 영역 */}
+          <div 
+             className="flex-1 overflow-auto bg-gray-100 dark:bg-slate-900 flex justify-center items-start p-4 relative"
+             ref={containerRef}
+             onTouchStart={handleTouchStart}
+             onTouchMove={handleTouchMove}
+             onTouchEnd={handleTouchEnd}
+          >
+             {/* 사이드바 오버레이 (모바일) */}
+             {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
+
+             <div ref={contentWrapperRef} className="shadow-lg transition-transform duration-75 ease-out origin-top">
+                <canvas ref={canvasRef} className="bg-white block rounded-sm"/>
+             </div>
+          </div>
        </div>
-       {pdfDoc && (
-         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-            <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-700 dark:text-gray-200"><ChevronLeft size={20}/></button>
-            <span className="font-mono text-sm font-bold text-gray-700 dark:text-gray-200">{pageNum} / {pdfDoc.numPages}</span>
-            <button onClick={() => setPageNumber(p => Math.min(pdfDoc.numPages, p+1))} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-700 dark:text-gray-200"><ChevronRight size={20}/></button>
-         </div>
-       )}
+
+       {/* 3. 하단 플로팅 네비게이션 */}
+       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-800/90 backdrop-blur px-4 py-2 rounded-full shadow-2xl border border-gray-200 dark:border-gray-600 flex items-center gap-6 z-50">
+          <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-700 dark:text-white"><ChevronLeft/></button>
+          <span className="font-mono font-bold text-gray-800 dark:text-white">{pageNum} / {pdfDoc?.numPages || '-'}</span>
+          <button onClick={() => setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p+1))} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-700 dark:text-white"><ChevronRight/></button>
+       </div>
+
     </div>
   );
 };
@@ -280,10 +403,9 @@ const CustomPDFViewer = ({ article, onBack }) => {
 const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false); // ✅ 새로고침 상태 추가
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const fetchNews = async () => {
-    // 수동 새로고침일 경우 화면 전체 로딩 대신 아이콘 로딩만
     if (news.length > 0) setIsRefreshing(true);
     else setLoading(true);
 
@@ -307,7 +429,6 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
             <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
             뉴스룸
             </h2>
-            {/* ✅ 새로고침 버튼 복구 */}
             <button 
                 onClick={fetchNews} 
                 disabled={isRefreshing}
@@ -320,21 +441,12 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
         {limit && <button onClick={onMoreClick} className="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>}
       </div>
       
-      {/* KRDS List Style + Dark Mode + High Contrast Badges */}
       <div className="flex flex-col border-t border-gray-200 dark:border-gray-700">
          {news.map((item, idx) => (
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     {/* ✅ [Fix] 가독성 개선: 흰색 텍스트 제거 -> 연한 배경에 진한 텍스트 적용 (Badge High Contrast) */}
-                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border 
-                        ${item.author?.includes('Google') 
-                            ? 'bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300' 
-                            : 'bg-green-100 border-green-200 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300'
-                        }`}
-                     >
-                        {item.author || '뉴스'}
-                     </span>
+                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${item.author?.includes('Google') ? 'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-green-50 border-green-100 text-green-600 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400'}`}>{item.author || '뉴스'}</span>
                      <span className="text-xs text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
@@ -471,7 +583,7 @@ const Gallery = ({ userRole, onUploadClick }) => {
   );
 };
 
-// --- [자료실 (Issue Card) - Refined] ---
+// --- [자료실 (Issue Card)] ---
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all duration-300">
     <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-50 dark:bg-slate-700'} relative flex items-center justify-center border-b border-gray-100 dark:border-gray-700`}>
@@ -496,16 +608,15 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
-// --- [네비게이션 (Navbar) - Brand Renaming] ---
+// --- [네비게이션 (Navbar)] ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm transition-colors">
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
-         {/* ✅ [Fix] 브랜드명 교체: Kids Insight -> 아이들의 미래를 잇는 지식 플랫폼 */}
          <div className="flex flex-col justify-center">
-           <span className="font-bold text-lg md:text-xl text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">아이들의 미래를 잇는</span>
-           <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">지식 플랫폼</span>
+           <span className="font-bold text-xl text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">Kids Insight</span>
+           <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">유보통합 지식 플랫폼</span>
          </div>
       </div>
       
@@ -518,7 +629,6 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
       </nav>
 
       <div className="flex items-center gap-2">
-        {/* ✅ 다크모드 토글 버튼 */}
         <button onClick={toggleTheme} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors">
            {isDarkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20}/>}
         </button>
@@ -548,7 +658,6 @@ const MainApp = () => {
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
 
-  // ✅ 테마 상태 관리
   const [isDarkMode, setIsDarkMode] = useState(false);
   const toggleTheme = () => setIsDarkMode(p => !p);
 
@@ -604,12 +713,11 @@ const MainApp = () => {
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
 
   return (
-    // ✅ 최상위 div에 dark 클래스 토글
     <div className={`${isDarkMode ? 'dark' : ''}`}>
        <div className="min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300">
        
        <Navbar 
-          isAdmin={role === 'admin' || user} // 간소화
+          isAdmin={role === 'admin' || user} 
           onLoginClick={() => setIsAuthOpen(true)}
           onLogout={() => {if(supabase) supabase.auth.signOut(); window.location.reload();}}
           onHomeClick={() => setView('home')}
@@ -627,14 +735,13 @@ const MainApp = () => {
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                       <div>
                          <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v1.0</span>
-                         {/* ✅ [Fix] 메인 카피 브랜드명 교체 */}
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
-                            아이들의 미래를 잇는<br/>
+                            아이들의 내일을 잇는<br/>
                             <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
                          </h1>
                          <p className="text-gray-600 dark:text-gray-300 text-lg mb-8 leading-relaxed">
-                            이 플랫폼은 선생님과 부모님을 위한<br/>
-                            깊이 있는 교육 정보를 공신력 있게 전달합니다.
+                            아이들의 내일을 잇는 지식 플랫폼은 선생님과 부모님을 위한<br/>
+                            정보를 전달합니다.
                          </p>
                          <div className="flex gap-4">
                             <button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] transition-all flex items-center gap-2">
