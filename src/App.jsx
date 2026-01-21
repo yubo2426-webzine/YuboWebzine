@@ -6,18 +6,19 @@ import {
   Star, Image as ImageIcon, List as ListIcon,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, Menu,
   Sun, Moon, Eye, Megaphone,
-  ZoomIn, ZoomOut, Download, Share2, Check 
+  ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
 
 // ✅ [Supabase 클라이언트] CDN 방식 (Canvas 호환)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// ⚠️ [Canvas 오류 수정] import.meta 제거 및 직접 할당 방식 적용
-// 실제 배포 시에는 환경 변수(.env)를 사용해야 하지만, 프리뷰 환경에서는 아래와 같이 처리합니다.
-const supabaseUrl = "https://rmlaqmrrkeiplabaikqi.supabase.co";
-const supabaseKey = ""; // ⚠️ 필요한 경우 이곳에 Supabase Anon Key를 입력하세요.
+// 🚀 [Production 설정] 배포 환경(Vercel)에서는 환경 변수를 사용합니다.
+// 로컬 개발 시 .env 파일에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY가 있어야 합니다.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// ✅ 클라이언트 생성 (키가 없으면 null 처리하여 크래시 방지)
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 // --- [유틸리티] 컨테이너 크기 감지 ---
 const useContainerSize = (ref) => {
@@ -88,6 +89,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [error, setError] = useState(null);
 
   const handleAuth = async (e) => {
+    if (!supabase) return;
     e.preventDefault();
     setLoading(true); setError(null);
     try {
@@ -370,10 +372,10 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const fetchNews = async () => {
+    if(!supabase) return; // Guard
     if (news.length > 0) setIsRefreshing(true);
     else setLoading(true);
 
-    if(!supabase) return;
     const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
     if(data) setNews(data);
     
@@ -442,6 +444,7 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
 
   useEffect(() => {
     const fetchNotices = async () => {
+      if(!supabase) return; // Guard
       const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
       if (data) setNotices(data);
     };
@@ -516,6 +519,7 @@ const Gallery = ({ userRole, onUploadClick }) => {
 
   useEffect(() => {
     const fetchImages = async () => {
+      if(!supabase) return; // Guard
       const { data } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
       if (data) setImages(data);
     };
@@ -579,14 +583,13 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
-// --- [네비게이션 (Navbar)] ✅ 브랜드명 롤백/수정 (지식 플랫폼) ---
+// --- [네비게이션 (Navbar)] ---
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm transition-colors">
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
          <div className="flex flex-col justify-center">
-           {/* ✅ [Fix] 최신 브랜드명 적용 */}
            <span className="font-bold text-lg text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">지식 플랫폼</span>
            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">아이들의 미래를 잇는</span>
          </div>
@@ -632,6 +635,26 @@ const MainApp = () => {
 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const toggleTheme = () => setIsDarkMode(p => !p);
+
+  // ✅ [Safe Guard] 키가 없을 때 안내 화면 표시
+  if (!supabase) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 text-center p-4 flex-col">
+         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-200">
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} strokeWidth={2.5}/>
+            </div>
+            <h1 className="text-2xl font-black text-gray-900 mb-2">Supabase 설정 필요</h1>
+            <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+               앱을 실행하려면 <strong>Supabase API Key</strong>가 필요합니다.<br/>
+               Vercel 배포 시, <strong>Environment Variables</strong> 설정에<br/>
+               <code>VITE_SUPABASE_URL</code> 및 <code>VITE_SUPABASE_ANON_KEY</code>를<br/>
+               반드시 추가해 주세요.
+            </p>
+         </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Auth Check
