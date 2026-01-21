@@ -8,12 +8,10 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
-
 // ✅ [Supabase 클라이언트] CDN 방식 (Canvas 호환)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // 🚀 [Production 설정] 배포 환경(Vercel)에서는 환경 변수를 사용합니다.
-// 로컬 개발 시 .env 파일에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY가 있어야 합니다.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -58,7 +56,6 @@ const BottomNav = ({ currentView, onViewChange }) => {
     { id: 'issue_list', label: '자료실', icon: Book },
     { id: 'gallery', label: '갤러리', icon: ImageIcon },
   ];
-
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 pb-safe z-50 h-[60px] flex items-center justify-around shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
       {navItems.map((item) => (
@@ -79,6 +76,23 @@ const BottomNav = ({ currentView, onViewChange }) => {
   );
 };
 
+// --- [컴포넌트] PC 푸터 (신규) ---
+const Footer = () => (
+  <footer className="hidden md:block bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 mt-auto">
+    <div className="max-w-7xl mx-auto px-4 text-center">
+       <div className="flex justify-center gap-6 mb-6">
+          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">이용약관</button>
+          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">개인정보처리방침</button>
+          <button className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">운영 정책</button>
+       </div>
+       <p className="text-sm text-gray-400 dark:text-gray-500 leading-relaxed">
+          © 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>
+          Contact: help@korea-kids-platform.kr
+       </p>
+    </div>
+  </footer>
+);
+
 // --- [컴포넌트] 인증 모달 ---
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
@@ -91,7 +105,8 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const handleAuth = async (e) => {
     if (!supabase) return;
     e.preventDefault();
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
@@ -143,10 +158,9 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   if (!isOpen) return null;
   const [file, setFile] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
-
   const getInputClass = "w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white";
   const getLabelClass = "block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1";
-
+  
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 flex flex-col">
@@ -160,7 +174,8 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             <button onClick={onClose}><X className="text-gray-400 hover:text-gray-900 dark:hover:text-white"/></button>
           </div>
           <div className="p-6">
-            {isUploading ? <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 전송 중입니다...</p></div> : (
+            {isUploading ?
+             <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 전송 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol) <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목 <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
@@ -175,10 +190,10 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      <div>
                         <label className={getLabelClass}>첨부 파일 <span className="text-red-500">*</span></label>
                         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-blue-400 transition-colors relative cursor-pointer group">
-                           <div className="space-y-1 text-center">
+                             <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
                               <div className="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
-                                 <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"><span>파일 업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
+                                  <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"><span>파일 업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-500">{file ? file.name : (type === 'gallery' ? 'PNG, JPG up to 10MB' : 'PDF only')}</p>
                            </div>
@@ -203,6 +218,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const contentWrapperRef = useRef(null);
+  const size = useContainerSize(containerRef);
 
   const [pdfDoc, setPdfDoc] = useState(null);
   const [pageNum, setPageNumber] = useState(1);
@@ -232,28 +248,37 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [article]);
 
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
+    if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
     let isCancelled = false;
 
     const renderPage = async () => {
       try {
         const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: scale * (window.innerWidth < 768 ? 1.5 : 2.0) });
+        
+        // ✅ [수정] 컨테이너 너비 기준 자동 맞춤 (Fit to Width)
+        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        const containerWidth = containerRef.current.clientWidth;
+        const autoScale = (containerWidth / unscaledViewport.width) * 0.98; // 98% for safe margin
+        
+        const finalScale = scale * autoScale; 
+        const viewport = page.getViewport({ scale: finalScale });
         
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
+  
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         
-        canvas.style.width = `${viewport.width / (window.innerWidth < 768 ? 1.5 : 2.0)}px`; 
-        canvas.style.height = `${viewport.height / (window.innerWidth < 768 ? 1.5 : 2.0)}px`;
+        // CSS로도 꽉 차게 명시
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
 
         if (!isCancelled) await page.render({ canvasContext: ctx, viewport }).promise;
       } catch (err) { console.error(err); }
     };
     renderPage();
     return () => { isCancelled = true; };
-  }, [pdfDoc, pageNum, scale]);
+  }, [pdfDoc, pageNum, scale, size]); // size 의존성 추가
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -265,7 +290,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [pdfDoc]);
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-
+  
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
       isPinching.current = true;
@@ -313,6 +338,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
             <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
             <h2 className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
           </div>
+   
           <div className="flex items-center gap-1 md:gap-2">
              <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg mr-2">
                 <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-600 dark:text-gray-200"><ZoomOut size={18}/></button>
@@ -334,7 +360,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
                       key={num} 
                       onClick={() => { setPageNumber(num); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
                       className={`w-full text-left p-3 rounded-md text-sm flex items-center justify-between ${pageNum === num ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
-                   >
+                    >
                       <span>Page {num}</span>
                       {pageNum === num && <Check size={14}/>}
                    </button>
@@ -343,15 +369,24 @@ const CustomPDFViewer = ({ article, onBack }) => {
           </div>
 
           <div 
-             className="flex-1 overflow-auto bg-gray-100 dark:bg-slate-900 flex justify-center items-start p-4 relative"
+             className="flex-1 overflow-auto bg-gray-100 dark:bg-slate-900 flex justify-center items-start p-4 relative group"
              ref={containerRef}
              onTouchStart={handleTouchStart}
              onTouchMove={handleTouchMove}
              onTouchEnd={handleTouchEnd}
           >
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
-             <div ref={contentWrapperRef} className="shadow-lg transition-transform duration-75 ease-out origin-top">
-                <canvas ref={canvasRef} className="bg-white block rounded-sm"/>
+             
+             {/* ✅ [추가] 모바일 전용 좌우 반투명 페이지 넘김 버튼 */}
+             <div className="absolute left-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-start pl-2" onClick={(e) => { e.stopPropagation(); setPageNumber(p => Math.max(1, p - 1)); }}>
+                <ChevronLeft className="text-gray-400/50" size={32} />
+             </div>
+             <div className="absolute right-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-end pr-2" onClick={(e) => { e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1)); }}>
+               <ChevronRight className="text-gray-400/50" size={32} />
+             </div>
+
+             <div ref={contentWrapperRef} className="shadow-lg transition-transform duration-75 ease-out origin-top w-full">
+                <canvas ref={canvasRef} className="bg-white block rounded-sm mx-auto"/>
              </div>
           </div>
        </div>
@@ -370,49 +405,41 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   const fetchNews = async () => {
-    if(!supabase) return; // Guard
+    if(!supabase) return;
     if (news.length > 0) setIsRefreshing(true);
     else setLoading(true);
-
     const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
     if(data) setNews(data);
-    
     setLoading(false);
     setIsRefreshing(false);
   };
-  
   useEffect(() => { fetchNews(); }, [limit]);
 
   if (loading && !isRefreshing) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-600"/></div>;
-
+  
   return (
-    <div className={`max-w-7xl mx-auto px-4 ${limit ? 'py-12' : 'py-16'}`}>
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
-            뉴스룸
-            </h2>
-            <button 
-                onClick={fetchNews} 
-                disabled={isRefreshing}
-                className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-all"
-                title="뉴스 새로고침"
-            >
-                <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            </button>
+    <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
+      {!limit && (
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+              뉴스룸
+              </h2>
+             <button onClick={fetchNews} disabled={isRefreshing} className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-all" title="뉴스 새로고침">
+                 <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+              </button>
+          </div>
         </div>
-        {limit && <button onClick={onMoreClick} className="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>}
-      </div>
+      )}
       
-      <div className="flex flex-col border-t border-gray-200 dark:border-gray-700">
+      <div className={`flex flex-col ${limit ? '' : 'border-t border-gray-200 dark:border-gray-700'}`}>
          {news.map((item, idx) => (
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     {/* ✅ High Contrast Badge Fix */}
                      <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${
                        item.author?.includes('Google') 
                          ? 'bg-blue-100 border-blue-200 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-100' 
@@ -422,12 +449,10 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
                      </span>
                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
                </div>
-               <div className="hidden md:flex items-center text-gray-300 dark:text-gray-600 group-hover:text-blue-400 dark:group-hover:text-blue-400">
-                  <ArrowUpRight size={20}/>
-               </div>
+               {!limit && <div className="hidden md:flex items-center text-gray-300 dark:text-gray-600 group-hover:text-blue-400 dark:group-hover:text-blue-400"><ArrowUpRight size={20}/></div>}
             </a>
          ))}
          {news.length === 0 && <div className="text-center py-10 text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-gray-700">등록된 뉴스가 없습니다.</div>}
@@ -437,14 +462,14 @@ const NewsFeed = ({ limit, onMoreClick, isAdmin }) => {
 };
 
 // --- [공지사항/캘린더] ---
-const NoticeBoard = ({ userRole, onWriteClick }) => {
-  const [mode, setMode] = useState('list');
+const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
+  const [mode, setMode] = useState(initialMode || 'list');
   const [notices, setNotices] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     const fetchNotices = async () => {
-      if(!supabase) return; // Guard
+      if(!supabase) return;
       const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
       if (data) setNotices(data);
     };
@@ -452,24 +477,26 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
   }, []);
 
   const getEvents = (date) => notices.filter(n => n.event_date && new Date(n.event_date).toDateString() === date.toDateString());
-
+  
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
-      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-         <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
-            소식 & 일정
-         </h2>
-         <div className="flex gap-2">
-            <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-md flex border border-gray-200 dark:border-gray-600">
-               <button onClick={() => setMode('list')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><ListIcon size={16}/> 목록</button>
-               <button onClick={() => setMode('calendar')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'calendar' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><CalendarIcon size={16}/> 달력</button>
-            </div>
-            {(userRole === 'team' || userRole === 'admin') && 
-               <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><Plus size={16}/> 글쓰기</button>
-            }
-         </div>
-      </div>
+    <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
+      {!initialMode && (
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+           <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+              소식 & 일정
+           </h2>
+           <div className="flex gap-2">
+              <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-md flex border border-gray-200 dark:border-gray-600">
+                 <button onClick={() => setMode('list')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><ListIcon size={16}/> 목록</button>
+                 <button onClick={() => setMode('calendar')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'calendar' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><CalendarIcon size={16}/> 달력</button>
+              </div>
+              {(userRole === 'team' || userRole === 'admin') && 
+                 <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><Plus size={16}/> 글쓰기</button>
+              }
+           </div>
+        </div>
+      )}
       
       {mode === 'list' ? (
         <div className="grid gap-4">
@@ -486,12 +513,13 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
            ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm h-full">
            <div className="flex justify-center items-center mb-6 gap-8">
               <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full dark:text-white"><ChevronLeft/></button>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">{currentDate.getFullYear()}년 {currentDate.getMonth()+1}월</h3>
               <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full dark:text-white"><ChevronRight/></button>
            </div>
+           
            <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
               {['일','월','화','수','목','금','토'].map(d => <div key={d} className="bg-gray-50 dark:bg-slate-900 text-center text-xs font-bold text-gray-500 dark:text-gray-400 py-2">{d}</div>)}
               {Array.from({length: 35}).map((_, i) => {
@@ -499,9 +527,9 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
                  const isToday = d.toDateString() === new Date().toDateString();
                  const isCurrentMonth = d.getMonth() === currentDate.getMonth();
                  return (
-                    <div key={i} className={`min-h-[100px] bg-white dark:bg-slate-800 p-2 ${!isCurrentMonth ? 'bg-gray-50/50 dark:bg-slate-900/50 text-gray-300 dark:text-gray-600' : 'text-gray-900 dark:text-gray-200'}`}>
-                       <span className={`text-sm font-bold inline-block w-6 h-6 text-center leading-6 rounded-full ${isToday ? 'bg-blue-600 text-white' : ''}`}>{d.getDate()}</span>
-                       <div className="mt-1 flex flex-col gap-1">{getEvents(d).map(ev => <div key={ev.id} className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded truncate font-bold">{ev.title}</div>)}</div>
+                    <div key={i} className={`min-h-[60px] md:min-h-[80px] bg-white dark:bg-slate-800 p-1 ${!isCurrentMonth ? 'bg-gray-50/50 dark:bg-slate-900/50 text-gray-300 dark:text-gray-600' : 'text-gray-900 dark:text-gray-200'}`}>
+                       <span className={`text-xs font-bold inline-block w-5 h-5 text-center leading-5 rounded-full ${isToday ? 'bg-blue-600 text-white' : ''}`}>{d.getDate()}</span>
+                       <div className="mt-1 flex flex-col gap-0.5">{getEvents(d).map(ev => <div key={ev.id} className="text-[9px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded truncate font-bold">{ev.title}</div>)}</div>
                     </div>
                  );
               })}
@@ -513,38 +541,44 @@ const NoticeBoard = ({ userRole, onWriteClick }) => {
 };
 
 // --- [갤러리] ---
-const Gallery = ({ userRole, onUploadClick }) => {
+const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const fetchImages = async () => {
-      if(!supabase) return; // Guard
-      const { data } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      if(!supabase) return;
+      let query = supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      if(limit) query = query.limit(limit);
+      const { data } = await query;
       if (data) setImages(data);
     };
     fetchImages();
-  }, []);
+  }, [limit]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
-      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-         <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
-            활동 갤러리
-         </h2>
-         {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><ImageIcon size={16}/> 사진 올리기</button>}
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className={`w-full ${isWidget ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
+      {!isWidget && (
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
+                활동 갤러리
+             </h2>
+             {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><ImageIcon size={16}/> 사진 올리기</button>}
+          </div>
+      )}
+      <div className={`grid gap-4 ${isWidget ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
          {images.map(img => (
             <div key={img.id} onClick={() => setSelected(img)} className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group">
                <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-slate-700">
-                  <img src={img.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                   <img src={img.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                </div>
-               <div className="p-3">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{img.title}</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(img.created_at).toLocaleDateString()}</p>
-               </div>
+               {!isWidget && (
+                   <div className="p-3">
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{img.title}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(img.created_at).toLocaleDateString()}</p>
+                   </div>
+               )}
             </div>
          ))}
       </div>
@@ -590,14 +624,23 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
          <div className="flex flex-col justify-center">
-           <span className="font-bold text-lg text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">지식 플랫폼</span>
+            <span className="font-bold text-lg text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">지식 플랫폼</span>
            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">아이들의 미래를 잇는</span>
          </div>
       </div>
       
-      <nav className="hidden md:flex items-center h-full">
+      {/* ✅ [수정] 버튼 스타일 네비게이션 */}
+      <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`h-full px-5 text-[15px] font-medium transition-all relative flex items-center ${currentView === key ? 'text-[#2563EB] dark:text-blue-400 font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#2563EB] dark:after:bg-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-[#2563EB] dark:hover:text-blue-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+          <button 
+             key={key} 
+             onClick={() => onViewChange(key)} 
+             className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                currentView === key 
+                ? 'bg-[#2563EB] text-white shadow-md' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#2563EB] dark:hover:text-blue-300'
+             }`}
+          >
              {key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}
           </button>
         ))}
@@ -636,7 +679,6 @@ const MainApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const toggleTheme = () => setIsDarkMode(p => !p);
 
-  // ✅ [Safe Guard] 키가 없을 때 안내 화면 표시
   if (!supabase) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-center p-4 flex-col">
@@ -714,7 +756,8 @@ const MainApp = () => {
        <Navbar 
           isAdmin={role === 'admin' || user} 
           onLoginClick={() => setIsAuthOpen(true)}
-          onLogout={() => {if(supabase) supabase.auth.signOut(); window.location.reload();}}
+          // ✅ [수정] 로그아웃 비동기 처리
+          onLogout={async () => {if(supabase) { await supabase.auth.signOut(); window.location.reload(); }}}
           onHomeClick={() => setView('home')}
           onViewChange={setView}
           currentView={view}
@@ -724,33 +767,31 @@ const MainApp = () => {
 
        <main className="flex-1 pb-24">
           {view === 'home' && (
-             <div className="animate-in fade-in space-y-20">
-                <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
+             <div className="animate-in fade-in space-y-12 pb-20">
+                {/* 1. 히어로 섹션 */}
+                <section className="bg-gray-50 dark:bg-slate-800 py-12 md:py-20 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                       <div>
-                         <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v1.0</span>
+                         <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v25.7</span>
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
                             아이들의 내일을 잇는<br/>
                             <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
                          </h1>
                          <p className="text-gray-600 dark:text-gray-300 text-lg mb-8 leading-relaxed">
-                            아이들의 내일을 잇는 지식 플랫폼은 선생님과 부모님을 위한<br/>
-                            정보를 전달합니다.
+                            선생님과 부모님을 위한 필수 지식과<br/>
+                            다양한 교육 자료를 한곳에서 만나보세요.
                          </p>
                          <div className="flex gap-4">
                             <button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] transition-all flex items-center gap-2">
-                               자료실 바로가기 <ArrowRight size={18}/>
-                            </button>
-                            <button onClick={() => setView('news')} className="px-8 py-4 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-white rounded-md font-bold hover:bg-gray-50 dark:hover:bg-slate-600 transition-all">
-                               뉴스룸 탐색
+                                자료실 바로가기 <ArrowRight size={18}/>
                             </button>
                          </div>
                       </div>
-                      <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-xl overflow-hidden flex items-center justify-center p-10">
+                      <div className="relative h-[250px] md:h-[350px] bg-white dark:bg-slate-700 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-xl overflow-hidden flex items-center justify-center p-10">
                          {issues[0] ? (
                             <div className="text-center">
                                <div className="text-xs font-bold text-gray-400 mb-2">LATEST ISSUE</div>
-                               <div className="text-9xl mb-4 animate-bounce-slow">{issues[0].icon}</div>
+                               <div className="text-8xl mb-4 animate-bounce-slow">{issues[0].icon}</div>
                                <h3 className="text-2xl font-black text-gray-900 dark:text-white">{issues[0].title}</h3>
                             </div>
                          ) : <div className="text-gray-300 font-bold">발행된 호수가 없습니다.</div>}
@@ -758,22 +799,59 @@ const MainApp = () => {
                    </div>
                 </section>
 
-                <NewsFeed limit={4} onMoreClick={() => setView('news')}/>
+                {/* ✅ [수정] 3단 구성 그리드 (뉴스 / 일정 / 갤러리) */}
+                <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                   
+                   {/* 1) 뉴스룸 (축소: 10개 스크롤) */}
+                   <div className="lg:col-span-5 flex flex-col h-[500px]">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                         <Newspaper size={20} className="text-blue-600"/> 뉴스룸
+                      </h3>
+                      <div className="flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800">
+                         <NewsFeed limit={10} isAdmin={false} />
+                      </div>
+                   </div>
 
-                <section className="max-w-7xl mx-auto px-4 pb-20">
-                   <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>월간 자료실</h2>
+                   {/* 2) 일정 (달력 모드 고정) */}
+                   <div className="lg:col-span-4 flex flex-col h-[500px]">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                         <CalendarIcon size={20} className="text-blue-600"/> 이달의 일정
+                      </h3>
+                      <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
+                         <NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' />
+                      </div>
+                   </div>
+
+                   {/* 3) 갤러리 (위젯 형태) */}
+                   <div className="lg:col-span-3 flex flex-col h-[500px]">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                         <ImageIcon size={20} className="text-blue-600"/> 갤러리
+                      </h3>
+                      <div className="flex-1 overflow-y-auto">
+                         <Gallery userRole={role} onUploadClick={()=>{}} limit={4} isWidget={true} />
+                      </div>
+                   </div>
+                </section>
+
+                {/* ✅ [수정] 월간 자료실 (사이즈 축소) */}
+                <section className="max-w-7xl mx-auto px-4">
+                   <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">월간 자료실</h2>
                       <button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      {issues.slice(0, 4).map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}
+                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {issues.slice(0, 6).map(issue => (
+                         <div key={issue.id} className="transform scale-95 origin-top-left">
+                           <IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
+                         </div>
+                      ))}
                    </div>
                 </section>
              </div>
           )}
           
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'}/>}
-          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
+          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
           
           {view === 'issue_list' && (
@@ -797,26 +875,23 @@ const MainApp = () => {
                       <p className="text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl">{currentIssue.description}</p>
                    </div>
                 </div>
+               
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>수록 자료 목록</h3>
                    {role === 'admin' && (
-                      <button 
-                         onClick={() => { setUploadType('article'); setIsUploadOpen(true); }} 
-                         className="flex items-center gap-2 shadow-sm bg-[#2563EB] text-white px-4 py-2 rounded-md font-bold hover:bg-[#1d4ed8]"
-                      >
+                      <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-sm bg-[#2563EB] text-white px-4 py-2 rounded-md font-bold hover:bg-[#1d4ed8]">
                          <Plus size={18} /> 자료 추가
                       </button>
                    )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {currentIssue.articles?.map(art => (
-                      <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-all flex items-center gap-4">
+                       <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-all flex items-center gap-4">
                          <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-md flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-400 transition-colors"><FileText size={24}/></div>
                          <div className="flex-1">
                             <div className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{art.title}</div>
                             <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                                <span>PDF 문서</span>
-                               {/* ✅ 조회수 표시 */}
                                {art.views > 0 && <span className="flex items-center gap-0.5 text-blue-500 font-bold"><Eye size={10}/> {art.views}</span>}
                             </div>
                          </div>
@@ -831,6 +906,8 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
 
+       {/* ✅ [추가] PC 푸터 / 모바일 바텀 내비게이션 */}
+       <Footer />
        <BottomNav currentView={view} onViewChange={setView} />
        
        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => window.location.reload()}/>
