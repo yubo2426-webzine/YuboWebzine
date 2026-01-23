@@ -9,8 +9,8 @@ import {
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
 
-// ✅ [수정됨] TextArea 제거 (에러 원인 해결)
-import { Button, Input, Badge } from 'krds-react';
+// ✅ [수정됨] 에러가 발생하는 Input, Badge, TextArea를 모두 제거하고 'Button'만 남김
+import { Button } from 'krds-react';
 
 // ✅ [Supabase 클라이언트] CDN 방식
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -105,6 +105,9 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // 스타일 복구용 클래스
+  const inputClass = "w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white";
+
   const handleAuth = async (e) => {
     if (!supabase) return;
     e.preventDefault();
@@ -135,11 +138,11 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
-              <Input 
+              {/* ✅ [롤백] 안전한 HTML input 사용 */}
+              <input 
                 type="email" 
                 placeholder="example@korea.kr" 
-                size="medium"
-                className="w-full"
+                className={inputClass}
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 required
@@ -147,11 +150,11 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
-              <Input 
+              {/* ✅ [롤백] 안전한 HTML input 사용 */}
+              <input 
                 type="password" 
                 placeholder="********" 
-                size="medium"
-                className="w-full"
+                className={inputClass}
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 required
@@ -159,6 +162,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             </div>
             {error && <p className="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded">{error}</p>}
             
+            {/* Button 컴포넌트는 유지 (만약 이것도 에러나면 바로 알려주세요) */}
             <Button 
               type="submit" 
               disabled={loading} 
@@ -209,7 +213,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      <>
                         <div>
                           <label className={getLabelClass}>내용 <span className="text-red-500">*</span></label>
-                          {/* ✅ [수정됨] TextArea 에러 방지를 위해 기본 HTML textarea로 롤백 */}
                           <textarea 
                             className={`${getInputClass} h-32 resize-none`} 
                             placeholder="공지 내용을 입력하세요" 
@@ -467,13 +470,14 @@ const NewsFeed = ({ limit, isAdmin }) => {
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     <Badge 
-                        variant={item.author?.includes('Google') ? 'primary' : 'success'} 
-                        shape="round" 
-                        size="small"
-                     >
+                     {/* ✅ [롤백] Badge 컴포넌트 제거 및 기존 Span 스타일 복구 */}
+                     <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${
+                       item.author?.includes('Google') 
+                         ? 'bg-blue-100 border-blue-200 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-100' 
+                         : 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-100'
+                     }`}>
                        {item.author || '뉴스'}
-                     </Badge>
+                     </span>
                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
@@ -529,12 +533,9 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
            {notices.map(n => (
               <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors shadow-sm">
                  <div className="flex justify-between mb-2">
-                    <Badge 
-                       variant={n.category === 'event' ? 'primary' : 'neutral'} 
-                       size="small"
-                    >
-                       {n.category === 'event' ? '행사' : '공지'}
-                    </Badge>
+                    {/* ✅ [롤백] Badge 컴포넌트 제거 및 기존 Span 스타일 복구 */}
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${n.category === 'event' ? 
+                       'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-400'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
                     <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{n.title}</h3>
