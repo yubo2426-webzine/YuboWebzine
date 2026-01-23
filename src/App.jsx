@@ -20,8 +20,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input 
-    // 폰트 크기를 text-base(16px)로 상향 조정하여 가독성 확보
-    className={`w-full h-[45px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-base text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
+    // ✅ [수정] 입력창 텍스트 크기 text-lg (18px)로 상향
+    className={`w-full h-[50px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
     {...props}
   />
 );
@@ -133,7 +133,7 @@ const Footer = () => (
   </footer>
 );
 
-// ✅ [4번 해결] 로그인 모달 폰트 및 입력창 크기 상향
+// ✅ [4번 해결] 로그인 모달 텍스트 크기 대폭 상향
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -170,19 +170,23 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         <div className="p-7">
           <form onSubmit={handleAuth} className="space-y-6">
             <div>
-              <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
+              {/* 라벨 텍스트: text-lg (18px)로 상향 */}
+              <label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
               <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
+              <label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
               <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
             {error && <p className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded">{error}</p>}
+            
+            {/* 버튼은 기존 크기 유지, 텍스트만 살짝 조정 */}
             <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
             </Button>
           </form>
           <div className="mt-6 text-center">
+             {/* 하단 링크 텍스트: text-base (16px)로 상향 */}
              <button onClick={() => setIsSignUp(!isSignUp)} className="text-base text-gray-500 underline hover:text-blue-600">
               {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
             </button>
@@ -197,13 +201,13 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   if (!isOpen) return null;
   const [file, setFile] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
-  const getLabelClass = "block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1";
+  const getLabelClass = "block text-base font-bold text-gray-700 dark:text-gray-300 mb-1";
   
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 flex flex-col">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center sticky top-0">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                {type === 'notice' && <><Megaphone className="text-blue-600" size={24}/> 공지사항 작성</>}
                {type === 'gallery' && <><ImageIcon className="text-blue-600" size={24}/> 갤러리 업로드</>}
                {type === 'issue' && <><Book className="text-blue-600" size={24}/> 월간호 발행</>}
@@ -213,7 +217,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
           </div>
           <div className="p-6">
             {isUploading ?
-            <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-base text-gray-600">전송 중...</p></div> : (
+            <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-lg text-gray-600">전송 중...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목 입력" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
@@ -231,16 +235,16 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 relative cursor-pointer group">
                              <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
-                              <div className="flex text-sm text-gray-600 justify-center">
+                              <div className="flex text-base text-gray-600 justify-center">
                                    <label className="relative cursor-pointer text-blue-600 hover:text-blue-500"><span>업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
                               </div>
-                              <p className="text-xs text-gray-500">{file ? file.name : '파일 선택'}</p>
+                              <p className="text-sm text-gray-500">{file ? file.name : '파일 선택'}</p>
                            </div>
                         </div>
                      </div>
                   )}
                   <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
-                     <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-md text-sm font-bold hover:bg-gray-50 transition-colors">취소</button>
+                     <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-md text-base font-bold hover:bg-gray-50 transition-colors">취소</button>
                      <Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">완료</Button>
                   </div>
                </form>
@@ -447,10 +451,11 @@ const NewsFeed = ({ limit, isAdmin }) => {
                <a href={item.link} target="_blank" className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                      <KRDSBadge variant={item.author?.includes('Google') ? 'primary' : 'success'}>{item.author || '뉴스'}</KRDSBadge>
-                     <span className="text-sm text-gray-500 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
+                     <span className="text-base text-gray-500 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
-                  <p className="text-base text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
+                  {/* 뉴스 제목 text-xl(20px) 상향 */}
+                  <h3 className="font-bold text-xl text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
+                  <p className="text-lg text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
                </a>
                <div className="flex items-center gap-2">
                    {!limit && <ArrowUpRight size={20} className="hidden md:block text-gray-300"/>}
@@ -571,14 +576,15 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
       
       {/* 이미지 모드일 때만 왼쪽 위 라벨 표시 */}
       {(issue.thumbnail_url || issue.image_url) && (
-        <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-xs font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
+        <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-sm font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
       )}
     </div>
     
     <div className="p-5 flex-1 flex flex-col">
-      <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
+      <div className="flex justify-between items-start mb-2"><span className="text-sm font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
+      {/* 이슈 카드 텍스트 크기 상향 */}
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
+      <p className="text-lg text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
     </div>
   </div>
 );
@@ -589,7 +595,7 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
-         <div className="flex flex-col justify-center"><span className="font-bold text-2xl leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">지식 플랫폼</span><span className="text-xs font-bold text-gray-500 mt-0.5 tracking-wide">아이들의 미래를 잇는</span></div>
+         <div className="flex flex-col justify-center"><span className="font-bold text-2xl leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">지식 플랫폼</span><span className="text-sm font-bold text-gray-500 mt-0.5 tracking-wide">아이들의 미래를 잇는</span></div>
       </div>
       <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
