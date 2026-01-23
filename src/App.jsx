@@ -9,8 +9,8 @@ import {
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
 
-// ✅ [KRDS] 버튼 컴포넌트 불러오기
-import { Button } from 'krds-react';
+// ✅ [KRDS] 버튼, 입력창, 텍스트영역, 배지 컴포넌트 추가 로드
+import { Button, Input, TextArea, Badge } from 'krds-react';
 
 // ✅ [Supabase 클라이언트] CDN 방식
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
