@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@krds-ui/core": "^0.6.0",
+    "krds-react": "^1.1.0",
     "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
