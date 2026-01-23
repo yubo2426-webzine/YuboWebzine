@@ -20,7 +20,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input 
-    // ✅ [수정] 입력창 텍스트 크기 text-lg (18px)로 상향
+    // ✅ [가독성] 텍스트 크기 text-lg(18px) 유지
     className={`w-full h-[50px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
     {...props}
   />
@@ -133,7 +133,6 @@ const Footer = () => (
   </footer>
 );
 
-// ✅ [4번 해결] 로그인 모달 텍스트 크기 대폭 상향
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -170,7 +169,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         <div className="p-7">
           <form onSubmit={handleAuth} className="space-y-6">
             <div>
-              {/* 라벨 텍스트: text-lg (18px)로 상향 */}
               <label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
               <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
@@ -179,14 +177,11 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
               <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
             {error && <p className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded">{error}</p>}
-            
-            {/* 버튼은 기존 크기 유지, 텍스트만 살짝 조정 */}
             <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
             </Button>
           </form>
           <div className="mt-6 text-center">
-             {/* 하단 링크 텍스트: text-base (16px)로 상향 */}
              <button onClick={() => setIsSignUp(!isSignUp)} className="text-base text-gray-500 underline hover:text-blue-600">
               {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
             </button>
@@ -422,7 +417,8 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-const NewsFeed = ({ limit, isAdmin }) => {
+// ✅ [2번 해결] NewsFeed 수정: onBack(홈으로) 및 내부 Refresh 헤더 지원
+const NewsFeed = ({ limit, isAdmin, onBack }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   
@@ -445,6 +441,33 @@ const NewsFeed = ({ limit, isAdmin }) => {
 
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
+      
+      {/* ✅ [추가] 뉴스 전체보기 페이지(!limit)일 때만 상단 헤더(제목+새로고침+홈으로) 표시 */}
+      {!limit && (
+        <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-900 dark:border-gray-100">
+           <div className="flex items-center gap-3">
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                 <Newspaper size={36} className="text-blue-600"/> 뉴스룸
+              </h2>
+              {/* 새로고침 버튼 */}
+              <button 
+                onClick={fetchNews} 
+                disabled={loading}
+                className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-all" 
+                title="새로고침"
+              >
+                 <RefreshCw size={24} className={loading ? "animate-spin" : ""} />
+              </button>
+           </div>
+           {/* 홈으로 돌아가기 버튼 */}
+           {onBack && (
+             <button onClick={onBack} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-2">
+                <Home size={20}/> 홈으로
+             </button>
+           )}
+        </div>
+      )}
+
       <div className={`flex flex-col ${limit ? '' : 'border-t border-gray-200 dark:border-gray-700'}`}>
          {news.map((item, idx) => (
             <div key={idx} className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 transition-colors relative">
@@ -453,7 +476,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
                      <KRDSBadge variant={item.author?.includes('Google') ? 'primary' : 'success'}>{item.author || '뉴스'}</KRDSBadge>
                      <span className="text-base text-gray-500 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
-                  {/* 뉴스 제목 text-xl(20px) 상향 */}
                   <h3 className="font-bold text-xl text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
                   <p className="text-lg text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
                </a>
@@ -558,23 +580,18 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   );
 };
 
-// ✅ [3번 해결] 이슈 카드: 썸네일 우선 or 타이포그래피 커버
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all h-full">
-    {/* 커버 영역 */}
     <div className={`aspect-[4/5] w-full relative flex items-center justify-center border-b overflow-hidden ${issue.thumbnail_url || issue.image_url ? 'bg-gray-100' : 'bg-blue-50 dark:bg-slate-700'}`}>
       {issue.thumbnail_url || issue.image_url ? (
-          // 이미지가 있으면 이미지 표시
           <img src={issue.thumbnail_url || issue.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
       ) : (
-          // 이미지가 없으면 타이포그래피 표지 표시
           <div className="p-6 text-center w-full h-full flex flex-col justify-center items-center break-keep group-hover:scale-105 transition-transform duration-500 bg-gradient-to-br from-blue-50 to-white dark:from-slate-700 dark:to-slate-800">
              <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest border-b-2 border-blue-600 dark:border-blue-400 pb-1">Vol.{issue.vol}</div>
              <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight line-clamp-3">{issue.title}</h3>
           </div>
       )}
       
-      {/* 이미지 모드일 때만 왼쪽 위 라벨 표시 */}
       {(issue.thumbnail_url || issue.image_url) && (
         <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-sm font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
       )}
@@ -582,14 +599,12 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
     
     <div className="p-5 flex-1 flex flex-col">
       <div className="flex justify-between items-start mb-2"><span className="text-sm font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
-      {/* 이슈 카드 텍스트 크기 상향 */}
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
       <p className="text-lg text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
     </div>
   </div>
 );
 
-// ✅ [4번 해결] 상단 네비게이션 폰트 상향 조정
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm">
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
@@ -622,8 +637,6 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
-  
-  // ✅ [1번 해결] Local Storage에서 테마 초기값 로드
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
@@ -632,10 +645,8 @@ const MainApp = () => {
     return false;
   });
 
-  // 뉴스 피드 강제 리로드를 위한 키 (Refresh 버튼용)
   const [newsKey, setNewsKey] = useState(0);
 
-  // 테마 변경 시 Local Storage 및 DOM 업데이트
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -678,7 +689,7 @@ const MainApp = () => {
                 {/* 1. 히어로 섹션 */}
                 <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.8.5</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
+                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.8.7</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
                       <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border shadow-2xl flex items-center justify-center p-12">{issues[0] ? (<div className="text-center"><div className="text-sm font-bold text-gray-400 mb-4">LATEST ISSUE</div><div className="text-9xl mb-6 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-3xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold text-xl">발행된 호수가 없습니다.</div>}</div>
                    </div>
                 </section>
@@ -690,7 +701,7 @@ const MainApp = () => {
                       <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
                           <div className="flex items-center gap-3">
                              <h3 className="text-3xl font-black flex items-center gap-3"><Newspaper size={32} className="text-blue-600"/> 뉴스룸</h3>
-                             {/* ✅ [2번 해결] 뉴스 새로고침 버튼 (Key값 변경으로 강제 리로드) */}
+                             {/* 뉴스 새로고침 버튼 (Key값 변경으로 강제 리로드) */}
                              <button onClick={() => setNewsKey(prev => prev + 1)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 transition-colors" title="새로고침">
                                 <RefreshCw size={20} />
                              </button>
@@ -738,7 +749,9 @@ const MainApp = () => {
                 </section>
              </div>
           )}
-          {view === 'news' && <NewsFeed isAdmin={role === 'admin'}/>}
+          {/* ✅ [수정] 뉴스 전체보기 페이지에 '홈으로' 기능(onBack) 전달 */}
+          {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
+          
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
           {view === 'issue_list' && <div className="pt-10 max-w-7xl mx-auto px-4"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h2 className="text-4xl font-bold">월간 자료실</h2>{role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-[#2563EB] text-white px-6 py-3 rounded-lg font-bold shadow-md flex items-center gap-2 text-lg"><Plus size={20}/> 호수 발행</button>}</div><div className="grid grid-cols-2 md:grid-cols-4 gap-8">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div></div>}
