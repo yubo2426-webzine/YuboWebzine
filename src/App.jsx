@@ -9,8 +9,8 @@ import {
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
 
-// ✅ [KRDS] 핵심 컴포넌트 4종 로드 (버튼, 입력창, 텍스트영역, 배지)
-import { Button, Input, TextArea, Badge } from 'krds-react';
+// ✅ [수정됨] TextArea 제거 (에러 원인 해결)
+import { Button, Input, Badge } from 'krds-react';
 
 // ✅ [Supabase 클라이언트] CDN 방식
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -135,7 +135,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
-              {/* ✅ [KRDS] Input 컴포넌트 적용 */}
               <Input 
                 type="email" 
                 placeholder="example@korea.kr" 
@@ -148,7 +147,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
-               {/* ✅ [KRDS] Input 컴포넌트 적용 */}
               <Input 
                 type="password" 
                 placeholder="********" 
@@ -161,7 +159,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             </div>
             {error && <p className="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded">{error}</p>}
             
-            {/* ✅ [KRDS] Button 컴포넌트 적용 */}
             <Button 
               type="submit" 
               disabled={loading} 
@@ -212,8 +209,13 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      <>
                         <div>
                           <label className={getLabelClass}>내용 <span className="text-red-500">*</span></label>
-                          {/* ✅ [KRDS] TextArea (일단은 기존 스타일 유지하되 필요시 교체 가능) */}
-                          <textarea className={`${getInputClass} h-32 resize-none`} placeholder="공지 내용을 입력하세요" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/>
+                          {/* ✅ [수정됨] TextArea 에러 방지를 위해 기본 HTML textarea로 롤백 */}
+                          <textarea 
+                            className={`${getInputClass} h-32 resize-none`} 
+                            placeholder="공지 내용을 입력하세요" 
+                            value={formData.content} 
+                            onChange={e => setFormData({...formData, content: e.target.value})}
+                          />
                         </div>
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><input type="date" className={getInputClass} value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
@@ -237,7 +239,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   )}
                   <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
                      <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm">취소</button>
-                     {/* ✅ [KRDS] Button 적용 */}
                      <Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">
                         등록 완료
                      </Button>
@@ -466,7 +467,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     {/* ✅ [KRDS] Badge 컴포넌트 적용 (News) */}
                      <Badge 
                         variant={item.author?.includes('Google') ? 'primary' : 'success'} 
                         shape="round" 
@@ -529,7 +529,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
            {notices.map(n => (
               <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors shadow-sm">
                  <div className="flex justify-between mb-2">
-                    {/* ✅ [KRDS] Badge 컴포넌트 적용 (Notice) */}
                     <Badge 
                        variant={n.category === 'event' ? 'primary' : 'neutral'} 
                        size="small"
@@ -685,7 +684,6 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
         {isAdmin ? (
           <button onClick={onLogout} className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">로그아웃</button>
         ) : (
-          // ✅ [KRDS] 로그인 버튼 교체
           <Button 
             variant="primary" 
             size="medium" 
