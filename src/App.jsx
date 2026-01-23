@@ -20,7 +20,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input 
-    className={`w-full h-[40px] px-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-base text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
+    // 폰트 크기를 text-base(16px)로 상향 조정하여 가독성 확보
+    className={`w-full h-[45px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-base text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
     {...props}
   />
 );
@@ -132,6 +133,7 @@ const Footer = () => (
   </footer>
 );
 
+// ✅ [4번 해결] 로그인 모달 폰트 및 입력창 크기 상향
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -160,28 +162,28 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="bg-gray-50 dark:bg-slate-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{isSignUp ? '회원가입' : '로그인'}</h2>
-          <button onClick={onClose}><X size={24} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"/></button>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="bg-gray-50 dark:bg-slate-900 px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{isSignUp ? '회원가입' : '로그인'}</h2>
+          <button onClick={onClose}><X size={26} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"/></button>
         </div>
-        <div className="p-6">
-          <form onSubmit={handleAuth} className="space-y-5">
+        <div className="p-7">
+          <form onSubmit={handleAuth} className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
+              <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
               <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
+              <label className="block text-base font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
               <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
             {error && <p className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded">{error}</p>}
-            <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-base">
+            <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
             </Button>
           </form>
-          <div className="mt-5 text-center">
-             <button onClick={() => setIsSignUp(!isSignUp)} className="text-sm text-gray-500 underline hover:text-blue-600">
+          <div className="mt-6 text-center">
+             <button onClick={() => setIsSignUp(!isSignUp)} className="text-base text-gray-500 underline hover:text-blue-600">
               {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
             </button>
           </div>
@@ -551,27 +553,28 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   );
 };
 
-// ✅ [3번 해결] 이슈 카드: 썸네일 or 타이포그래피 커버 적용
+// ✅ [3번 해결] 이슈 카드: 썸네일 우선 or 타이포그래피 커버
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all h-full">
-    {/* 커버 영역: 이미지가 있으면 이미지, 없으면 타이포그래피 표지 */}
-    <div className={`aspect-[4/5] w-full relative flex items-center justify-center border-b overflow-hidden ${issue.thumbnail_url || issue.image_url ? 'bg-gray-100' : (issue.cover_color || 'bg-blue-50 dark:bg-slate-700')}`}>
+    {/* 커버 영역 */}
+    <div className={`aspect-[4/5] w-full relative flex items-center justify-center border-b overflow-hidden ${issue.thumbnail_url || issue.image_url ? 'bg-gray-100' : 'bg-blue-50 dark:bg-slate-700'}`}>
       {issue.thumbnail_url || issue.image_url ? (
+          // 이미지가 있으면 이미지 표시
           <img src={issue.thumbnail_url || issue.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
       ) : (
-          <div className="p-6 text-center w-full h-full flex flex-col justify-center items-center break-keep group-hover:scale-105 transition-transform duration-500">
+          // 이미지가 없으면 타이포그래피 표지 표시
+          <div className="p-6 text-center w-full h-full flex flex-col justify-center items-center break-keep group-hover:scale-105 transition-transform duration-500 bg-gradient-to-br from-blue-50 to-white dark:from-slate-700 dark:to-slate-800">
              <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest border-b-2 border-blue-600 dark:border-blue-400 pb-1">Vol.{issue.vol}</div>
              <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight line-clamp-3">{issue.title}</h3>
           </div>
       )}
       
-      {/* 이미지 모드일 때만 라벨 표시 (타이포 모드는 이미 텍스트가 있으므로 중복 방지) */}
+      {/* 이미지 모드일 때만 왼쪽 위 라벨 표시 */}
       {(issue.thumbnail_url || issue.image_url) && (
         <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-xs font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
       )}
     </div>
     
-    {/* 하단 정보 영역 */}
     <div className="p-5 flex-1 flex flex-col">
       <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
       <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
@@ -580,16 +583,17 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
+// ✅ [4번 해결] 상단 네비게이션 폰트 상향 조정
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm">
     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
-         <div className="flex flex-col justify-center"><span className="font-bold text-xl leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">지식 플랫폼</span><span className="text-xs font-bold text-gray-500 mt-0.5 tracking-wide">아이들의 미래를 잇는</span></div>
+         <div className="flex flex-col justify-center"><span className="font-bold text-2xl leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">지식 플랫폼</span><span className="text-xs font-bold text-gray-500 mt-0.5 tracking-wide">아이들의 미래를 잇는</span></div>
       </div>
       <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-base font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB] dark:text-gray-300 dark:hover:bg-slate-800'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
+          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-lg font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB] dark:text-gray-300 dark:hover:bg-slate-800'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
         ))}
       </nav>
       <div className="flex items-center gap-2">
@@ -613,16 +617,19 @@ const MainApp = () => {
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
   
-  // ✅ [1번 해결] 다크모드 상태를 localStorage와 연동하여 초기화
+  // ✅ [1번 해결] Local Storage에서 테마 초기값 로드
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || 
-        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const savedTheme = localStorage.getItem('theme');
+      return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
     return false;
   });
 
-  // 테마 변경 이펙트 (DOM 적용 및 저장)
+  // 뉴스 피드 강제 리로드를 위한 키 (Refresh 버튼용)
+  const [newsKey, setNewsKey] = useState(0);
+
+  // 테마 변경 시 Local Storage 및 DOM 업데이트
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -677,14 +684,14 @@ const MainApp = () => {
                       <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
                           <div className="flex items-center gap-3">
                              <h3 className="text-3xl font-black flex items-center gap-3"><Newspaper size={32} className="text-blue-600"/> 뉴스룸</h3>
-                             {/* ✅ [2번 해결] 뉴스 새로고침 버튼 복구 */}
-                             <button onClick={() => {}} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 transition-colors" title="새로고침">
+                             {/* ✅ [2번 해결] 뉴스 새로고침 버튼 (Key값 변경으로 강제 리로드) */}
+                             <button onClick={() => setNewsKey(prev => prev + 1)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 transition-colors" title="새로고침">
                                 <RefreshCw size={20} />
                              </button>
                           </div>
                           <button onClick={() => setView('news')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={18}/></button>
                       </div>
-                      <div className="flex-1 overflow-y-auto border rounded-xl bg-white dark:bg-slate-800 shadow-sm"><NewsFeed limit={10} isAdmin={role === 'admin'} /></div>
+                      <div className="flex-1 overflow-y-auto border rounded-xl bg-white dark:bg-slate-800 shadow-sm"><NewsFeed key={newsKey} limit={10} isAdmin={role === 'admin'} /></div>
                    </div>
 
                    {/* 일정 */}
