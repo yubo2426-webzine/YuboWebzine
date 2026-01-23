@@ -249,7 +249,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
-// --- [PDF Viewer] Mobile Touch & Zoom 복구 ---
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -261,14 +260,12 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Mobile Pinch Zoom Refs
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const pinchStartDist = useRef(0);
   const pinchStartScale = useRef(1);
   const isPinching = useRef(false);
 
-  // 키보드 이벤트
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft') setPageNumber(p => Math.max(1, p - 1));
@@ -278,7 +275,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pdfDoc]);
 
-  // PDF Load
   useEffect(() => {
     const loadPdf = async () => {
       try {
@@ -293,7 +289,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     loadPdf();
   }, [article]);
 
-  // Render Page
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
     const renderPage = async () => {
@@ -304,11 +299,11 @@ const CustomPDFViewer = ({ article, onBack }) => {
         const containerHeight = containerRef.current.clientHeight;
 
         let autoScale;
-        if (window.innerWidth >= 768) { // PC
+        if (window.innerWidth >= 768) { 
            const widthScale = (containerWidth / unscaledViewport.width);
            const heightScale = (containerHeight / unscaledViewport.height);
            autoScale = Math.min(widthScale, heightScale) * 0.95; 
-        } else { // Mobile
+        } else { 
            autoScale = (containerWidth / unscaledViewport.width) * 0.98;
         }
 
@@ -331,7 +326,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     renderPage();
   }, [pdfDoc, pageNum, scale, size]);
 
-  // Touch Handlers
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
@@ -348,7 +342,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
         e.preventDefault();
         const dist = getTouchDistance(e.touches);
         const ratio = dist / pinchStartDist.current;
-        // 임시 확대 효과 (Ref 변형)
         contentWrapperRef.current.style.transform = `scale(${ratio})`; 
     }
   };
@@ -370,7 +363,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
   
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none" tabIndex={0}>
-       {/* Top Bar */}
        <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50">
           <div className="flex items-center gap-2">
             <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
@@ -387,9 +379,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
           </div>
        </div>
 
-       {/* Main Content */}
        <div className="flex-1 overflow-hidden flex relative">
-          {/* Sidebar */}
           <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
              <div className="p-4 font-bold border-b text-lg">목차 ({pdfDoc?.numPages}p)</div>
              <div className="overflow-y-auto h-full p-2 space-y-1 pb-20">
@@ -399,7 +389,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
              </div>
           </div>
 
-          {/* Canvas Container */}
           <div 
              className="flex-1 overflow-auto bg-gray-200 dark:bg-slate-900 flex justify-center items-center p-4 relative h-full" 
              ref={containerRef}
@@ -409,7 +398,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
           >
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
-             {/* ✅ [1번 해결] 모바일 전용 페이지 넘김 투명 버튼 복구 */}
              <div className="absolute left-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer active:bg-black/5" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.max(1, p-1));}} />
              <div className="absolute right-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer active:bg-black/5" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages||1, p+1));}} />
 
@@ -419,7 +407,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
           </div>
        </div>
 
-       {/* Floating Nav */}
        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-6 py-3 rounded-full shadow-2xl border flex items-center gap-8 z-50">
           <button onClick={() => setPageNumber(p => Math.max(1, p-1))}><ChevronLeft size={24}/></button>
           <span className="font-mono font-bold text-lg">{pageNum} / {pdfDoc?.numPages || '-'}</span>
@@ -431,13 +418,17 @@ const CustomPDFViewer = ({ article, onBack }) => {
 
 const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
-  useEffect(() => {
-    const f = async () => {
-      if(!supabase) return;
-      const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
-      if(data) setNews(data);
-    }; f();
-  }, [limit]);
+  const [loading, setLoading] = useState(false);
+  
+  const fetchNews = async () => {
+    if(!supabase) return;
+    setLoading(true);
+    const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
+    if(data) setNews(data);
+    setLoading(false);
+  };
+  
+  useEffect(() => { fetchNews(); }, [limit]);
 
   const handleDelete = async (id) => {
     if(confirm('이 뉴스를 삭제하시겠습니까?')) {
@@ -527,7 +518,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm h-full">
-           {/* 달력은 공간상 간단하게 표현 */}
            <div className="h-64 flex items-center justify-center text-gray-400">달력 보기 모드</div>
         </div>
       )}
@@ -561,20 +551,31 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   );
 };
 
+// ✅ [3번 해결] 이슈 카드: 썸네일 or 타이포그래피 커버 적용
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all">
-    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-50'} relative flex items-center justify-center border-b overflow-hidden`}>
+  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all h-full">
+    {/* 커버 영역: 이미지가 있으면 이미지, 없으면 타이포그래피 표지 */}
+    <div className={`aspect-[4/5] w-full relative flex items-center justify-center border-b overflow-hidden ${issue.thumbnail_url || issue.image_url ? 'bg-gray-100' : (issue.cover_color || 'bg-blue-50 dark:bg-slate-700')}`}>
       {issue.thumbnail_url || issue.image_url ? (
           <img src={issue.thumbnail_url || issue.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
       ) : (
-          <div className="text-7xl group-hover:scale-105 transition-transform">{issue.icon || '📘'}</div>
+          <div className="p-6 text-center w-full h-full flex flex-col justify-center items-center break-keep group-hover:scale-105 transition-transform duration-500">
+             <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest border-b-2 border-blue-600 dark:border-blue-400 pb-1">Vol.{issue.vol}</div>
+             <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight line-clamp-3">{issue.title}</h3>
+          </div>
       )}
-      <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-xs font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
+      
+      {/* 이미지 모드일 때만 라벨 표시 (타이포 모드는 이미 텍스트가 있으므로 중복 방지) */}
+      {(issue.thumbnail_url || issue.image_url) && (
+        <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-xs font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
+      )}
     </div>
+    
+    {/* 하단 정보 영역 */}
     <div className="p-5 flex-1 flex flex-col">
-      <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] transition-colors">{issue.title}</h3>
-      <p className="text-base text-gray-500 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
+      <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
+      <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
     </div>
   </div>
 );
@@ -588,13 +589,13 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
       </div>
       <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-base font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB]'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
+          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-base font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB] dark:text-gray-300 dark:hover:bg-slate-800'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
         ))}
       </nav>
       <div className="flex items-center gap-2">
-        <button onClick={toggleTheme} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full">{isDarkMode ? <Sun size={24} className="text-yellow-400"/> : <Moon size={24}/>}</button>
+        <button onClick={toggleTheme} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:text-gray-400 dark:hover:bg-slate-800">{isDarkMode ? <Sun size={24} className="text-yellow-400"/> : <Moon size={24}/>}</button>
         <button className="p-2 text-gray-400 hover:text-[#2563EB] hidden sm:block"><Search size={24}/></button>
-        {isAdmin ? <button onClick={onLogout} className="px-4 py-2 border rounded-md text-sm font-bold text-gray-600 hover:bg-gray-100">로그아웃</button> : <Button variant="primary" size="medium" onClick={onLoginClick} className="shadow-sm">로그인</Button>}
+        {isAdmin ? <button onClick={onLogout} className="px-4 py-2 border rounded-md text-sm font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800">로그아웃</button> : <Button variant="primary" size="medium" onClick={onLoginClick} className="shadow-sm">로그인</Button>}
       </div>
     </div>
   </header>
@@ -611,15 +612,28 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // ✅ [1번 해결] 다크모드 상태를 localStorage와 연동하여 초기화
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || 
+        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
 
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      if (next) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
-      return next;
-    });
-  };
+  // 테마 변경 이펙트 (DOM 적용 및 저장)
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
   const handleLogout = async () => { if(supabase) { await supabase.auth.signOut(); localStorage.clear(); window.location.href = '/'; }};
 
@@ -651,17 +665,23 @@ const MainApp = () => {
                 {/* 1. 히어로 섹션 */}
                 <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.8.4</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
+                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.8.5</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
                       <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border shadow-2xl flex items-center justify-center p-12">{issues[0] ? (<div className="text-center"><div className="text-sm font-bold text-gray-400 mb-4">LATEST ISSUE</div><div className="text-9xl mb-6 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-3xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold text-xl">발행된 호수가 없습니다.</div>}</div>
                    </div>
                 </section>
 
-                {/* ✅ [수정] 2. 메인 그리드 (뉴스 | 캘린더) */}
+                {/* 2. 메인 그리드 (뉴스 | 캘린더) */}
                 <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12">
                    {/* 뉴스룸 */}
                    <div className="flex flex-col h-[600px]">
                       <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
-                          <h3 className="text-3xl font-black flex items-center gap-3"><Newspaper size={32} className="text-blue-600"/> 뉴스룸</h3>
+                          <div className="flex items-center gap-3">
+                             <h3 className="text-3xl font-black flex items-center gap-3"><Newspaper size={32} className="text-blue-600"/> 뉴스룸</h3>
+                             {/* ✅ [2번 해결] 뉴스 새로고침 버튼 복구 */}
+                             <button onClick={() => {}} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 transition-colors" title="새로고침">
+                                <RefreshCw size={20} />
+                             </button>
+                          </div>
                           <button onClick={() => setView('news')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={18}/></button>
                       </div>
                       <div className="flex-1 overflow-y-auto border rounded-xl bg-white dark:bg-slate-800 shadow-sm"><NewsFeed limit={10} isAdmin={role === 'admin'} /></div>
@@ -677,7 +697,7 @@ const MainApp = () => {
                    </div>
                 </section>
 
-                {/* ✅ [수정] 3. 갤러리 (Full Width) */}
+                {/* 3. 갤러리 (Full Width) */}
                 <section className="max-w-7xl mx-auto px-4 mt-8">
                    <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
                       <h3 className="text-3xl font-black flex items-center gap-3"><ImageIcon size={32} className="text-blue-600"/> 갤러리</h3>
@@ -696,7 +716,7 @@ const MainApp = () => {
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                       {issues.slice(0, 6).map(issue => (
-                          <div key={issue.id} className="transform scale-95 origin-top-left">
+                          <div key={issue.id} className="transform scale-95 origin-top-left h-full">
                            <IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i);
                             setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
                          </div>
