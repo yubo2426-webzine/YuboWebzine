@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Book, FileText, User, LogOut, ChevronRight, ArrowLeft, 
   Plus, Trash2, ChevronLeft,  
@@ -6,20 +6,18 @@ import {
   Star, Image as ImageIcon, List as ListIcon,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, Menu,
   Sun, Moon, Eye, Megaphone,
-  ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
+  ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle, Monitor
 } from 'lucide-react';
 
-// ✅ [KRDS] Button은 라이브러리에서 정상적으로 가져옵니다.
+// ✅ [KRDS] Button 사용 (안정성 확인됨)
 import { Button } from 'krds-react';
 
-// ✅ [Supabase] 클라이언트 (CDN 방식)
+// ✅ [Supabase] 클라이언트
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // ------------------------------------------------------------------
-// 🏛️ [KRDS System] 라이브러리 미지원 컴포넌트 자체 구현 (안정화)
+// 🏛️ [KRDS System] 커스텀 컴포넌트 (Input, Badge)
 // ------------------------------------------------------------------
-
-// 1. KRDS 표준 Input (텍스트 필드) - 직접 구현
 const KRDSInput = ({ className, ...props }) => (
   <input 
     className={`w-full h-[40px] px-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
@@ -27,16 +25,12 @@ const KRDSInput = ({ className, ...props }) => (
   />
 );
 
-// 2. KRDS 표준 Badge (배지) - 직접 구현
-// 발견하신 HTML 구조(<span class="krds-badge ...">)를 React로 옮긴 것입니다.
 const KRDSBadge = ({ variant = 'neutral', children, className }) => {
-  // KRDS 색상 토큰을 Tailwind 클래스로 매핑
   const styles = {
     primary: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800',
     success: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800',
     neutral: 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-gray-600',
   };
-  
   return (
     <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-black ${styles[variant]} ${className}`}>
       {children}
@@ -51,6 +45,34 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+// --- [Hook] 브라우저 History API 연동 (뒤로가기 지원) ---
+const useHistoryState = (initialState) => {
+  const [state, setState] = useState(initialState);
+
+  useEffect(() => {
+    // 초기 로드시 현재 상태를 history에 replace
+    window.history.replaceState({ view: initialState }, '');
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.view) {
+        setState(event.state.view);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const setHistoryState = (newState) => {
+    if (newState !== state) {
+      window.history.pushState({ view: newState }, '', `?view=${newState}`);
+      setState(newState);
+    }
+  };
+
+  return [state, setHistoryState];
+};
 
 const useContainerSize = (ref) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -155,29 +177,13 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
-              {/* ✅ [KRDS] Custom Input 적용 (안정성 확보) */}
-              <KRDSInput 
-                type="email" 
-                placeholder="example@korea.kr" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
-              />
+              <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
-              {/* ✅ [KRDS] Custom Input 적용 */}
-              <KRDSInput 
-                type="password" 
-                placeholder="********" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required 
-              />
+              <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
             {error && <p className="text-red-600 text-xs font-bold bg-red-50 p-2 rounded">{error}</p>}
-            
-            {/* ✅ [KRDS] Library Button 사용 (동작 확인됨) */}
             <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
             </Button>
@@ -220,7 +226,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   {type === 'notice' && (
                      <>
                         <div><label className={getLabelClass}>내용</label><textarea className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none" placeholder="내용 입력" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/></div>
-                        <div><label className={getLabelClass}>일정</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
+                        <div><label className={getLabelClass}>일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
@@ -251,17 +257,26 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
+// --- [PDF Viewer 개선] HiDPI 지원 + PC 세로맞춤 + 키보드 ---
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const contentWrapperRef = useRef(null);
   const size = useContainerSize(containerRef);
 
   const [pdfDoc, setPdfDoc] = useState(null);
   const [pageNum, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isPinching = useRef(false);
+
+  // 키보드 이벤트 핸들러 (방향키)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') { setPageNumber(p => Math.max(1, p - 1)); }
+      if (e.key === 'ArrowRight') { setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1)); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pdfDoc]);
 
   useEffect(() => {
     const loadPdf = async () => {
@@ -282,13 +297,39 @@ const CustomPDFViewer = ({ article, onBack }) => {
     const renderPage = async () => {
       try {
         const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: scale * ((containerRef.current.clientWidth / page.getViewport({ scale: 1.0 }).width) * 0.98) });
+        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
+
+        // ✅ [1번 해결] PC에서는 세로(Height) 기준 맞춤 우선, 모바일은 가로(Width) 우선
+        // PC(768px 이상)일 때는 화면 안에 쏙 들어오게(Min) 계산
+        let autoScale;
+        if (window.innerWidth >= 768) {
+           const widthScale = (containerWidth / unscaledViewport.width);
+           const heightScale = (containerHeight / unscaledViewport.height);
+           autoScale = Math.min(widthScale, heightScale) * 0.95; // 여백 5%
+        } else {
+           autoScale = (containerWidth / unscaledViewport.width) * 0.98;
+        }
+
+        const finalScale = scale * autoScale;
+        const viewport = page.getViewport({ scale: finalScale });
+
+        // ✅ [2번 해결] HiDPI (Retina) 디스플레이 대응 - 해상도 열화 방지
+        const outputScale = window.devicePixelRatio || 1;
+        
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        canvas.style.width = '100%'; canvas.style.height = '100%';
-        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = Math.floor(viewport.width) + "px";
+        canvas.style.height = Math.floor(viewport.height) + "px";
+
+        // 스케일 보정
+        const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+
+        await page.render({ canvasContext: ctx, viewport, transform }).promise;
       } catch (err) { console.error(err); }
     };
     renderPage();
@@ -296,7 +337,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
 
   const handleDownload = () => window.open(article.fileUrl || article.file_url, '_blank');
   return (
-    <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right">
+    <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none" tabIndex={0}>
        <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50">
           <div className="flex items-center gap-2">
             <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
@@ -321,9 +362,10 @@ const CustomPDFViewer = ({ article, onBack }) => {
                 ))}
              </div>
           </div>
-          <div className="flex-1 overflow-auto bg-gray-100 dark:bg-slate-900 flex justify-center items-start p-4 relative" ref={containerRef}>
+          {/* 높이 100% 보장 및 Flex Center 적용 */}
+          <div className="flex-1 overflow-auto bg-gray-200 dark:bg-slate-900 flex justify-center items-center p-4 relative h-full" ref={containerRef}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
-             <div ref={contentWrapperRef} className="shadow-lg w-full"><canvas ref={canvasRef} className="bg-white block rounded-sm mx-auto"/></div>
+             <div className="shadow-2xl"><canvas ref={canvasRef} className="bg-white block rounded-sm mx-auto"/></div>
           </div>
        </div>
        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-2xl border flex items-center gap-6 z-50">
@@ -335,7 +377,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-const NewsFeed = ({ limit }) => {
+const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   useEffect(() => {
     const f = async () => {
@@ -345,61 +387,132 @@ const NewsFeed = ({ limit }) => {
     }; f();
   }, [limit]);
 
+  // 뉴스 삭제 로직
+  const handleDelete = async (id) => {
+    if(confirm('이 뉴스를 삭제하시겠습니까?')) {
+        await supabase.from('news').delete().eq('id', id);
+        setNews(prev => prev.filter(n => n.id !== id));
+    }
+  };
+
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       <div className={`flex flex-col ${limit ? '' : 'border-t border-gray-200 dark:border-gray-700'}`}>
          {news.map((item, idx) => (
-            <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 transition-colors">
-               <div className="flex-1">
+            <div key={idx} className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 transition-colors relative">
+               <a href={item.link} target="_blank" className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     {/* ✅ [KRDS] Custom Badge 사용 */}
                      <KRDSBadge variant={item.author?.includes('Google') ? 'primary' : 'success'}>{item.author || '뉴스'}</KRDSBadge>
                      <span className="text-xs text-gray-500 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
                   <p className="text-sm text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
+               </a>
+               <div className="flex items-center gap-2">
+                   {!limit && <ArrowUpRight size={20} className="hidden md:block text-gray-300"/>}
+                   {/* ✅ [5번 해결] 관리자 삭제 버튼 추가 */}
+                   {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-gray-300 hover:text-red-500 p-2"><Trash2 size={16}/></button>}
                </div>
-               {!limit && <ArrowUpRight size={20} className="hidden md:block text-gray-300"/>}
-            </a>
+            </div>
          ))}
       </div>
     </div>
   );
 };
 
+// ✅ [8번 해결] 소식 페이지에 공지사항/일정 탭 필터링 추가
 const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [mode, setMode] = useState(initialMode || 'list');
+  const [filter, setFilter] = useState('all'); // all, notice, event
   const [notices, setNotices] = useState([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   useEffect(() => {
     const f = async () => { if(supabase) { const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false }); if(data) setNotices(data); }}; f();
   }, []);
+
+  const handleDelete = async (id) => {
+    if(confirm('삭제하시겠습니까?')) {
+        await supabase.from('notices').delete().eq('id', id);
+        setNotices(prev => prev.filter(n => n.id !== id));
+    }
+  };
+
+  const getEvents = (date) => notices.filter(n => n.event_date && new Date(n.event_date).toDateString() === date.toDateString());
+  
+  // 필터링된 목록
+  const filteredNotices = notices.filter(n => {
+      if(filter === 'all') return true;
+      if(filter === 'notice') return n.category !== 'event';
+      if(filter === 'event') return n.category === 'event';
+      return true;
+  });
+
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!initialMode && (
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b gap-4">
            <h2 className="text-2xl font-bold flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 rounded-sm"></span>소식 & 일정</h2>
-           <div className="flex gap-2">
+           
+           <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              {/* 탭 필터 버튼 */}
+              <div className="bg-gray-100 p-1 rounded-md flex">
+                  {['all', 'notice', 'event'].map(f => (
+                      <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1 text-xs font-bold rounded ${filter === f ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}>
+                          {f === 'all' ? '전체' : f === 'notice' ? '공지' : '행사'}
+                      </button>
+                  ))}
+              </div>
+
               <div className="bg-gray-100 p-1 rounded-md flex"><button onClick={() => setMode('list')} className={`p-1.5 text-sm font-bold flex gap-1 ${mode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}><ListIcon size={16}/> 목록</button><button onClick={() => setMode('calendar')} className={`p-1.5 text-sm font-bold flex gap-1 ${mode === 'calendar' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}><CalendarIcon size={16}/> 달력</button></div>
-              {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex gap-2"><Plus size={16}/> 글쓰기</button>}
+              {(userRole === 'team' || userRole === 'admin') && <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex gap-2 items-center"><Plus size={16}/> 글쓰기</button>}
            </div>
         </div>
       )}
       {mode === 'list' ? (
         <div className="grid gap-4">
-           {notices.map(n => (
-              <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border hover:border-blue-300 transition-colors shadow-sm">
+           {filteredNotices.map(n => (
+              <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border hover:border-blue-300 transition-colors shadow-sm relative group">
                  <div className="flex justify-between mb-2">
-                    {/* ✅ [KRDS] Custom Badge 사용 */}
                     <KRDSBadge variant={n.category === 'event' ? 'primary' : 'neutral'}>{n.category === 'event' ? '행사' : '공지'}</KRDSBadge>
                     <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
                  <h3 className="text-lg font-bold mb-2">{n.title}</h3>
                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{n.content}</p>
                  {n.event_date && <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-100"><CalendarIcon size={14}/> 일정: {n.event_date}</div>}
+                 
+                 {/* ✅ [5번 해결] 관리자 삭제 버튼 */}
+                 {(userRole === 'team' || userRole === 'admin') && 
+                    <button onClick={() => handleDelete(n.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                 }
               </div>
            ))}
         </div>
-      ) : (<div className="h-64 flex items-center justify-center border rounded-lg bg-gray-50 text-gray-400">달력 기능 준비중...</div>)}
+      ) : (
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm h-full">
+           <div className="flex justify-center items-center mb-6 gap-8">
+              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full dark:text-white"><ChevronLeft/></button>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{currentDate.getFullYear()}년 {currentDate.getMonth()+1}월</h3>
+              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full dark:text-white"><ChevronRight/></button>
+           </div>
+           
+           <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+              {['일','월','화','수','목','금','토'].map(d => <div key={d} className="bg-gray-50 dark:bg-slate-900 text-center text-xs font-bold text-gray-500 dark:text-gray-400 py-2">{d}</div>)}
+              {Array.from({length: 35}).map((_, i) => {
+                 const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), i - new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() + 1);
+                 const isToday = d.toDateString() === new Date().toDateString();
+                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
+                 const daysEvents = notices.filter(n => n.event_date && new Date(n.event_date).toDateString() === d.toDateString());
+                 return (
+                    <div key={i} className={`min-h-[60px] md:min-h-[80px] bg-white dark:bg-slate-800 p-1 ${!isCurrentMonth ? 'bg-gray-50/50 dark:bg-slate-900/50 text-gray-300 dark:text-gray-600' : 'text-gray-900 dark:text-gray-200'}`}>
+                       <span className={`text-xs font-bold inline-block w-5 h-5 text-center leading-5 rounded-full ${isToday ? 'bg-blue-600 text-white' : ''}`}>{d.getDate()}</span>
+                       <div className="mt-1 flex flex-col gap-0.5">{daysEvents.map(ev => <div key={ev.id} className="text-[9px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded truncate font-bold">{ev.title}</div>)}</div>
+                    </div>
+                 );
+              })}
+           </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -408,14 +521,26 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(null);
   useEffect(() => { const f = async () => { if(supabase) { let q = supabase.from('gallery').select('*').order('created_at', { ascending: false }); if(limit) q = q.limit(limit); const { data } = await q; if(data) setImages(data); }}; f(); }, [limit]);
+  
+  const handleDelete = async (id) => {
+    if(confirm('사진을 삭제하시겠습니까?')) {
+        await supabase.from('gallery').delete().eq('id', id);
+        setImages(prev => prev.filter(img => img.id !== id));
+    }
+  };
+
   return (
     <div className={`w-full ${isWidget ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!isWidget && <div className="flex justify-between items-center mb-6 pb-4 border-b"><h2 className="text-2xl font-bold flex items-center gap-2"><span className="w-1.5 h-6 bg-blue-600 rounded-sm"></span>활동 갤러리</h2>{(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex gap-2"><ImageIcon size={16}/> 사진 올리기</button>}</div>}
       <div className={`grid gap-4 ${isWidget ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
          {images.map(img => (
-            <div key={img.id} onClick={() => setSelected(img)} className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border hover:border-blue-400 hover:shadow-md cursor-pointer group">
+            <div key={img.id} onClick={() => setSelected(img)} className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border hover:border-blue-400 hover:shadow-md cursor-pointer group relative">
                <div className="aspect-square bg-gray-100 overflow-hidden"><img src={img.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/></div>
                {!isWidget && <div className="p-3"><h4 className="font-bold text-sm truncate">{img.title}</h4><p className="text-xs text-gray-500 mt-1">{new Date(img.created_at).toLocaleDateString()}</p></div>}
+               {/* ✅ [5번 해결] 갤러리 삭제 버튼 */}
+               {!isWidget && (userRole === 'team' || userRole === 'admin') && 
+                  <button onClick={(e) => {e.stopPropagation(); handleDelete(img.id)}} className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>
+               }
             </div>
          ))}
       </div>
@@ -424,10 +549,16 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   );
 };
 
+// ✅ [6번 해결] 썸네일 부활 (이미지 있으면 이미지 표시)
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all">
-    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-50'} relative flex items-center justify-center border-b`}>
-      <div className="text-6xl group-hover:scale-105 transition-transform">{issue.icon || '📘'}</div>
+    <div className={`aspect-[4/5] w-full ${issue.cover_color || 'bg-slate-50'} relative flex items-center justify-center border-b overflow-hidden`}>
+      {/* 썸네일 이미지가 있으면 이미지 표시, 없으면 아이콘 표시 */}
+      {issue.thumbnail_url || issue.image_url ? (
+          <img src={issue.thumbnail_url || issue.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+      ) : (
+          <div className="text-6xl group-hover:scale-105 transition-transform">{issue.icon || '📘'}</div>
+      )}
       <div className="absolute top-0 left-0"><span className="inline-block bg-[#2563EB] text-white text-[11px] font-bold px-3 py-1.5 rounded-br-lg shadow-sm">Vol.{issue.vol}</span></div>
     </div>
     <div className="p-5 flex-1 flex flex-col">
@@ -462,7 +593,8 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
 const MainApp = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('guest');
-  const [view, setView] = useState('home'); 
+  // ✅ [4번 해결] 뒤로가기 지원을 위한 Custom Hook 사용
+  const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState([]);
   const [currentIssue, setCurrentIssue] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
@@ -478,6 +610,15 @@ const MainApp = () => {
       if (next) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
       return next;
     });
+  };
+
+  // ✅ [3번 해결] 강력한 로그아웃 로직
+  const handleLogout = async () => {
+    if(supabase) {
+        await supabase.auth.signOut();
+        localStorage.clear();
+        window.location.href = '/'; // 강제 이동
+    }
   };
 
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border text-center"><AlertTriangle size={32} className="mx-auto text-red-500 mb-4"/><h1 className="text-xl font-bold mb-2">Supabase 설정 필요</h1><p className="text-gray-600 text-sm">Vercel 환경변수를 확인해주세요.</p></div></div>;
@@ -501,25 +642,25 @@ const MainApp = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-       <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={async () => { await supabase.auth.signOut(); window.location.reload(); }} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme}/>
+       <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={handleLogout} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme}/>
        <main className="flex-1 pb-24 w-full">
           {view === 'home' && (
              <div className="animate-in fade-in space-y-12 pb-20">
                 <section className="bg-gray-50 dark:bg-slate-800 py-12 md:py-20 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                      <div><span className="inline-block py-1 px-3 rounded bg-blue-100 text-blue-700 text-xs font-bold mb-4">Beta v25.8.2</span><h1 className="text-4xl md:text-5xl font-black leading-tight mb-6">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 text-lg mb-8 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] flex items-center gap-2">자료실 바로가기 <ArrowRight size={18}/></button></div></div>
+                      <div><span className="inline-block py-1 px-3 rounded bg-blue-100 text-blue-700 text-xs font-bold mb-4">Beta v25.8.3</span><h1 className="text-4xl md:text-5xl font-black leading-tight mb-6">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 text-lg mb-8 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] flex items-center gap-2">자료실 바로가기 <ArrowRight size={18}/></button></div></div>
                       <div className="relative h-[250px] md:h-[350px] bg-white dark:bg-slate-700 rounded-2xl border shadow-xl flex items-center justify-center p-10">{issues[0] ? (<div className="text-center"><div className="text-xs font-bold text-gray-400 mb-2">LATEST ISSUE</div><div className="text-8xl mb-4 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-2xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold">발행된 호수가 없습니다.</div>}</div>
                    </div>
                 </section>
                 <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-10">
-                   <div className="lg:col-span-5 flex flex-col h-[520px]"><div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2"><h3 className="text-2xl font-black flex items-center gap-2"><Newspaper size={24} className="text-blue-600"/> 뉴스룸</h3><button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button></div><div className="flex-1 overflow-y-auto border rounded-lg bg-white dark:bg-slate-800 shadow-sm"><NewsFeed limit={10} /></div></div>
+                   <div className="lg:col-span-5 flex flex-col h-[520px]"><div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2"><h3 className="text-2xl font-black flex items-center gap-2"><Newspaper size={24} className="text-blue-600"/> 뉴스룸</h3><button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button></div><div className="flex-1 overflow-y-auto border rounded-lg bg-white dark:bg-slate-800 shadow-sm"><NewsFeed limit={10} isAdmin={role === 'admin'} /></div></div>
                    <div className="lg:col-span-4 flex flex-col h-[520px]"><div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2"><h3 className="text-2xl font-black flex items-center gap-2"><CalendarIcon size={24} className="text-blue-600"/> 이달의 일정</h3><button onClick={() => setView('notice')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button></div><div className="flex-1 border rounded-lg overflow-hidden bg-white dark:bg-slate-800 shadow-sm"><NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' /></div></div>
                    <div className="lg:col-span-3 flex flex-col h-[520px]"><div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2"><h3 className="text-2xl font-black flex items-center gap-2"><ImageIcon size={24} className="text-blue-600"/> 갤러리</h3><button onClick={() => setView('gallery')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button></div><div className="flex-1 overflow-y-auto"><Gallery userRole={role} onUploadClick={()=>{}} limit={4} isWidget={true} /></div></div>
                 </section>
                 <section className="max-w-7xl mx-auto px-4"><div className="flex items-center justify-between mb-4 border-b pb-2"><h2 className="text-xl font-bold">월간 자료실</h2><button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={16}/></button></div><div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">{issues.slice(0, 6).map(issue => <div key={issue.id} className="transform scale-95 origin-top-left"><IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/></div>)}</div></section>
              </div>
           )}
-          {view === 'news' && <NewsFeed />}
+          {view === 'news' && <NewsFeed isAdmin={role === 'admin'}/>}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
           {view === 'issue_list' && <div className="pt-10 max-w-7xl mx-auto px-4"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h2 className="text-3xl font-bold">월간 자료실</h2>{role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-[#2563EB] text-white px-5 py-2.5 rounded-md font-bold shadow-sm flex items-center gap-2"><Plus size={18}/> 호수 발행</button>}</div><div className="grid grid-cols-2 md:grid-cols-4 gap-6">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div></div>}
