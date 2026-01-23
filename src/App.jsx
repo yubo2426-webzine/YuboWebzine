@@ -9,7 +9,7 @@ import {
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
 
-// ✅ [KRDS] 버튼, 입력창, 텍스트영역, 배지 컴포넌트 추가 로드
+// ✅ [KRDS] 핵심 컴포넌트 4종 로드 (버튼, 입력창, 텍스트영역, 배지)
 import { Button, Input, TextArea, Badge } from 'krds-react';
 
 // ✅ [Supabase 클라이언트] CDN 방식
@@ -135,15 +135,33 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">이메일</label>
-              <input type="email" placeholder="example@korea.kr" className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={email} onChange={e => setEmail(e.target.value)} required/>
+              {/* ✅ [KRDS] Input 컴포넌트 적용 */}
+              <Input 
+                type="email" 
+                placeholder="example@korea.kr" 
+                size="medium"
+                className="w-full"
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
-              <input type="password" placeholder="********" className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={password} onChange={e => setPassword(e.target.value)} required/>
+               {/* ✅ [KRDS] Input 컴포넌트 적용 */}
+              <Input 
+                type="password" 
+                placeholder="********" 
+                size="medium"
+                className="w-full"
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required
+              />
             </div>
             {error && <p className="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded">{error}</p>}
             
-            {/* ✅ [KRDS] 로그인/가입 버튼 교체 */}
+            {/* ✅ [KRDS] Button 컴포넌트 적용 */}
             <Button 
               type="submit" 
               disabled={loading} 
@@ -192,7 +210,11 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   <div><label className={getLabelClass}>제목 <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
                   {type === 'notice' && (
                      <>
-                        <div><label className={getLabelClass}>내용 <span className="text-red-500">*</span></label><textarea className={`${getInputClass} h-32 resize-none`} placeholder="공지 내용을 입력하세요" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/></div>
+                        <div>
+                          <label className={getLabelClass}>내용 <span className="text-red-500">*</span></label>
+                          {/* ✅ [KRDS] TextArea (일단은 기존 스타일 유지하되 필요시 교체 가능) */}
+                          <textarea className={`${getInputClass} h-32 resize-none`} placeholder="공지 내용을 입력하세요" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}/>
+                        </div>
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><input type="date" className={getInputClass} value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
@@ -215,7 +237,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   )}
                   <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
                      <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm">취소</button>
-                     {/* ✅ [KRDS] 등록 버튼 교체 */}
+                     {/* ✅ [KRDS] Button 적용 */}
                      <Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">
                         등록 완료
                      </Button>
@@ -444,13 +466,14 @@ const NewsFeed = ({ limit, isAdmin }) => {
             <a key={idx} href={item.link} target="_blank" className="group flex flex-col md:flex-row gap-4 p-5 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-colors">
                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                     <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${
-                       item.author?.includes('Google') 
-                         ? 'bg-blue-100 border-blue-200 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-100' 
-                         : 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-100'
-                     }`}>
+                     {/* ✅ [KRDS] Badge 컴포넌트 적용 (News) */}
+                     <Badge 
+                        variant={item.author?.includes('Google') ? 'primary' : 'success'} 
+                        shape="round" 
+                        size="small"
+                     >
                        {item.author || '뉴스'}
-                     </span>
+                     </Badge>
                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">{item.title}</h3>
@@ -506,8 +529,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
            {notices.map(n => (
               <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors shadow-sm">
                  <div className="flex justify-between mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${n.category === 'event' ? 
-                       'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-400'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                    {/* ✅ [KRDS] Badge 컴포넌트 적용 (Notice) */}
+                    <Badge 
+                       variant={n.category === 'event' ? 'primary' : 'neutral'} 
+                       size="small"
+                    >
+                       {n.category === 'event' ? '행사' : '공지'}
+                    </Badge>
                     <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{n.title}</h3>
