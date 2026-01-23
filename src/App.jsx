@@ -8,6 +8,10 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, Share2, Check, AlertTriangle 
 } from 'lucide-react';
+
+// ✅ [KRDS] 버튼 컴포넌트 불러오기
+import { Button } from 'krds-react';
+
 // ✅ [Supabase 클라이언트] CDN 방식
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -41,7 +45,8 @@ const loadPdfScript = () => {
 // --- [유틸리티] 조회수 증가 ---
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
-  try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } 
+  try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id);
+  } 
   catch (e) { console.error("조회수 업데이트 실패:", e); }
 };
 
@@ -115,7 +120,8 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         if (error) throw error;
         onLoginSuccess(); onClose();
       }
-    } catch (err) { setError(err.message); } finally { setLoading(false); }
+    } catch (err) { setError(err.message); } finally { setLoading(false);
+    }
   };
 
   return (
@@ -136,9 +142,17 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
               <input type="password" placeholder="********" className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={password} onChange={e => setPassword(e.target.value)} required/>
             </div>
             {error && <p className="text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-[#2563EB] text-white rounded-md font-bold text-sm hover:bg-[#1d4ed8] transition-colors shadow-sm disabled:opacity-50">
+            
+            {/* ✅ [KRDS] 로그인/가입 버튼 교체 */}
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              variant="primary"
+              size="large"
+              className="w-full"
+            >
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
-            </button>
+            </Button>
           </form>
           <div className="mt-4 text-center">
              <button onClick={() => setIsSignUp(!isSignUp)} className="text-xs text-gray-500 dark:text-gray-400 underline hover:text-blue-600 dark:hover:text-blue-400">
@@ -158,7 +172,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
   const getInputClass = "w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white";
   const getLabelClass = "block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1";
-  
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 flex flex-col">
@@ -173,7 +186,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
           </div>
           <div className="p-6">
             {isUploading ?
-             <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 전송 중입니다...</p></div> : (
+            <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 전송 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol) <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목 <span className="text-red-500">*</span></label><input className={getInputClass} placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
@@ -184,6 +197,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      </>
                   )}
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className={`${getInputClass} h-24 resize-none`} placeholder="이번 호에 대한 간단한 설명을 입력하세요" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
+   
                   {(type === 'article' || type === 'gallery') && (
                      <div>
                         <label className={getLabelClass}>첨부 파일 <span className="text-red-500">*</span></label>
@@ -191,7 +205,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                              <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
                               <div className="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
-                                  <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"><span>파일 업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
+                                   <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"><span>파일 업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-500">{file ? file.name : (type === 'gallery' ? 'PNG, JPG up to 10MB' : 'PDF only')}</p>
                            </div>
@@ -201,12 +215,15 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   )}
                   <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
                      <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm">취소</button>
-                     <button type="submit" className="flex-1 py-2.5 bg-[#2563EB] text-white font-bold rounded-md hover:bg-[#1d4ed8] transition-colors shadow-sm text-sm">등록 완료</button>
+                     {/* ✅ [KRDS] 등록 버튼 교체 */}
+                     <Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">
+                        등록 완료
+                     </Button>
                   </div>
                </form>
             )}
          </div>
-       </div>
+      </div>
     </div>
   );
 };
@@ -222,7 +239,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const [pageNum, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  
   // 제스처 Refs
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -311,13 +328,12 @@ const CustomPDFViewer = ({ article, onBack }) => {
         }
     }
   };
-
   const handleDownload = () => window.open(article.fileUrl || article.file_url, '_blank');
   const handleShareURL = async () => {
-     try { await navigator.share({ title: article.title, url: window.location.href }); } 
+     try { await navigator.share({ title: article.title, url: window.location.href });
+     } 
      catch { alert("주소가 복사되었습니다."); }
   };
-
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right">
        <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shrink-0 shadow-sm z-50">
@@ -333,12 +349,14 @@ const CustomPDFViewer = ({ article, onBack }) => {
              </div>
              <button onClick={handleDownload} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-600 dark:text-gray-200" title="다운로드"><Download size={20}/></button>
              <button onClick={handleShareURL} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-600 dark:text-gray-200" title="공유"><Share2 size={20}/></button>
-             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full transition-colors ${isSidebarOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-200'}`}><ListIcon size={20}/></button>
+             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full transition-colors ${isSidebarOpen ?
+                'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-200'}`}><ListIcon size={20}/></button>
           </div>
        </div>
 
        <div className="flex-1 overflow-hidden flex relative">
-          <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 z-40 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
+          <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 z-40 ${isSidebarOpen ?
+             'translate-x-0' : '-translate-x-full md:hidden'}`}>
              <div className="p-4 font-bold border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white">목차 ({pdfDoc?.numPages}p)</div>
              <div className="overflow-y-auto h-full p-2 space-y-1 pb-20">
                 {pdfDoc && Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1).map((num) => (
@@ -346,7 +364,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
                       key={num} 
                       onClick={() => { setPageNumber(num); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
                       className={`w-full text-left p-3 rounded-md text-sm flex items-center justify-between ${pageNum === num ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
-                    >
+                   >
                       <span>Page {num}</span>
                       {pageNum === num && <Check size={14}/>}
                    </button>
@@ -364,10 +382,12 @@ const CustomPDFViewer = ({ article, onBack }) => {
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
              {/* 모바일 전용 좌우 반투명 페이지 넘김 버튼 */}
-             <div className="absolute left-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-start pl-2" onClick={(e) => { e.stopPropagation(); setPageNumber(p => Math.max(1, p - 1)); }}>
+             <div className="absolute left-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-start pl-2" onClick={(e) => 
+                { e.stopPropagation(); setPageNumber(p => Math.max(1, p - 1)); }}>
                 <ChevronLeft className="text-gray-400/50" size={32} />
              </div>
-             <div className="absolute right-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-end pr-2" onClick={(e) => { e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1)); }}>
+             <div className="absolute right-0 top-0 bottom-0 w-[15%] z-10 hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer md:hidden flex items-center justify-end pr-2" onClick={(e) => { e.stopPropagation();
+                setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1)); }}>
                <ChevronRight className="text-gray-400/50" size={32} />
              </div>
 
@@ -391,7 +411,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
   const fetchNews = async () => {
     if(!supabase) return;
     if (news.length > 0) setIsRefreshing(true);
@@ -404,7 +423,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
   useEffect(() => { fetchNews(); }, [limit]);
 
   if (loading && !isRefreshing) return <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto text-blue-600"/></div>;
-  
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!limit && (
@@ -412,13 +430,13 @@ const NewsFeed = ({ limit, isAdmin }) => {
           <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <span className="w-1.5 h-6 bg-blue-600 inline-block rounded-sm"></span>
-              뉴스룸
+               뉴스룸
               </h2>
              <button onClick={fetchNews} disabled={isRefreshing} className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 transition-all" title="뉴스 새로고침">
                  <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
               </button>
           </div>
-        </div>
+      </div>
       )}
       
       <div className={`flex flex-col ${limit ? '' : 'border-t border-gray-200 dark:border-gray-700'}`}>
@@ -452,7 +470,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [mode, setMode] = useState(initialMode || 'list');
   const [notices, setNotices] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-
   useEffect(() => {
     const fetchNotices = async () => {
       if(!supabase) return;
@@ -461,9 +478,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
     };
     fetchNotices();
   }, []);
-
   const getEvents = (date) => notices.filter(n => n.event_date && new Date(n.event_date).toDateString() === date.toDateString());
-  
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!initialMode && (
@@ -475,7 +490,8 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
            <div className="flex gap-2">
               <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-md flex border border-gray-200 dark:border-gray-600">
                  <button onClick={() => setMode('list')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><ListIcon size={16}/> 목록</button>
-                 <button onClick={() => setMode('calendar')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'calendar' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><CalendarIcon size={16}/> 달력</button>
+                 <button onClick={() => setMode('calendar')} className={`p-1.5 rounded-sm text-sm font-bold flex items-center gap-1 ${mode === 'calendar' ?
+                  'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}><CalendarIcon size={16}/> 달력</button>
               </div>
               {(userRole === 'team' || userRole === 'admin') && 
                  <button onClick={() => onWriteClick('notice')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-[#1d4ed8] transition-colors"><Plus size={16}/> 글쓰기</button>
@@ -484,12 +500,14 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
         </div>
       )}
       
-      {mode === 'list' ? (
+      {mode === 'list' ?
+      (
         <div className="grid gap-4">
            {notices.map(n => (
               <div key={n.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors shadow-sm">
                  <div className="flex justify-between mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${n.category === 'event' ? 'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-400'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${n.category === 'event' ? 
+                       'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-400'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
                     <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{n.title}</h3>
@@ -541,7 +559,6 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
     };
     fetchImages();
   }, [limit]);
-
   return (
     <div className={`w-full ${isWidget ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!isWidget && (
@@ -564,7 +581,7 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
                       <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{img.title}</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(img.created_at).toLocaleDateString()}</p>
                    </div>
-               )}
+                )}
             </div>
          ))}
       </div>
@@ -610,12 +627,11 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
          <div className="flex flex-col justify-center">
-            <span className="font-bold text-lg text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">지식 플랫폼</span>
+             <span className="font-bold text-lg text-gray-900 dark:text-white leading-none tracking-tight group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors">지식 플랫폼</span>
            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">아이들의 미래를 잇는</span>
          </div>
       </div>
       
-      {/* ✅ [수정] PC 메뉴 버튼 가시성 확보 */}
       <nav className="hidden md:flex items-center gap-2">
         {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
           <button 
@@ -641,7 +657,15 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
         {isAdmin ? (
           <button onClick={onLogout} className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">로그아웃</button>
         ) : (
-          <button onClick={onLoginClick} className="px-5 py-2 bg-[#2563EB] text-white rounded-md text-sm font-bold hover:bg-[#1d4ed8] hover:shadow-lg transition-all shadow-sm">로그인</button>
+          // ✅ [KRDS] 로그인 버튼 교체
+          <Button 
+            variant="primary" 
+            size="medium" 
+            onClick={onLoginClick}
+            className="shadow-sm"
+          >
+            로그인
+          </Button>
         )}
       </div>
     </div>
@@ -663,7 +687,6 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
   // ✅ [수정] 테마 토글 로직: documentElement에 직접 class 적용
   const toggleTheme = () => {
     setIsDarkMode(prev => {
@@ -681,13 +704,13 @@ const MainApp = () => {
             <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={32} strokeWidth={2.5}/>
             </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-2">Supabase 설정 필요</h1>
+             <h1 className="text-2xl font-black text-gray-900 mb-2">Supabase 설정 필요</h1>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                앱을 실행하려면 <strong>Supabase API Key</strong>가 필요합니다.<br/>
                Vercel 배포 시, <strong>Environment Variables</strong> 설정에<br/>
                <code>VITE_SUPABASE_URL</code> 및 <code>VITE_SUPABASE_ANON_KEY</code>를<br/>
                반드시 추가해 주세요.
-            </p>
+             </p>
          </div>
       </div>
     );
@@ -705,14 +728,13 @@ const MainApp = () => {
     };
     initAuth();
     
-    // Fetch Issues for Home
+     // Fetch Issues for Home
     const fetchIssues = async () => {
        const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false });
        if (data) setIssues(data);
     };
     fetchIssues();
   }, []);
-
   const handleUpload = async (data) => {
     setIsUploading(true);
     try {
@@ -741,9 +763,7 @@ const MainApp = () => {
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
-
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
-
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
        <Navbar 
@@ -761,18 +781,19 @@ const MainApp = () => {
        <main className="flex-1 pb-24 w-full">
           {view === 'home' && (
              <div className="animate-in fade-in space-y-12 pb-20">
-                {/* 1. 히어로 섹션 */}
+              
+                 {/* 1. 히어로 섹션 */}
                 <section className="bg-gray-50 dark:bg-slate-800 py-12 md:py-20 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                       <div>
-                         <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v25.7.1</span>
+                          <span className="inline-block py-1 px-3 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">Beta v25.7.1</span>
                          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
                             아이들의 내일을 잇는<br/>
-                            <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
+                             <span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span>
                          </h1>
                          <p className="text-gray-600 dark:text-gray-300 text-lg mb-8 leading-relaxed">
                             선생님과 부모님을 위한 필수 지식과<br/>
-                            다양한 교육 자료를 한곳에서 만나보세요.
+                             다양한 교육 자료를 한곳에서 만나보세요.
                          </p>
                          <div className="flex gap-4">
                             <button onClick={() => setView('issue_list')} className="px-8 py-4 bg-[#2563EB] text-white rounded-md font-bold shadow-md hover:bg-[#1d4ed8] transition-all flex items-center gap-2">
@@ -780,15 +801,17 @@ const MainApp = () => {
                             </button>
                          </div>
                       </div>
-                      <div className="relative h-[250px] md:h-[350px] bg-white dark:bg-slate-700 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-xl overflow-hidden flex items-center justify-center p-10">
-                         {issues[0] ? (
+                    
+                     <div className="relative h-[250px] md:h-[350px] bg-white dark:bg-slate-700 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-xl overflow-hidden flex items-center justify-center p-10">
+                         {issues[0] ?
+                           (
                             <div className="text-center">
                                <div className="text-xs font-bold text-gray-400 mb-2">LATEST ISSUE</div>
                                <div className="text-8xl mb-4 animate-bounce-slow">{issues[0].icon}</div>
-                               <h3 className="text-2xl font-black text-gray-900 dark:text-white">{issues[0].title}</h3>
+                                <h3 className="text-2xl font-black text-gray-900 dark:text-white">{issues[0].title}</h3>
                             </div>
                          ) : <div className="text-gray-300 font-bold">발행된 호수가 없습니다.</div>}
-                      </div>
+                       </div>
                    </div>
                 </section>
 
@@ -798,10 +821,10 @@ const MainApp = () => {
                    {/* 1) 뉴스룸 */}
                    <div className="lg:col-span-5 flex flex-col h-[520px]">
                       <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
-                         <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                          <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                             <Newspaper size={24} className="text-blue-600"/> 뉴스룸
                          </h3>
-                         <button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
+                          <button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
                       </div>
                       <div className="flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 shadow-sm">
                          <NewsFeed limit={10} isAdmin={false} />
@@ -810,14 +833,14 @@ const MainApp = () => {
 
                    {/* 2) 일정 */}
                    <div className="lg:col-span-4 flex flex-col h-[520px]">
-                      <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
+                       <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
                          <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                             <CalendarIcon size={24} className="text-blue-600"/> 이달의 일정
-                         </h3>
+                          </h3>
                          <button onClick={() => setView('notice')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
                       </div>
                       <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
-                         <NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' />
+                          <NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' />
                       </div>
                    </div>
 
@@ -825,11 +848,11 @@ const MainApp = () => {
                    <div className="lg:col-span-3 flex flex-col h-[520px]">
                       <div className="flex justify-between items-end mb-4 border-b-2 border-gray-900 dark:border-gray-100 pb-2">
                          <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                            <ImageIcon size={24} className="text-blue-600"/> 갤러리
+                             <ImageIcon size={24} className="text-blue-600"/> 갤러리
                          </h3>
                          <button onClick={() => setView('gallery')} className="text-sm font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={14}/></button>
                       </div>
-                      <div className="flex-1 overflow-y-auto">
+                       <div className="flex-1 overflow-y-auto">
                          <Gallery userRole={role} onUploadClick={()=>{}} limit={4} isWidget={true} />
                       </div>
                    </div>
@@ -839,12 +862,13 @@ const MainApp = () => {
                 <section className="max-w-7xl mx-auto px-4">
                    <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">월간 자료실</h2>
-                      <button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
+                       <button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {issues.slice(0, 6).map(issue => (
-                         <div key={issue.id} className="transform scale-95 origin-top-left">
-                           <IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
+                          <div key={issue.id} className="transform scale-95 origin-top-left">
+                           <IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i);
+                            setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
                          </div>
                       ))}
                    </div>
@@ -853,8 +877,10 @@ const MainApp = () => {
           )}
           
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'}/>}
-          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
-          {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
+          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t);
+            setIsUploadOpen(true);}}/>}
+          {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t);
+            setIsUploadOpen(true); }}/>}
           
           {view === 'issue_list' && (
              <div className="pt-10 max-w-7xl mx-auto px-4">
@@ -864,7 +890,7 @@ const MainApp = () => {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div>
              </div>
-          )}
+           )}
           
           {view === 'issue_detail' && currentIssue && (
              <div className="max-w-5xl mx-auto px-4 py-10 animate-in slide-in-from-right">
@@ -889,10 +915,10 @@ const MainApp = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {currentIssue.articles?.map(art => (
                        <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-all flex items-center gap-4">
-                         <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-md flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-400 transition-colors"><FileText size={24}/></div>
+                          <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-md flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-400 transition-colors"><FileText size={24}/></div>
                          <div className="flex-1">
                             <div className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{art.title}</div>
-                            <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                             <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                                <span>PDF 문서</span>
                                {art.views > 0 && <span className="flex items-center gap-0.5 text-blue-500 font-bold"><Eye size={10}/> {art.views}</span>}
                             </div>
