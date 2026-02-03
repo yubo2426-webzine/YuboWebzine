@@ -8,10 +8,11 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, Check, AlertTriangle
 } from 'lucide-react';
+
 // ✅ [KRDS] Button 사용
 import { Button } from 'krds-react';
 
-// ✅ [Supabase] 클라이언트
+// ✅ [Supabase] 클라이언트 (CDN 방식)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // ------------------------------------------------------------------
@@ -474,12 +475,12 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
   );
 };
 
-// ✅ [NoticeBoard] 작성자(관리자) + 조회수 표시
+// ✅ [NoticeBoard] 팝업 기능 및 조회수 표시
 const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [mode, setMode] = useState(initialMode || 'list');
   const [filter, setFilter] = useState('all'); 
   const [notices, setNotices] = useState([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedNotice, setSelectedNotice] = useState(null); // 팝업 상태
 
   useEffect(() => {
     const f = async () => { if(supabase) { const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false }); if(data) setNotices(data); }}; f();
@@ -489,12 +490,15 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
     if(confirm('삭제하시겠습니까?')) {
         await supabase.from('notices').delete().eq('id', id);
         setNotices(prev => prev.filter(n => n.id !== id));
+        setSelectedNotice(null);
     }
   };
 
   const handleNoticeClick = (item) => {
       incrementViewCount('notices', item.id, item.views);
-      setNotices(prev => prev.map(n => n.id === item.id ? {...n, views: (n.views || 0) + 1} : n));
+      const updated = { ...item, views: (item.views || 0) + 1 };
+      setNotices(prev => prev.map(n => n.id === item.id ? updated : n));
+      setSelectedNotice(updated); // 팝업 오픈
   };
 
   const filteredNotices = notices.filter(n => {
@@ -531,23 +535,62 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
                     <KRDSBadge variant={n.category === 'event' ? 'primary' : 'neutral'}>{n.category === 'event' ? '행사' : '공지'}</KRDSBadge>
                     <span className="text-sm text-gray-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
-                 <h3 className="text-xl font-bold mb-2">{n.title}</h3>
-                 <p className="text-base text-gray-600 whitespace-pre-wrap leading-relaxed">{n.content}</p>
+                 <h3 className="text-xl font-bold mb-2 line-clamp-1">{n.title}</h3>
+                 <p className="text-base text-gray-600 dark:text-gray-400 line-clamp-2">{n.content}</p>
                  {n.event_date && <div className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-100"><CalendarIcon size={16}/> 일정: {n.event_date}</div>}
                  
-                 {/* ✅ 작성자+조회수 메타 정보 */}
+                 {/* ✅ 작성자+조회수 */}
                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-3 text-xs text-gray-400 font-bold">
-                    <span className="flex items-center gap-1"><User size={12}/> 작성자: 관리자</span>
+                    <span className="flex items-center gap-1"><User size={12}/> 관리자</span>
                     <span className="w-px h-2 bg-gray-300"></span>
-                    <span className="flex items-center gap-1"><Eye size={12}/> 조회수: {n.views || 0}회</span>
+                    <span className="flex items-center gap-1"><Eye size={12}/> {n.views || 0}</span>
                  </div>
-                 {(userRole === 'team' || userRole === 'admin') && <button onClick={(e) => {e.stopPropagation(); handleDelete(n.id)}} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={18}/></button>}
               </div>
            ))}
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm h-full">
            <div className="h-64 flex items-center justify-center text-gray-400">달력 보기 모드</div>
+        </div>
+      )}
+
+      {/* ✅ [Popup] 공지사항 상세 모달 */}
+      {selectedNotice && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedNotice(null)}>
+           <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col relative" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start z-10">
+                 <div>
+                    <div className="flex items-center gap-2 mb-2">
+                       <KRDSBadge variant={selectedNotice.category === 'event' ? 'primary' : 'neutral'}>{selectedNotice.category === 'event' ? '행사' : '공지'}</KRDSBadge>
+                       <span className="text-sm text-gray-500">{new Date(selectedNotice.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug">{selectedNotice.title}</h2>
+                 </div>
+                 <button onClick={() => setSelectedNotice(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X size={24} className="text-gray-500"/></button>
+              </div>
+              <div className="p-6 md:p-8">
+                 {selectedNotice.event_date && (
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-3 border border-blue-100 dark:border-blue-800">
+                       <CalendarIcon className="text-blue-600 dark:text-blue-400" size={24}/>
+                       <div>
+                          <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">Event Date</div>
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">{selectedNotice.event_date}</div>
+                       </div>
+                    </div>
+                 )}
+                 <p className="text-lg leading-relaxed whitespace-pre-wrap text-gray-800 dark:text-gray-200">{selectedNotice.content}</p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm text-gray-500">
+                 <div className="flex items-center gap-3 font-medium">
+                     <span className="flex items-center gap-1"><User size={14}/> 작성자: 관리자</span>
+                     <span className="w-px h-3 bg-gray-300"></span>
+                     <span className="flex items-center gap-1"><Eye size={14}/> 조회수: {selectedNotice.views || 0}회</span>
+                 </div>
+                 {(userRole === 'team' || userRole === 'admin') && (
+                    <button onClick={() => handleDelete(selectedNotice.id)} className="text-red-500 hover:text-red-700 font-bold flex items-center gap-1"><Trash2 size={16}/> 삭제</button>
+                 )}
+              </div>
+           </div>
         </div>
       )}
     </div>
@@ -582,7 +625,7 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
                        <h4 className="font-bold text-base truncate mb-1">{img.title}</h4>
                        <p className="text-sm text-gray-500 mb-3">{new Date(img.created_at).toLocaleDateString()}</p>
                        
-                       {/* ✅ 작성자+조회수 메타 정보 */}
+                       {/* ✅ 작성자+조회수 */}
                        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-[11px] text-gray-400 font-bold">
                            <span className="flex items-center gap-1">관리자</span>
                            <span className="flex items-center gap-1"><Eye size={10}/> {img.views || 0}</span>
@@ -598,6 +641,7 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   );
 };
 
+// ✅ [IssueCard] 조회수 UI 추가
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 hover:ring-1 hover:ring-blue-500 hover:shadow-lg transition-all h-full">
     <div className={`aspect-[4/5] w-full relative flex items-center justify-center border-b overflow-hidden ${issue.thumbnail_url || issue.image_url ? 'bg-gray-100' : 'bg-blue-50 dark:bg-slate-700'}`}>
@@ -616,7 +660,13 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
     <div className="p-5 flex-1 flex flex-col">
       <div className="flex justify-between items-start mb-2"><span className="text-sm font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
-      <p className="text-lg text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto">{issue.description || "내용 없음"}</p>
+      <p className="text-lg text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto mb-3">{issue.description || "내용 없음"}</p>
+      
+      {/* ✅ 자료실 조회수 표시 */}
+      <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs font-bold text-gray-400">
+         <span>관리자 발행</span>
+         <span className="flex items-center gap-1"><Eye size={12}/> {issue.views || 0}</span>
+      </div>
     </div>
   </div>
 );
@@ -700,6 +750,15 @@ const MainApp = () => {
 
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
 
+  // ✅ [MainApp] 자료실 클릭 핸들러 (조회수 증가 및 이동)
+  const handleIssueClick = (issue) => {
+    incrementViewCount('issues', issue.id, issue.views);
+    const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
+    setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i));
+    setCurrentIssue(updatedIssue);
+    setView('issue_detail');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
        <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={handleLogout} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme}/>
@@ -748,7 +807,7 @@ const MainApp = () => {
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                       {issues.slice(0, 6).map(issue => (
                            <div key={issue.id} className="transform scale-95 origin-top-left h-full">
-                           <IssueCard issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
+                           <IssueCard issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
                          </div>
                       ))}
                    </div>
@@ -758,7 +817,7 @@ const MainApp = () => {
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
-          {view === 'issue_list' && <div className="pt-10 max-w-7xl mx-auto px-4"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h2 className="text-4xl font-bold">월간 자료실</h2>{role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-[#2563EB] text-white px-6 py-3 rounded-lg font-bold shadow-md flex items-center gap-2 text-lg"><Plus size={20}/> 호수 발행</button>}</div><div className="grid grid-cols-2 md:grid-cols-4 gap-8">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={(i) => {setCurrentIssue(i); setView('issue_detail');}} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div></div>}
+          {view === 'issue_list' && <div className="pt-10 max-w-7xl mx-auto px-4"><div className="flex items-center justify-between mb-8 pb-4 border-b"><h2 className="text-4xl font-bold">월간 자료실</h2>{role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-[#2563EB] text-white px-6 py-3 rounded-lg font-bold shadow-md flex items-center gap-2 text-lg"><Plus size={20}/> 호수 발행</button>}</div><div className="grid grid-cols-2 md:grid-cols-4 gap-8">{issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}</div></div>}
           {view === 'issue_detail' && currentIssue && <div className="max-w-5xl mx-auto px-4 py-12 animate-in slide-in-from-right"><button onClick={() => setView('issue_list')} className="mb-8 flex items-center gap-2 font-bold text-gray-500 hover:text-blue-600 text-lg"><ArrowLeft size={24}/> 목록으로 돌아가기</button><div className="bg-white dark:bg-slate-800 border rounded-xl p-10 md:p-14 mb-12 shadow-lg flex flex-col md:flex-row gap-10 items-start"><div className="w-32 h-32 bg-blue-50 rounded-xl flex items-center justify-center text-7xl border border-blue-100 text-blue-600">{currentIssue.icon}</div><div><span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-sm font-bold rounded mb-4">Vol.{currentIssue.vol}</span><h1 className="text-4xl font-black mb-6">{currentIssue.title}</h1><p className="text-gray-600 text-lg leading-relaxed max-w-2xl">{currentIssue.description}</p></div></div><div className="flex justify-between items-center mb-8 pb-4 border-b"><h3 className="text-2xl font-bold flex items-center gap-3"><span className="w-1.5 h-8 bg-blue-600 rounded-sm"></span>수록 자료 목록</h3>{role === 'admin' && <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-sm bg-[#2563EB] text-white px-5 py-2.5 rounded-lg font-bold text-base"><Plus size={20} /> 자료 추가</button>}</div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{currentIssue.articles?.map(art => <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-6 bg-white dark:bg-slate-800 border rounded-xl hover:border-blue-400 hover:shadow-lg cursor-pointer transition-all flex items-center gap-5"><div className="w-14 h-14 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><FileText size={28}/></div><div className="flex-1"><div className="font-bold text-lg group-hover:text-blue-600 transition-colors">{art.title}</div><div className="flex items-center gap-3 text-sm text-gray-400 mt-1.5"><span>PDF 문서</span>{art.views > 0 && <span className="flex items-center gap-1 text-blue-500 font-bold"><Eye size={14}/> {art.views}</span>}</div></div><ArrowRight className="ml-auto text-gray-300 group-hover:text-blue-400" size={24}/></div>)}{(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-16 text-center text-gray-400 border border-dashed rounded-xl text-lg">등록된 자료가 없습니다.</div>}</div></div>}
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
