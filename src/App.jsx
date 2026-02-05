@@ -45,17 +45,21 @@ const SocialShare = () => {
   const currentUrl = encodeURIComponent(window.location.href);
   const title = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
 
-  // ✅ [공식 이미지 소스] 깨지지 않는 안정적인 URL 엄선
-  const icons = {
-    // 카카오 개발자 센터 공식 호스팅 이미지
-    kakao: "https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png",
-    // 네이버 밴드 공식 아이콘
-    band: "https://ssl.pstatic.net/share/favicon/band_icon.png",
-    // 페이스북 (Wikimedia 공식 로고)
-    facebook: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg",
-    // X (구 트위터 - 공식 로고)
-    x: "https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg"
-  };
+// src/App.jsx 내부 SocialShare 컴포넌트 수정
+
+const icons = {
+  // ✅ 카카오: 기존 유지 (잘 나옴)
+  kakao: "https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png",
+  
+  // ✅ [수정됨] 밴드: 위키미디어 공식 SVG 주소로 변경 (404 해결)
+  band: "https://upload.wikimedia.org/wikipedia/commons/3/30/Naver_Band_Icon.svg",
+  
+  // ✅ 페이스북: 기존 유지
+  facebook: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg",
+  
+  // ✅ X (트위터): 기존 유지
+  x: "https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg"
+};
 
   const shareKakao = () => {
     // 1. 카카오 SDK 로드 체크
