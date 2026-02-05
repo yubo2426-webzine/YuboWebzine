@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, List as ListIcon,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, 
   Sun, Moon, Eye, Megaphone,
-  ZoomIn, ZoomOut, Download, Check, AlertTriangle, Facebook // ✅ Facebook 아이콘 추가 
+  ZoomIn, ZoomOut, Download, AlertTriangle
 } from 'lucide-react';
 
 // ✅ [KRDS] Button 사용
@@ -39,14 +39,26 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 };
 
 // ------------------------------------------------------------------
-// 🔗 [Social] 공유 기능 컴포넌트 (New for v25.8.9)
+// 🔗 [Social] 실제 앱 아이콘 적용 및 연결 패치
 // ------------------------------------------------------------------
 const SocialShare = () => {
   const currentUrl = encodeURIComponent(window.location.href);
   const title = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
 
+  // ✅ [이미지 소스] 위키미디어 등 공개된 고해상도 로고 URL 사용
+  const icons = {
+    kakao: "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo_no_text.svg",
+    band: "https://upload.wikimedia.org/wikipedia/commons/3/30/Naver_Band_Icon.svg",
+    x: "https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg", // 최신 X 로고
+    facebook: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
+  };
+
   const shareKakao = () => {
-    if (!window.Kakao) return;
+    // 🚨 [진단] index.html에 스크립트가 없는 경우 경고 표시
+    if (!window.Kakao) {
+      alert("⚠️ 카카오 연결 실패!\n\nindex.html 파일에 카카오 스크립트가 추가되었는지 확인해주세요.");
+      return;
+    }
     
     // ✅ 전달받은 키 적용 완료
     if (!window.Kakao.isInitialized()) {
@@ -58,7 +70,7 @@ const SocialShare = () => {
       content: {
         title: '아이들의 미래를 잇는 지식 플랫폼',
         description: '선생님과 부모님을 위한 교육 정보와 최신 자료를 확인해보세요.',
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', // 임시 교육 아이콘
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png',
         link: { mobileWebUrl: window.location.href, webUrl: window.location.href },
       },
       buttons: [{ title: '자료 보러가기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }],
@@ -69,18 +81,30 @@ const SocialShare = () => {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${title}&url=${currentUrl}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`, '_blank');
 
-  const btnBase = "w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-sm border text-lg font-bold cursor-pointer";
+  // 버튼 스타일 (이미지 꽉 채우기)
+  const btnBase = "w-11 h-11 rounded-full overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 hover:scale-105 transition-transform bg-white cursor-pointer flex items-center justify-center";
 
   return (
     <div className="flex justify-center gap-4 py-4">
-       {/* Kakao */}
-       <button onClick={shareKakao} className={`${btnBase} bg-[#FAE100] border-[#FAE100] text-[#371D1E] hover:opacity-90`} title="카카오톡">K</button>
-       {/* Band */}
-       <button onClick={shareBand} className={`${btnBase} bg-[#03C75A] border-[#03C75A] text-white hover:opacity-90`} title="밴드">B</button>
+       {/* Kakao (노란색 배경 유지) */}
+       <button onClick={shareKakao} className={`${btnBase} bg-[#FAE100] border-[#FAE100] p-2`} title="카카오톡">
+         <img src={icons.kakao} alt="Kakao" className="w-full h-full object-contain" />
+       </button>
+       
+       {/* Band (흰 배경) */}
+       <button onClick={shareBand} className={btnBase} title="밴드">
+         <img src={icons.band} alt="Band" className="w-full h-full object-contain" />
+       </button>
+       
        {/* Facebook */}
-       <button onClick={shareFacebook} className={`${btnBase} bg-[#1877F2] border-[#1877F2] text-white hover:opacity-90`} title="페이스북"><Facebook size={20} fill="currentColor" strokeWidth={0} /></button>
-       {/* X (Twitter) */}
-       <button onClick={shareX} className={`${btnBase} bg-black border-black text-white hover:opacity-80`} title="X (Twitter)">X</button>
+       <button onClick={shareFacebook} className={btnBase} title="페이스북">
+         <img src={icons.facebook} alt="Facebook" className="w-full h-full object-contain" />
+       </button>
+
+       {/* X (검정 배경) */}
+       <button onClick={shareX} className={`${btnBase} bg-black border-black p-2.5`} title="X (Twitter)">
+         <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert" />
+       </button>
     </div>
   );
 };
@@ -171,8 +195,6 @@ const BottomNav = ({ currentView, onViewChange }) => {
 // 🧩 [Footer] 수정: 모바일 노출 & 소셜 공유 추가
 // ------------------------------------------------------------------
 const Footer = () => (
-  // ✅ md:hidden 제거 -> 모바일에서도 보임
-  // ✅ pb-28 추가 -> BottomNav에 가려지지 않게 여백 확보
   <footer className="w-full bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 pb-28 md:pb-12 mt-auto z-10 relative">
     <div className="max-w-7xl mx-auto px-4 text-center">
        
@@ -814,8 +836,7 @@ const MainApp = () => {
              <div className="animate-in fade-in space-y-16 pb-20">
                 <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                      {/* ✅ 버전 업데이트 완료 */}
-                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.8.9</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
+                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.9.0</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
                       <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border shadow-2xl flex items-center justify-center p-12">{issues[0] ?
                       (<div className="text-center"><div className="text-sm font-bold text-gray-400 mb-4">LATEST ISSUE</div><div className="text-9xl mb-6 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-3xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold text-xl">발행된 호수가 없습니다.</div>}</div>
                    </div>
