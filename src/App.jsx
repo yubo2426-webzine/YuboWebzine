@@ -16,6 +16,15 @@ import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // ------------------------------------------------------------------
+// ✅ [Assets] 로컬 이미지 아이콘 불러오기
+// (src/assets 폴더에 해당 파일들이 있어야 합니다)
+// ------------------------------------------------------------------
+import imgKakao from './assets/kakao_icon.png';
+import imgBand from './assets/band_icon.png';
+import imgFacebook from './assets/facebook_icon.png';
+import imgX from './assets/x_icon.png';
+
+// ------------------------------------------------------------------
 // 🏛️ [KRDS System] 커스텀 컴포넌트
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
@@ -39,27 +48,19 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 };
 
 // ------------------------------------------------------------------
-// 🔗 [Social] 공식 앱 아이콘 이미지 적용
+// 🔗 [Social] 로컬 이미지 아이콘 적용 컴포넌트
 // ------------------------------------------------------------------
 const SocialShare = () => {
   const currentUrl = encodeURIComponent(window.location.href);
   const title = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
 
-// src/App.jsx 내부 SocialShare 컴포넌트 수정
-
-const icons = {
-  // ✅ 카카오: 기존 유지 (잘 나옴)
-  kakao: "https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png",
-  
-  // ✅ [수정됨] 밴드: 위키미디어 공식 SVG 주소로 변경 (404 해결)
-  band: "https://upload.wikimedia.org/wikipedia/commons/3/30/Naver_Band_Icon.svg",
-  
-  // ✅ 페이스북: 기존 유지
-  facebook: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg",
-  
-  // ✅ X (트위터): 기존 유지
-  x: "https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg"
-};
+  // ✅ Import한 로컬 이미지 변수 사용 (깨짐 방지)
+  const icons = {
+    kakao: imgKakao,
+    band: imgBand,
+    facebook: imgFacebook,
+    x: imgX
+  };
 
   const shareKakao = () => {
     // 1. 카카오 SDK 로드 체크
@@ -88,7 +89,7 @@ const icons = {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${title}&url=${currentUrl}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`, '_blank');
 
-  // 버튼 스타일 (이미지 꽉 채우기 + 그림자 + 호버 효과)
+  // 버튼 스타일
   const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white";
 
   return (
@@ -108,13 +109,15 @@ const icons = {
          <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover" />
        </button>
 
-       {/* 4. X (트위터) - 배경 검정 처리 */}
+       {/* 4. X (트위터) */}
        <button onClick={shareX} className={`${btnClass} bg-black p-2.5 flex items-center justify-center`} title="X 공유">
+         {/* X 아이콘이 검은색인 경우 다크모드 대응 등을 위해 invert 필터 사용 가능 (여기선 기본 적용) */}
          <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0" />
        </button>
     </div>
   );
 };
+
 // ------------------------------------------------------------------
 // 🚀 Main Logic
 // ------------------------------------------------------------------
@@ -842,7 +845,7 @@ const MainApp = () => {
              <div className="animate-in fade-in space-y-16 pb-20">
                 <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.9.0</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
+                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.9.1 (Assets Patch)</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
                       <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border shadow-2xl flex items-center justify-center p-12">{issues[0] ?
                       (<div className="text-center"><div className="text-sm font-bold text-gray-400 mb-4">LATEST ISSUE</div><div className="text-9xl mb-6 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-3xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold text-xl">발행된 호수가 없습니다.</div>}</div>
                    </div>
@@ -898,7 +901,6 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
        
-       {/* ✅ Footer 수정 적용 완료 */}
        <Footer />
        <BottomNav currentView={view} onViewChange={setView} />
        
