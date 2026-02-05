@@ -39,11 +39,23 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 };
 
 // ------------------------------------------------------------------
-// 🔗 [Social] SVG 아이콘 (깨짐 방지 및 고화질 보장)
+// 🔗 [Social] 공식 앱 아이콘 이미지 적용
 // ------------------------------------------------------------------
 const SocialShare = () => {
   const currentUrl = encodeURIComponent(window.location.href);
   const title = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
+
+  // ✅ [공식 이미지 소스] 깨지지 않는 안정적인 URL 엄선
+  const icons = {
+    // 카카오 개발자 센터 공식 호스팅 이미지
+    kakao: "https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png",
+    // 네이버 밴드 공식 아이콘
+    band: "https://ssl.pstatic.net/share/favicon/band_icon.png",
+    // 페이스북 (Wikimedia 공식 로고)
+    facebook: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg",
+    // X (구 트위터 - 공식 로고)
+    x: "https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg"
+  };
 
   const shareKakao = () => {
     // 1. 카카오 SDK 로드 체크
@@ -72,37 +84,29 @@ const SocialShare = () => {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${title}&url=${currentUrl}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`, '_blank');
 
-  // 버튼 스타일 공통
-  const btnClass = "w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:-translate-y-1 shadow-md cursor-pointer border-0";
+  // 버튼 스타일 (이미지 꽉 채우기 + 그림자 + 호버 효과)
+  const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white";
 
   return (
     <div className="flex justify-center gap-5 py-6">
-       {/* 1. 카카오톡 (공식 노란색 #FAE100) */}
-       <button onClick={shareKakao} className={`${btnClass} bg-[#FAE100]`} title="카카오톡 공유">
-         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-           <path fillRule="evenodd" clipRule="evenodd" d="M12 3C7.02944 3 3 6.13401 3 10C3 12.482 4.632 14.675 7.1 15.923L6.154 19.467C6.069 19.784 6.447 20.045 6.716 19.866L11.026 17.001C11.343 17.03 11.668 17.045 12 17.045C16.97 17.045 21 13.911 21 10.045C21 6.179 16.97 3 12 3Z" fill="#3C1E1E"/>
-         </svg>
+       {/* 1. 카카오톡 */}
+       <button onClick={shareKakao} className={btnClass} title="카카오톡 공유">
+         <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover" />
        </button>
        
-       {/* 2. 네이버 밴드 (공식 초록색 #03C75A) */}
-       <button onClick={shareBand} className={`${btnClass} bg-[#03C75A]`} title="밴드 공유">
-          <svg width="26" height="26" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7.4 19C5.4 19 3 20.9 3 25.5V38.5C3 43.1 5.4 45 7.4 45H56.6C58.6 45 61 43.1 61 38.5V25.5C61 20.9 58.6 19 56.6 19H7.4ZM19 39H15.5V25H19C24 25 24 28 24 28C24 28 25 32 19 32C26.5 32 24.5 39 19 39ZM49.5 29.5L42.5 25H39V39H42.5L44.5 33H45L49 39H53.5L49 32.5C52 32.5 53 29.5 49.5 29.5ZM20.5 28H19.5V30.5H20.5C21.5 30.5 21.5 28 20.5 28ZM20.5 33.5H19.5V36H20.5C22 36 22 33.5 20.5 33.5ZM49.5 29H48.5C48.5 28 47.5 28 46.5 28H42.5V30H46.5C47.5 30 49.5 30 49.5 29Z" fill="white"/>
-          </svg>
+       {/* 2. 네이버 밴드 */}
+       <button onClick={shareBand} className={btnClass} title="밴드 공유">
+          <img src={icons.band} alt="Band" className="w-full h-full object-cover" />
        </button>
        
-       {/* 3. 페이스북 (공식 파란색 #1877F2) */}
-       <button onClick={shareFacebook} className={`${btnClass} bg-[#1877F2]`} title="페이스북 공유">
-         <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-            <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24V15.563H7.078V12.073H10.125V9.429C10.125 6.422 11.917 4.769 14.656 4.769C15.967 4.769 17.339 5.003 17.339 5.003V7.956H15.834C14.343 7.956 13.875 8.881 13.875 9.83V12.073H17.203L16.67 15.563H13.875V24C19.612 23.094 24 18.1 24 12.073Z"/>
-         </svg>
+       {/* 3. 페이스북 */}
+       <button onClick={shareFacebook} className={btnClass} title="페이스북 공유">
+         <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover" />
        </button>
 
-       {/* 4. X (트위터) (검정색 #000000) */}
-       <button onClick={shareX} className={`${btnClass} bg-black`} title="X 공유">
-         <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18.244 2.25H21.552L14.325 10.51L22.827 21.75H16.17L10.956 14.933L4.99 21.75H1.68L9.341 12.996L1.174 2.25H8.029L12.802 8.561L18.244 2.25ZM17.083 19.77H18.916L7.084 4.126H5.117L17.083 19.77Z"/>
-         </svg>
+       {/* 4. X (트위터) - 배경 검정 처리 */}
+       <button onClick={shareX} className={`${btnClass} bg-black p-2.5 flex items-center justify-center`} title="X 공유">
+         <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0" />
        </button>
     </div>
   );
