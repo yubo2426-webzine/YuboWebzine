@@ -48,11 +48,15 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 };
 
 // ------------------------------------------------------------------
-// 🔗 [Social] 공유 기능 컴포넌트
+// 🔗 [Social] 공유 기능 컴포넌트 (링크 전송 강화 버전)
 // ------------------------------------------------------------------
 const SocialShare = () => {
-  const currentUrl = encodeURIComponent(window.location.href);
-  const title = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
+  // 1. 인코딩된 URL (밴드, 페이스북, X용 - 기존 방식 유지)
+  const currentUrlEncoded = encodeURIComponent(window.location.href);
+  const titleEncoded = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
+
+  // 2. ✅ [추가] 순수 URL (카카오톡용 - 인코딩 없이 원본 주소 사용)
+  const rawUrl = window.location.href;
 
   // ✅ Import한 이미지 변수 연결
   const icons = {
@@ -70,21 +74,36 @@ const SocialShare = () => {
     if (!window.Kakao.isInitialized()) {
       window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3'); 
     }
+
+    // ✅ 카카오톡 메시지 보내기 (링크 연결 강화)
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
         title: '아이들의 미래를 잇는 지식 플랫폼',
         description: '선생님과 부모님을 위한 교육 정보와 최신 자료를 확인해보세요.',
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png',
-        link: { mobileWebUrl: window.location.href, webUrl: window.location.href },
+        
+        // 👇 [핵심] 썸네일 이미지를 클릭해도 해당 페이지로 이동
+        link: {
+          mobileWebUrl: rawUrl,
+          webUrl: rawUrl,
+        },
       },
-      buttons: [{ title: '자료 보러가기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }],
+      buttons: [
+        {
+          title: '웹진 바로가기', // 👇 버튼 텍스트 변경
+          link: {
+            mobileWebUrl: rawUrl, // 👇 버튼 클릭 시 이동할 링크
+            webUrl: rawUrl,
+          },
+        },
+      ],
     });
   };
 
-  const shareBand = () => window.open(`https://band.us/plugin/share?body=${title}%0A${currentUrl}&route=${currentUrl}`, '_blank');
-  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${title}&url=${currentUrl}`, '_blank');
-  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`, '_blank');
+  const shareBand = () => window.open(`https://band.us/plugin/share?body=${titleEncoded}%0A${currentUrlEncoded}&route=${currentUrlEncoded}`, '_blank');
+  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
+  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
 
   // 버튼 스타일 (이미지 꽉 채우기)
   const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white flex items-center justify-center";
@@ -98,7 +117,6 @@ const SocialShare = () => {
     </div>
   );
 };
-
 // ------------------------------------------------------------------
 // 🚀 Main Logic
 // ------------------------------------------------------------------
