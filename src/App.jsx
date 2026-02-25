@@ -19,27 +19,49 @@ import imgFacebook from './assets/facebook_icon.png';
 import imgX from './assets/x_icon.svg';
 
 // ------------------------------------------------------------------
-// ✅ [React 19 호환] 자체 구현한 useKakaoLoader 커스텀 훅
-// 라이브러리 충돌 없이 문서와 동일하게 로딩 상태(loading, error)를 반환합니다.
+// ✅ [React 19 호환] 자체 구현한 useKakaoLoader 커스텀 훅 (무한 로딩 방어 완벽 패치)
 // ------------------------------------------------------------------
 const useCustomKakaoLoader = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // 1. 이미 완전히 로드된 경우 즉시 종료
     if (window.kakao && window.kakao.maps) {
       setLoading(false);
       return;
     }
-    const script = document.createElement('script');
-    // autoload=false를 적용하여 React 라이프사이클에 맞게 수동 로드합니다.
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
-    script.async = true;
-    script.onload = () => {
+
+    const scriptId = 'kakao-map-script';
+    let script = document.getElementById(scriptId);
+
+    // 2. 스크립트 태그가 없다면 새로 생성 (첫 번째 렌더링)
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    // 3. 로딩 완료/실패 이벤트를 무조건 연결 (두 번째 렌더링이어도 연결되도록)
+    const handleLoad = () => {
       window.kakao.maps.load(() => setLoading(false));
     };
-    script.onerror = () => setError(true);
-    document.head.appendChild(script);
+    
+    const handleError = () => {
+      console.error("카카오맵 API 로드 실패. API 키나 도메인 설정을 확인하세요.");
+      setError(true);
+    };
+
+    script.addEventListener('load', handleLoad);
+    script.addEventListener('error', handleError);
+
+    // 4. 컴포넌트가 사라질 때 이벤트 리스너 정리
+    return () => {
+      script.removeEventListener('load', handleLoad);
+      script.removeEventListener('error', handleError);
+    };
   }, []);
 
   return [loading, error];
