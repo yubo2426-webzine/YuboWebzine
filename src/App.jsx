@@ -6,18 +6,21 @@ import {
   Image as ImageIcon, List as ListIcon,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, 
   Sun, Moon, Eye, Megaphone,
-  ZoomIn, ZoomOut, Download, AlertTriangle
+  ZoomIn, ZoomOut, Download, AlertTriangle,
+  Map as MapIcon, Menu, MapPin, Filter // ✅ 신규 아이콘
 } from 'lucide-react';
 
 // ✅ [KRDS] Button 사용
 import { Button } from 'krds-react';
 
+// ✅ [카카오맵 SDK]
+import { Map, MapMarker } from 'react-kakao-maps-sdk';
+
 // ✅ [Supabase] 클라이언트
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // ------------------------------------------------------------------
-// ✅ [Assets] src/assets 폴더의 이미지 불러오기 (Import 방식)
-// ❗ 파일명과 확장자(.png / .svg)가 실제 파일과 똑같아야 합니다!
+// ✅ [Assets] src/assets 폴더의 이미지 불러오기
 // ------------------------------------------------------------------
 import imgKakao from './assets/kakao_icon.svg';
 import imgBand from './assets/band_icon.svg';
@@ -48,56 +51,27 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 };
 
 // ------------------------------------------------------------------
-// 🔗 [Social] 공유 기능 컴포넌트 (링크 전송 강화 버전)
+// 🔗 [Social] 공유 기능 컴포넌트
 // ------------------------------------------------------------------
 const SocialShare = () => {
-  // 1. 인코딩된 URL (밴드, 페이스북, X용 - 기존 방식 유지)
   const currentUrlEncoded = encodeURIComponent(window.location.href);
   const titleEncoded = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
-
-  // 2. ✅ [추가] 순수 URL (카카오톡용 - 인코딩 없이 원본 주소 사용)
   const rawUrl = window.location.href;
 
-  // ✅ Import한 이미지 변수 연결
-  const icons = {
-    kakao: imgKakao,
-    band: imgBand,
-    facebook: imgFacebook,
-    x: imgX
-  };
+  const icons = { kakao: imgKakao, band: imgBand, facebook: imgFacebook, x: imgX };
 
   const shareKakao = () => {
-    if (!window.Kakao) {
-      alert("⚠️ 카카오 연결 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!window.Kakao.isInitialized()) {
-      window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3'); 
-    }
-
-    // ✅ 카카오톡 메시지 보내기 (링크 연결 강화)
+    if (!window.Kakao) { alert("⚠️ 카카오 연결 중입니다. 잠시 후 다시 시도해주세요."); return; }
+    if (!window.Kakao.isInitialized()) window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3');
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
         title: '아이들의 미래를 잇는 지식 플랫폼',
         description: '선생님과 부모님을 위한 교육 정보와 최신 자료를 확인해보세요.',
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png',
-        
-        // 👇 [핵심] 썸네일 이미지를 클릭해도 해당 페이지로 이동
-        link: {
-          mobileWebUrl: rawUrl,
-          webUrl: rawUrl,
-        },
+        link: { mobileWebUrl: rawUrl, webUrl: rawUrl },
       },
-      buttons: [
-        {
-          title: '웹진 바로가기', // 👇 버튼 텍스트 변경
-          link: {
-            mobileWebUrl: rawUrl, // 👇 버튼 클릭 시 이동할 링크
-            webUrl: rawUrl,
-          },
-        },
-      ],
+      buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
   };
 
@@ -105,9 +79,7 @@ const SocialShare = () => {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
 
-  // 버튼 스타일 (이미지 꽉 채우기)
   const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white flex items-center justify-center";
-
   return (
     <div className="flex justify-center gap-5 py-6">
        <button onClick={shareKakao} className={btnClass} title="카카오톡"><img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover" /></button>
@@ -117,10 +89,10 @@ const SocialShare = () => {
     </div>
   );
 };
+
 // ------------------------------------------------------------------
 // 🚀 Main Logic
 // ------------------------------------------------------------------
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
@@ -130,18 +102,12 @@ const useHistoryState = (initialState) => {
   const [state, setState] = useState(initialState);
   useEffect(() => {
     window.history.replaceState({ view: initialState }, '');
-    const handlePopState = (event) => {
-      if (event.state && event.state.view) setState(event.state.view);
-    };
+    const handlePopState = (event) => { if (event.state && event.state.view) setState(event.state.view); };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-
   const setHistoryState = (newState) => {
-    if (newState !== state) {
-      window.history.pushState({ view: newState }, '', `?view=${newState}`);
-      setState(newState);
-    }
+    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`); setState(newState); }
   };
   return [state, setHistoryState];
 };
@@ -157,7 +123,7 @@ const useContainerSize = (ref) => {
 };
 
 const loadPdfScript = () => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -171,35 +137,9 @@ const incrementViewCount = async (table, id, currentViews) => {
   try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } catch (e) { console.error(e); }
 };
 
-const BottomNav = ({ currentView, onViewChange }) => {
-  const navItems = [
-    { id: 'home', label: '홈', icon: Home },
-    { id: 'news', label: '뉴스', icon: Newspaper },
-    { id: 'notice', label: '소식', icon: Megaphone },
-    { id: 'issue_list', label: '자료실', icon: Book },
-    { id: 'gallery', label: '갤러리', icon: ImageIcon },
-  ];
-
-  return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 pb-safe z-50 h-[65px] flex items-center justify-around shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-      {navItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onViewChange(item.id)}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
-            currentView === item.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'
-          }`}
-        >
-          <item.icon size={24} strokeWidth={currentView === item.id ? 2.5 : 2} />
-          <span className="text-[11px] font-medium tracking-tight">{item.label}</span>
-        </button>
-      ))}
-    </nav>
-  );
-};
-
+// Footer Component
 const Footer = () => (
-  <footer className="w-full bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 pb-28 md:pb-12 mt-auto z-10 relative">
+  <footer className="w-full bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 pb-12 mt-auto z-10 relative">
     <div className="max-w-7xl mx-auto px-4 text-center">
        <div className="mb-8">
           <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3">콘텐츠 공유하기</p>
@@ -218,6 +158,7 @@ const Footer = () => (
   </footer>
 );
 
+// Auth & Modals
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -228,9 +169,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
   const handleAuth = async (e) => {
     if (!supabase) return;
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    e.preventDefault(); setLoading(true); setError(null);
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
@@ -253,14 +192,10 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         </div>
         <div className="p-7">
           <form onSubmit={handleAuth} className="space-y-6">
-            <div>
-              <label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
-              <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
-              <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
+            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
+            <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
+            <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required /></div>
             {error && <p className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded">{error}</p>}
             <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">
               {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
@@ -296,7 +231,8 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             <button onClick={onClose}><X className="text-gray-400 hover:text-gray-900 dark:hover:text-white"/></button>
           </div>
           <div className="p-6">
-            {isUploading ? <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-lg text-gray-600">전송 중...</p></div> : (
+            {isUploading ?
+             <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-lg text-gray-600">전송 중...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목 입력" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
@@ -311,7 +247,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      <div>
                         <label className={getLabelClass}>파일</label>
                         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 relative cursor-pointer group">
-                           <div className="space-y-1 text-center">
+                          <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
                               <div className="flex text-base text-gray-600 justify-center">
                                  <label className="relative cursor-pointer text-blue-600 hover:text-blue-500"><span>업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
@@ -333,6 +269,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
+// PDF Viewer
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -381,9 +318,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         const containerHeight = containerRef.current.clientHeight;
         let autoScale;
         if (window.innerWidth >= 768) { 
-           const widthScale = (containerWidth / unscaledViewport.width);
-           const heightScale = (containerHeight / unscaledViewport.height);
-           autoScale = Math.min(widthScale, heightScale) * 0.95; 
+           autoScale = Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95; 
         } else { 
            autoScale = (containerWidth / unscaledViewport.width) * 0.98;
         }
@@ -487,6 +422,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
+// Section Components
 const NewsFeed = ({ limit, isAdmin, onBack }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -517,17 +453,13 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
       {!limit && (
         <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-900 dark:border-gray-100">
            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-                 <Newspaper size={36} className="text-blue-600"/> 뉴스룸
-              </h2>
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3"><Newspaper size={36} className="text-blue-600"/> 뉴스룸</h2>
               <button onClick={fetchNews} disabled={loading} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-all" title="새로고침">
                  <RefreshCw size={24} className={loading ? "animate-spin" : ""} />
               </button>
            </div>
            {onBack && (
-              <button onClick={onBack} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-2">
-                <Home size={20}/> 홈으로
-             </button>
+              <button onClick={onBack} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-2"><Home size={20}/> 홈으로</button>
            )}
         </div>
       )}
@@ -541,8 +473,6 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
                   </div>
                   <h3 className="font-bold text-xl text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
                   <p className="text-lg text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
-                  
-                  {/* ✅ 조회수 메타 정보 */}
                   <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 font-medium">
                       <span className="flex items-center gap-1"><Eye size={12}/> 조회수: {item.views || 0}회</span>
                   </div>
@@ -563,7 +493,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [filter, setFilter] = useState('all'); 
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
-
   useEffect(() => {
     const f = async () => { if(supabase) { const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false }); if(data) setNotices(data); }}; f();
   }, []);
@@ -578,7 +507,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
       incrementViewCount('notices', item.id, item.views);
       const updated = { ...item, views: (item.views || 0) + 1 };
       setNotices(prev => prev.map(n => n.id === item.id ? updated : n));
-      setSelectedNotice(updated); // 팝업 오픈
+      setSelectedNotice(updated);
   };
   const filteredNotices = notices.filter(n => {
       if(filter === 'all') return true;
@@ -616,10 +545,8 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
                  <h3 className="text-xl font-bold mb-2 line-clamp-1">{n.title}</h3>
                  <p className="text-base text-gray-600 dark:text-gray-400 line-clamp-2">{n.content}</p>
                  {n.event_date && <div className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-100"><CalendarIcon size={16}/> 일정: {n.event_date}</div>}
-                 
-                 {/* ✅ 작성자+조회수 */}
                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-3 text-xs text-gray-400 font-bold">
-                     <span className="flex items-center gap-1"><User size={12}/> 관리자</span>
+                    <span className="flex items-center gap-1"><User size={12}/> 관리자</span>
                     <span className="w-px h-2 bg-gray-300"></span>
                     <span className="flex items-center gap-1"><Eye size={12}/> {n.views || 0}</span>
                  </div>
@@ -680,8 +607,7 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   const [selected, setSelected] = useState(null);
   useEffect(() => { const f = async () => { if(supabase) { let q = supabase.from('gallery').select('*').order('created_at', { ascending: false }); if(limit) q = q.limit(limit); const { data } = await q; if(data) setImages(data); }}; f(); }, [limit]);
   const handleDelete = async (id) => {
-    if(confirm('사진을 삭제하시겠습니까?')) { await supabase.from('gallery').delete().eq('id', id);
-    setImages(prev => prev.filter(img => img.id !== id)); }
+    if(confirm('사진을 삭제하시겠습니까?')) { await supabase.from('gallery').delete().eq('id', id); setImages(prev => prev.filter(img => img.id !== id)); }
   };
   const handleImageClick = (img) => {
       setSelected(img);
@@ -699,16 +625,13 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
                    <div className="p-4 flex flex-col flex-1">
                        <h4 className="font-bold text-base truncate mb-1">{img.title}</h4>
                        <p className="text-sm text-gray-500 mb-3">{new Date(img.created_at).toLocaleDateString()}</p>
-                       
-                       {/* ✅ 작성자+조회수 */}
                        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-[11px] text-gray-400 font-bold">
                            <span className="flex items-center gap-1">관리자</span>
                            <span className="flex items-center gap-1"><Eye size={10}/> {img.views || 0}</span>
                        </div>
                    </div>
                )}
-               {!isWidget && (userRole === 'team' || userRole === 'admin') && <button onClick={(e) => {e.stopPropagation();
-               handleDelete(img.id)}} className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>}
+               {!isWidget && (userRole === 'team' || userRole === 'admin') && <button onClick={(e) => {e.stopPropagation(); handleDelete(img.id)}} className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>}
             </div>
          ))}
       </div>
@@ -733,12 +656,9 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
       )}
     </div>
     <div className="p-5 flex-1 flex flex-col">
-      <div className="flex justify-between items-start mb-2"><span className="text-sm font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation();
-      onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
+      <div className="flex justify-between items-start mb-2"><span className="text-sm font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 px-2 py-0.5 rounded">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-gray-300 hover:text-red-600"><Trash2 size={16}/></button>}</div>
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug mb-2 group-hover:text-[#2563EB] dark:group-hover:text-blue-400 transition-colors line-clamp-2">{issue.title}</h3>
       <p className="text-lg text-gray-500 dark:text-gray-400 line-clamp-2 mt-auto mb-3">{issue.description || "내용 없음"}</p>
-      
-      {/* ✅ 자료실 조회수 표시 */}
       <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs font-bold text-gray-400">
          <span>관리자 발행</span>
          <span className="flex items-center gap-1"><Eye size={12}/> {issue.views || 0}</span>
@@ -747,22 +667,30 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
-const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme }) => (
-  <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-[70px] flex items-center shadow-sm">
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
-         <div className="w-10 h-10 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
-         <div className="flex flex-col justify-center"><span className="font-bold text-2xl leading-none tracking-tight group-hover:text-[#2563EB] transition-colors">지식 플랫폼</span><span className="text-sm font-bold text-gray-500 mt-0.5 tracking-wide">아이들의 미래를 잇는</span></div>
+// ✅ Navbar Update (Menu Icon 추가)
+const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme, onMenuClick }) => (
+  <header className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 shadow-sm h-16">
+    <div className="container mx-auto px-4 h-full flex items-center justify-between">
+      <div className="flex items-center gap-2 cursor-pointer group" onClick={onHomeClick}>
+         <div className="w-9 h-9 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-black text-lg shadow-md group-hover:bg-[#1d4ed8] transition-colors">K</div>
+         <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white truncate group-hover:text-[#2563EB] transition-colors">아이들의 미래를 잇는 지식 플랫폼</h1>
       </div>
-      <nav className="hidden md:flex items-center gap-2">
-        {['home', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-lg font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB] dark:text-gray-300 dark:hover:bg-slate-800'}`}>{key === 'home' ? '홈' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}</button>
+      <nav className="hidden md:flex items-center gap-1">
+        {['home', 'resource_map', 'news', 'notice', 'issue_list', 'gallery'].map(key => (
+          <button key={key} onClick={() => onViewChange(key)} className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${currentView === key ? 'bg-[#2563EB] text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-[#2563EB] dark:text-gray-300 dark:hover:bg-slate-800'}`}>
+            {key === 'home' ? '홈' : key === 'resource_map' ? '체험지도' : key === 'news' ? '뉴스룸' : key === 'notice' ? '소식' : key === 'issue_list' ? '자료실' : '갤러리'}
+          </button>
         ))}
       </nav>
       <div className="flex items-center gap-2">
-        <button onClick={toggleTheme} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:text-gray-400 dark:hover:bg-slate-800">{isDarkMode ? <Sun size={24} className="text-yellow-400"/> : <Moon size={24}/>}</button>
-        <button className="p-2 text-gray-400 hover:text-[#2563EB] hidden sm:block"><Search size={24}/></button>
-        {isAdmin ? <button onClick={onLogout} className="px-4 py-2 border rounded-md text-sm font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800">로그아웃</button> : <Button variant="primary" size="medium" onClick={onLoginClick} className="shadow-sm">로그인</Button>}
+        <button onClick={toggleTheme} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:text-gray-400 dark:hover:bg-slate-800">
+          {isDarkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20}/>}
+        </button>
+        {isAdmin ? <button onClick={onLogout} className="hidden sm:block px-4 py-2 border rounded-md text-sm font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800">로그아웃</button> : <Button variant="primary" size="medium" onClick={onLoginClick} className="hidden sm:block shadow-sm text-sm">로그인</Button>}
+        {/* ✅ 햄버거 버튼 */}
+        <button onClick={onMenuClick} className="p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition">
+          <Menu size={28} />
+        </button>
       </div>
     </div>
   </header>
@@ -779,6 +707,8 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); // ✅ 전역 사이드 메뉴 상태 추가
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
@@ -789,102 +719,169 @@ const MainApp = () => {
   const [newsKey, setNewsKey] = useState(0);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    if (isDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
+    else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
   }, [isDarkMode]);
-  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
   const handleLogout = async () => { if(supabase) { await supabase.auth.signOut(); localStorage.clear(); window.location.href = '/'; }};
 
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border text-center"><AlertTriangle size={32} className="mx-auto text-red-500 mb-4"/><h1 className="text-xl font-bold mb-2">Supabase 설정 필요</h1><p className="text-gray-600 text-sm">Vercel 환경변수를 확인해주세요.</p></div></div>;
+
   useEffect(() => {
     const initAuth = async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) { setUser(session.user); const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single(); setRole(data?.role || 'general'); }}; initAuth();
     const fetchIssues = async () => { const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); if (data) setIssues(data); }; fetchIssues();
   }, []);
+
   const handleUpload = async (data) => {
     setIsUploading(true);
     try {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice', author_id: user.id }]);
-       else if (data.type === 'gallery' && data.file) { const fn = `${Date.now()}_${data.file.name}`; await supabase.storage.from('gallery').upload(fn, data.file);
-       const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fn); await supabase.from('gallery').insert([{ title: data.title, image_url: publicUrl, author_id: user.id }]);
-       }
+       else if (data.type === 'gallery' && data.file) { const fn = `${Date.now()}_${data.file.name}`; await supabase.storage.from('gallery').upload(fn, data.file); const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fn); await supabase.from('gallery').insert([{ title: data.title, image_url: publicUrl, author_id: user.id }]); }
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-blue-100', icon: '📘' }]);
-       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`;
-       await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
-       await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
+       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`; await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }]; await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
        alert("완료되었습니다!"); setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
+
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
-  const handleIssueClick = (issue) => {
-    incrementViewCount('issues', issue.id, issue.views);
-    const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
-    setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i));
-    setCurrentIssue(updatedIssue);
-    setView('issue_detail');
-  };
+  const handleIssueClick = (issue) => { incrementViewCount('issues', issue.id, issue.views); const updatedIssue = { ...issue, views: (issue.views || 0) + 1 }; setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); setCurrentIssue(updatedIssue); setView('issue_detail'); };
+
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-       <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={handleLogout} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme}/>
-       <main className="flex-1 pb-24 w-full">
-          {view === 'home' && (
-             <div className="animate-in fade-in space-y-16 pb-20">
-                <section className="bg-gray-50 dark:bg-slate-800 py-16 md:py-24 border-b border-gray-200 dark:border-gray-700">
-                   <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                      <div><span className="inline-block py-1.5 px-4 rounded bg-blue-100 text-blue-700 text-sm font-bold mb-6">Beta v25.9.6 (Assets Patch)</span><h1 className="text-5xl md:text-6xl font-black leading-tight mb-8">아이들의 내일을 잇는<br/><span className="text-[#2563EB] dark:text-blue-400">지식 플랫폼.</span></h1><p className="text-gray-600 dark:text-gray-300 text-xl mb-10 leading-relaxed">선생님과 부모님을 위한 필수 지식과<br/>다양한 교육 자료를 한곳에서 만나보세요.</p><div className="flex gap-4"><button onClick={() => setView('issue_list')} className="px-10 py-5 bg-[#2563EB] text-white rounded-lg font-bold shadow-lg hover:bg-[#1d4ed8] flex items-center gap-3 text-lg">자료실 바로가기 <ArrowRight size={20}/></button></div></div>
-                      <div className="relative h-[300px] md:h-[400px] bg-white dark:bg-slate-700 rounded-2xl border shadow-2xl flex items-center justify-center p-12">{issues[0] ?
-                      (<div className="text-center"><div className="text-sm font-bold text-gray-400 mb-4">LATEST ISSUE</div><div className="text-9xl mb-6 animate-bounce-slow">{issues[0].icon}</div><h3 className="text-3xl font-black">{issues[0].title}</h3></div>) : <div className="text-gray-300 font-bold text-xl">발행된 호수가 없습니다.</div>}</div>
-                   </div>
-                </section>
-                <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12">
-                   <div className="flex flex-col h-[600px]">
-                      <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
-                          <div className="flex items-center gap-3">
-                             <h3 className="text-3xl font-black flex items-center gap-3"><Newspaper size={32} className="text-blue-600"/> 뉴스룸</h3>
-                             <button onClick={() => setNewsKey(prev => prev + 1)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 transition-colors" title="새로고침"><RefreshCw size={20} /></button>
-                          </div>
-                          <button onClick={() => setView('news')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={18}/></button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto border rounded-xl bg-white dark:bg-slate-800 shadow-sm"><NewsFeed key={newsKey} limit={10} isAdmin={role === 'admin'} /></div>
-                   </div>
-                   <div className="flex flex-col h-[600px]">
-                       <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
-                          <h3 className="text-3xl font-black flex items-center gap-3"><CalendarIcon size={32} className="text-blue-600"/> 이달의 일정</h3>
-                         <button onClick={() => setView('notice')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={18}/></button>
-                      </div>
-                      <div className="flex-1 border rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-sm"><NoticeBoard userRole={role} onWriteClick={()=>{}} initialMode='calendar' /></div>
-                   </div>
-                </section>
-                <section className="max-w-7xl mx-auto px-4 mt-8">
-                   <div className="flex justify-between items-end mb-6 border-b-2 border-gray-900 dark:border-gray-100 pb-3">
-                      <h3 className="text-3xl font-black flex items-center gap-3"><ImageIcon size={32} className="text-blue-600"/> 갤러리</h3>
-                      <button onClick={() => setView('gallery')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1">전체보기 <ChevronRight size={18}/></button>
-                   </div>
-                   <div className="w-full">
-                      <Gallery userRole={role} onUploadClick={()=>{}} limit={4} isWidget={true} />
-                   </div>
-                </section>
-                <section className="max-w-7xl mx-auto px-4 mt-8">
-                   <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
-                      <h2 className="text-3xl font-bold">월간 자료실</h2>
-                      <button onClick={() => setView('issue_list')} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={18}/></button>
-                   </div>
-                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                      {issues.slice(0, 6).map(issue => (
-                         <div key={issue.id} className="transform scale-95 origin-top-left h-full">
-                           <IssueCard issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
-                         </div>
-                      ))}
-                   </div>
-                </section>
+       
+       {/* 🍔 전역 사이드 메뉴 (Side Drawer) */}
+       {isSideMenuOpen && (
+         <div className="fixed inset-0 z-[100] flex justify-end">
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsSideMenuOpen(false)} />
+           <div className="relative w-[280px] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col animate-slide-in-right">
+             <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+               <span className="font-bold text-lg text-gray-900 dark:text-white">전체 메뉴</span>
+               <button onClick={() => setIsSideMenuOpen(false)} className="p-2 text-gray-500 hover:text-red-500 rounded-full transition-colors"><X size={24} /></button>
              </div>
+             <nav className="flex-1 overflow-y-auto p-4">
+               <ul className="flex flex-col gap-2">
+                 {[
+                   { id: 'home', icon: <Home size={20} />, label: '홈' },
+                   { id: 'resource_map', icon: <MapIcon size={20} className="text-[#2563EB]" />, label: '체험자원 지도', badge: 'New' },
+                   { id: 'issue_list', icon: <Book size={20} />, label: '월간 웹진' },
+                   { id: 'notice', icon: <CalendarIcon size={20} />, label: '기관 소식' },
+                   { id: 'news', icon: <Newspaper size={20} />, label: '뉴스룸' },
+                   { id: 'gallery', icon: <ImageIcon size={20} />, label: '갤러리' }
+                 ].map((item) => (
+                   <li key={item.id}>
+                     <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-left">
+                       <div className="flex items-center gap-3 text-gray-700 dark:text-gray-200 font-medium">{item.icon} {item.label}</div>
+                       {item.badge && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{item.badge}</span>}
+                     </button>
+                   </li>
+                 ))}
+               </ul>
+             </nav>
+             <div className="p-5 border-t border-gray-100 dark:border-gray-800">
+               {role === 'admin' ? 
+                 <Button onClick={() => { handleLogout(); setIsSideMenuOpen(false); }} className="w-full justify-center bg-gray-100 text-gray-700 border-none hover:bg-gray-200">로그아웃</Button> 
+                 : 
+                 <Button onClick={() => { setIsAuthOpen(true); setIsSideMenuOpen(false); }} className="w-full justify-center"><User size={16} className="mr-2" /> 관리자 로그인</Button>
+               }
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* 상단 헤더 */}
+       <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={handleLogout} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onMenuClick={() => setIsSideMenuOpen(true)}/>
+       
+       {/* 메인 영역: 지도 뷰일 때는 풀스크린 높이 조절 */}
+       <main className={`flex-1 w-full ${view === 'resource_map' ? 'h-[calc(100dvh-64px)]' : 'pb-24'}`}>
+          
+          {/* =========================================
+              1. 신규 홈 화면 (Home)
+          ========================================= */}
+          {view === 'home' && (
+            <div className="flex flex-col gap-6 animate-fade-in max-w-3xl mx-auto px-4 py-6">
+              {/* 하이라이트 배너 */}
+              <div className="w-full h-56 bg-slate-800 rounded-2xl relative overflow-hidden shadow-lg flex items-end p-6 group cursor-pointer" onClick={() => setView('resource_map')}>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
+                {/* 갤러리 최신 이미지를 배경으로 깔거나, 없으면 기본 컬러/패턴 */}
+                <div className="absolute inset-0 bg-[#2563EB]/20 bg-[url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2038&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay group-hover:scale-105 transition-transform duration-700"></div>
+                <div className="relative z-20">
+                  <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.0 업데이트</span>
+                  <h2 className="text-white text-2xl md:text-3xl font-black leading-snug">우리 동네 영유아 체험자원을<br/>한눈에 찾아보세요!</h2>
+                </div>
+              </div>
+
+              {/* 체험자원 지도 CTA 버튼 */}
+              <button onClick={() => setView('resource_map')} className="w-full bg-[#2563EB] text-white rounded-2xl py-5 px-5 flex justify-between items-center shadow-lg hover:bg-blue-700 transition-transform active:scale-[0.98]">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 p-3 rounded-full"><MapPin size={28} /></div>
+                  <div className="text-left">
+                    <div className="text-blue-100 text-sm font-medium">전북특별자치도 14개 시군</div>
+                    <div className="font-bold text-xl">내 주변 체험자원 찾기</div>
+                  </div>
+                </div>
+                <ChevronRight size={28} className="opacity-80" />
+              </button>
+
+              {/* 2x2 퀵 메뉴 그리드 */}
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'issue_list', title: '월간 자료실', icon: <Book size={28}/>, color: 'bg-indigo-50 text-indigo-600' },
+                  { id: 'notice', title: '기관 소식', icon: <CalendarIcon size={28}/>, color: 'bg-emerald-50 text-emerald-600' },
+                  { id: 'gallery', title: '갤러리', icon: <ImageIcon size={28}/>, color: 'bg-amber-50 text-amber-600' },
+                  { id: 'news', title: '뉴스룸', icon: <Newspaper size={28}/>, color: 'bg-rose-50 text-rose-600' }
+                ].map(menu => (
+                  <div key={menu.id} onClick={() => setView(menu.id)} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]">
+                    <div className={`p-4 rounded-full ${menu.color} dark:bg-slate-700 dark:text-white`}>{menu.icon}</div>
+                    <span className="font-bold text-gray-800 dark:text-gray-100">{menu.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* =========================================
+              2. 포털형 체험자원 지도 (Resource Map)
+          ========================================= */}
+          {view === 'resource_map' && (
+            <div className="flex flex-col md:flex-row w-full h-full">
+              {/* 좌측(PC) / 상단(Mobile) : 패널 */}
+              <div className="w-full md:w-[400px] h-2/5 md:h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shadow-md z-10 shrink-0">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Filter size={18} className="text-[#2563EB]" />
+                    <span className="font-bold text-gray-900 dark:text-white">체험자원 검색</span>
+                  </div>
+                  <input type="text" placeholder="체험처명 또는 지역 검색" className="w-full h-11 px-4 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]" />
+                  <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {['전체', '전주시', '군산시', '익산시', '완주군'].map(region => (
+                      <button key={region} className="px-4 py-1.5 bg-gray-100 dark:bg-slate-800 text-sm font-medium rounded-full whitespace-nowrap text-gray-700 dark:text-gray-300 hover:bg-[#2563EB] hover:text-white transition-colors">
+                        {region}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-950">
+                  <div className="text-center text-gray-400 py-10 flex flex-col items-center gap-2">
+                    <MapPin size={32} className="opacity-20" />
+                    <span>데이터베이스 연동 대기 중입니다.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 우측(PC) / 하단(Mobile) : 카카오맵 */}
+              <div className="flex-1 h-3/5 md:h-full relative bg-gray-200">
+                <Map center={{ lat: 35.8242238, lng: 127.1479532 }} style={{ width: "100%", height: "100%" }} level={10}>
+                  <MapMarker position={{ lat: 35.8242238, lng: 127.1479532 }}>
+                    <div style={{ padding: "5px", color: "#000", fontSize: "12px", textAlign: "center", fontWeight: "bold" }}>전라북도청</div>
+                  </MapMarker>
+                </Map>
+              </div>
+            </div>
+          )}
+
+          {/* 기존 뷰 컴포넌트들 유지 */}
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
@@ -893,8 +890,8 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
        
-       <Footer />
-       <BottomNav currentView={view} onViewChange={setView} />
+       {/* 지도 뷰가 아닐 때만 하단 Footer 노출 */}
+       {view !== 'resource_map' && <Footer />}
        
        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => window.location.reload()}/>
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
