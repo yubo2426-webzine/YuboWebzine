@@ -7,34 +7,49 @@ import {
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, 
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, AlertTriangle,
-  Map as MapIcon, Menu, MapPin, Filter // ✅ 신규 아이콘
+  Map as MapIcon, Menu, MapPin, Filter
 } from 'lucide-react';
 
-// ✅ [KRDS] Button 사용
 import { Button } from 'krds-react';
-
-// ✅ [카카오맵 SDK]
-import { Map, MapMarker } from 'react-kakao-maps-sdk';
-
-// ✅ [Supabase] 클라이언트
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// ------------------------------------------------------------------
-// ✅ [Assets] src/assets 폴더의 이미지 불러오기
-// ------------------------------------------------------------------
 import imgKakao from './assets/kakao_icon.svg';
 import imgBand from './assets/band_icon.svg';
 import imgFacebook from './assets/facebook_icon.png';
 import imgX from './assets/x_icon.svg';
 
 // ------------------------------------------------------------------
+// ✅ [React 19 호환] 자체 구현한 useKakaoLoader 커스텀 훅
+// 라이브러리 충돌 없이 문서와 동일하게 로딩 상태(loading, error)를 반환합니다.
+// ------------------------------------------------------------------
+const useCustomKakaoLoader = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (window.kakao && window.kakao.maps) {
+      setLoading(false);
+      return;
+    }
+    const script = document.createElement('script');
+    // autoload=false를 적용하여 React 라이프사이클에 맞게 수동 로드합니다.
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => setLoading(false));
+    };
+    script.onerror = () => setError(true);
+    document.head.appendChild(script);
+  }, []);
+
+  return [loading, error];
+};
+
+// ------------------------------------------------------------------
 // 🏛️ [KRDS System] 커스텀 컴포넌트
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
-  <input 
-    className={`w-full h-[50px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`}
-    {...props}
-  />
+  <input className={`w-full h-[50px] px-4 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 disabled:text-gray-400 transition-all ${className}`} {...props} />
 );
 
 const KRDSBadge = ({ variant = 'neutral', children, className }) => {
@@ -43,21 +58,13 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
     success: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800',
     neutral: 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-gray-600',
   };
-  return (
-    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded text-xs font-bold ${styles[variant]} ${className}`}>
-      {children}
-    </span>
-  );
+  return <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded text-xs font-bold ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// ------------------------------------------------------------------
-// 🔗 [Social] 공유 기능 컴포넌트
-// ------------------------------------------------------------------
 const SocialShare = () => {
   const currentUrlEncoded = encodeURIComponent(window.location.href);
   const titleEncoded = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
   const rawUrl = window.location.href;
-
   const icons = { kakao: imgKakao, band: imgBand, facebook: imgFacebook, x: imgX };
 
   const shareKakao = () => {
@@ -65,20 +72,13 @@ const SocialShare = () => {
     if (!window.Kakao.isInitialized()) window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3');
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
-      content: {
-        title: '아이들의 미래를 잇는 지식 플랫폼',
-        description: '선생님과 부모님을 위한 교육 정보와 최신 자료를 확인해보세요.',
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png',
-        link: { mobileWebUrl: rawUrl, webUrl: rawUrl },
-      },
+      content: { title: '아이들의 미래를 잇는 지식 플랫폼', description: '선생님과 부모님을 위한 교육 정보와 최신 자료를 확인해보세요.', imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
   };
-
   const shareBand = () => window.open(`https://band.us/plugin/share?body=${titleEncoded}%0A${currentUrlEncoded}&route=${currentUrlEncoded}`, '_blank');
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
-
   const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white flex items-center justify-center";
   return (
     <div className="flex justify-center gap-5 py-6">
@@ -90,14 +90,10 @@ const SocialShare = () => {
   );
 };
 
-// ------------------------------------------------------------------
-// 🚀 Main Logic
-// ------------------------------------------------------------------
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// --- [Hook] History API ---
 const useHistoryState = (initialState) => {
   const [state, setState] = useState(initialState);
   useEffect(() => {
@@ -137,28 +133,20 @@ const incrementViewCount = async (table, id, currentViews) => {
   try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } catch (e) { console.error(e); }
 };
 
-// Footer Component
 const Footer = () => (
   <footer className="w-full bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-10 pb-12 mt-auto z-10 relative">
     <div className="max-w-7xl mx-auto px-4 text-center">
-       <div className="mb-8">
-          <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3">콘텐츠 공유하기</p>
-          <SocialShare />
-       </div>
+       <div className="mb-8"><p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3">콘텐츠 공유하기</p><SocialShare /></div>
        <div className="flex justify-center gap-6 mb-6">
           <button className="text-sm font-bold text-gray-500 hover:text-blue-600">이용약관</button>
           <button className="text-sm font-bold text-gray-500 hover:text-blue-600">개인정보처리방침</button>
           <button className="text-sm font-bold text-gray-500 hover:text-blue-600">운영 정책</button>
        </div>
-       <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-          © 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>
-          Contact: help@korea-kids-platform.kr
-       </p>
+       <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">© 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>Contact: help@korea-kids-platform.kr</p>
     </div>
   </footer>
 );
 
-// Auth & Modals
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   if (!isOpen) return null;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -171,41 +159,23 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     if (!supabase) return;
     e.preventDefault(); setLoading(true); setError(null);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        alert("가입 확인 메일을 보냈습니다."); setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        onLoginSuccess(); onClose();
-      }
+      if (isSignUp) { const { error } = await supabase.auth.signUp({ email, password }); if (error) throw error; alert("가입 확인 메일을 보냈습니다."); setIsSignUp(false); } 
+      else { const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) throw error; onLoginSuccess(); onClose(); }
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="bg-gray-50 dark:bg-slate-900 px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{isSignUp ? '회원가입' : '로그인'}</h2>
-          <button onClick={onClose}><X size={26} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"/></button>
-        </div>
+        <div className="bg-gray-50 dark:bg-slate-900 px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"><h2 className="text-2xl font-bold text-gray-900 dark:text-white">{isSignUp ? '회원가입' : '로그인'}</h2><button onClick={onClose}><X size={26} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"/></button></div>
         <div className="p-7">
           <form onSubmit={handleAuth} className="space-y-6">
-            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label>
-            <KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label>
-            <KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">이메일</label><KRDSInput type="email" placeholder="example@korea.kr" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+            <div><label className="block text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">비밀번호</label><KRDSInput type="password" placeholder="********" value={password} onChange={e => setPassword(e.target.value)} required /></div>
             {error && <p className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded">{error}</p>}
-            <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">
-              {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
-            </Button>
+            <Button type="submit" disabled={loading} variant="primary" size="large" className="w-full text-lg h-[50px]">{loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}</Button>
           </form>
-          <div className="mt-6 text-center">
-             <button onClick={() => setIsSignUp(!isSignUp)} className="text-base text-gray-500 underline hover:text-blue-600">
-              {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
-            </button>
-          </div>
+          <div className="mt-6 text-center"><button onClick={() => setIsSignUp(!isSignUp)} className="text-base text-gray-500 underline hover:text-blue-600">{isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}</button></div>
         </div>
       </div>
     </div>
@@ -257,10 +227,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         </div>
                      </div>
                   )}
-                  <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
-                     <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-md text-base font-bold hover:bg-gray-50 transition-colors">취소</button>
-                     <Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">완료</Button>
-                  </div>
+                  <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6"><button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-md text-base font-bold hover:bg-gray-50 transition-colors">취소</button><Button type="submit" variant="primary" size="medium" className="flex-1 shadow-sm">완료</Button></div>
                </form>
             )}
          </div>
@@ -269,7 +236,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
-// PDF Viewer
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -317,11 +283,8 @@ const CustomPDFViewer = ({ article, onBack }) => {
         const containerWidth = containerRef.current.clientWidth;
         const containerHeight = containerRef.current.clientHeight;
         let autoScale;
-        if (window.innerWidth >= 768) { 
-           autoScale = Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95; 
-        } else { 
-           autoScale = (containerWidth / unscaledViewport.width) * 0.98;
-        }
+        if (window.innerWidth >= 768) autoScale = Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95; 
+        else autoScale = (containerWidth / unscaledViewport.width) * 0.98;
         const finalScale = scale * autoScale;
         const viewport = page.getViewport({ scale: finalScale });
         const outputScale = window.devicePixelRatio || 1;
@@ -340,21 +303,14 @@ const CustomPDFViewer = ({ article, onBack }) => {
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
-      isPinching.current = true;
-      pinchStartDist.current = getTouchDistance(e.touches);
-      pinchStartScale.current = scale;
-    } else {
-      isPinching.current = false;
-      touchStartX.current = e.changedTouches[0].screenX;
-    }
+    if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches); pinchStartScale.current = scale; } 
+    else { isPinching.current = false; touchStartX.current = e.changedTouches[0].screenX; }
   };
   const handleTouchMove = (e) => {
     if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) {
         e.preventDefault();
         const dist = getTouchDistance(e.touches);
-        const ratio = dist / pinchStartDist.current;
-        contentWrapperRef.current.style.transform = `scale(${ratio})`; 
+        contentWrapperRef.current.style.transform = `scale(${dist / pinchStartDist.current})`; 
     }
   };
   const handleTouchEnd = (e) => {
@@ -370,22 +326,13 @@ const CustomPDFViewer = ({ article, onBack }) => {
         }
     }
   };
-  const handleDownload = () => window.open(article.fileUrl || article.file_url, '_blank');
-  
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none" tabIndex={0}>
        <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50">
-          <div className="flex items-center gap-2">
-            <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button>
-            <h2 className="font-bold text-lg text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
-          </div>
+          <div className="flex items-center gap-2"><button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ArrowLeft className="text-gray-700 dark:text-white"/></button><h2 className="font-bold text-lg text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2></div>
           <div className="flex items-center gap-1">
-             <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg mr-2">
-                <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2"><ZoomOut size={20}/></button>
-                <span className="text-sm w-12 text-center font-bold">{Math.round(scale * 100)}%</span>
-                <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2"><ZoomIn size={20}/></button>
-             </div>
-             <button onClick={handleDownload} className="p-2"><Download size={24}/></button>
+             <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg mr-2"><button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2"><ZoomOut size={20}/></button><span className="text-sm w-12 text-center font-bold">{Math.round(scale * 100)}%</span><button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2"><ZoomIn size={20}/></button></div>
+             <button onClick={() => window.open(article.fileUrl || article.file_url, '_blank')} className="p-2"><Download size={24}/></button>
              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-blue-100 text-blue-600' : ''}`}><ListIcon size={24}/></button>
           </div>
        </div>
@@ -398,19 +345,11 @@ const CustomPDFViewer = ({ article, onBack }) => {
                 ))}
              </div>
           </div>
-          <div 
-             className="flex-1 overflow-auto bg-gray-200 dark:bg-slate-900 flex justify-center items-center p-4 relative h-full" 
-             ref={containerRef}
-             onTouchStart={handleTouchStart}
-             onTouchMove={handleTouchMove}
-             onTouchEnd={handleTouchEnd}
-          >
+          <div className="flex-1 overflow-auto bg-gray-200 dark:bg-slate-900 flex justify-center items-center p-4 relative h-full" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              <div className="absolute left-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer active:bg-black/5" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.max(1, p-1));}} />
              <div className="absolute right-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer active:bg-black/5" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages||1, p+1));}} />
-             <div ref={contentWrapperRef} className="shadow-2xl transition-transform duration-75 ease-out origin-center">
-                <canvas ref={canvasRef} className="bg-white block rounded-sm mx-auto"/>
-             </div>
+             <div ref={contentWrapperRef} className="shadow-2xl transition-transform duration-75 ease-out origin-center"><canvas ref={canvasRef} className="bg-white block rounded-sm mx-auto"/></div>
           </div>
        </div>
        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-6 py-3 rounded-full shadow-2xl border flex items-center gap-8 z-50">
@@ -422,7 +361,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// Section Components
 const NewsFeed = ({ limit, isAdmin, onBack }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -454,13 +392,9 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
         <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-900 dark:border-gray-100">
            <div className="flex items-center gap-3">
               <h2 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3"><Newspaper size={36} className="text-blue-600"/> 뉴스룸</h2>
-              <button onClick={fetchNews} disabled={loading} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-all" title="새로고침">
-                 <RefreshCw size={24} className={loading ? "animate-spin" : ""} />
-              </button>
+              <button onClick={fetchNews} disabled={loading} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-all" title="새로고침"><RefreshCw size={24} className={loading ? "animate-spin" : ""} /></button>
            </div>
-           {onBack && (
-              <button onClick={onBack} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-2"><Home size={20}/> 홈으로</button>
-           )}
+           {onBack && <button onClick={onBack} className="text-base font-bold text-gray-500 hover:text-blue-600 flex items-center gap-2"><Home size={20}/> 홈으로</button>}
         </div>
       )}
       <div className={`flex flex-col ${limit ? '' : 'border-t border-gray-200 dark:border-gray-700'}`}>
@@ -473,9 +407,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
                   </div>
                   <h3 className="font-bold text-xl text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-1">{item.title}</h3>
                   <p className="text-lg text-gray-500 mt-1 line-clamp-2">클릭하여 원문 기사를 확인하세요.</p>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 font-medium">
-                      <span className="flex items-center gap-1"><Eye size={12}/> 조회수: {item.views || 0}회</span>
-                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 font-medium"><span className="flex items-center gap-1"><Eye size={12}/> 조회수: {item.views || 0}회</span></div>
                </div>
                <div className="flex items-center gap-2">
                    {!limit && <ArrowUpRight size={20} className="hidden md:block text-gray-300"/>}
@@ -559,7 +491,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
         </div>
       )}
 
-      {/* ✅ [Popup] 공지사항 상세 모달 */}
       {selectedNotice && (
         <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedNotice(null)}>
            <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col relative" onClick={e => e.stopPropagation()}>
@@ -667,7 +598,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   </div>
 );
 
-// ✅ Navbar Update (Menu Icon 추가)
 const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme, onMenuClick }) => (
   <header className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 shadow-sm h-16">
     <div className="container mx-auto px-4 h-full flex items-center justify-between">
@@ -687,7 +617,6 @@ const Navbar = ({ isAdmin, onLoginClick, onLogout, onHomeClick, onViewChange, cu
           {isDarkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20}/>}
         </button>
         {isAdmin ? <button onClick={onLogout} className="hidden sm:block px-4 py-2 border rounded-md text-sm font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800">로그아웃</button> : <Button variant="primary" size="medium" onClick={onLoginClick} className="hidden sm:block shadow-sm text-sm">로그인</Button>}
-        {/* ✅ 햄버거 버튼 */}
         <button onClick={onMenuClick} className="p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition">
           <Menu size={28} />
         </button>
@@ -707,7 +636,11 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
-  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); // ✅ 전역 사이드 메뉴 상태 추가
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); 
+
+  // ✅ React 19 호환: 커스텀 useKakaoLoader 훅 적용
+  const [mapLoading, mapError] = useCustomKakaoLoader();
+  const mapContainerRef = useRef(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -716,7 +649,6 @@ const MainApp = () => {
     }
     return false;
   });
-  const [newsKey, setNewsKey] = useState(0);
 
   useEffect(() => {
     if (isDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
@@ -732,6 +664,21 @@ const MainApp = () => {
     const initAuth = async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) { setUser(session.user); const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single(); setRole(data?.role || 'general'); }}; initAuth();
     const fetchIssues = async () => { const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); if (data) setIssues(data); }; fetchIssues();
   }, []);
+
+  // ✅ React 19 호환: 훅에서 로딩이 끝나면 지도를 렌더링
+  useEffect(() => {
+    if (view === 'resource_map' && !mapLoading && !mapError && mapContainerRef.current) {
+      if (window.kakao && window.kakao.maps) {
+        const options = {
+          center: new window.kakao.maps.LatLng(35.8242238, 127.1479532),
+          level: 10
+        };
+        const map = new window.kakao.maps.Map(mapContainerRef.current, options);
+        const marker = new window.kakao.maps.Marker({ position: options.center });
+        marker.setMap(map);
+      }
+    }
+  }, [view, mapLoading, mapError]);
 
   const handleUpload = async (data) => {
     setIsUploading(true);
@@ -751,7 +698,6 @@ const MainApp = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
        
-       {/* 🍔 전역 사이드 메뉴 (Side Drawer) */}
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsSideMenuOpen(false)} />
@@ -790,21 +736,14 @@ const MainApp = () => {
          </div>
        )}
 
-       {/* 상단 헤더 */}
        <Navbar isAdmin={role === 'admin' || user} onLoginClick={() => setIsAuthOpen(true)} onLogout={handleLogout} onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onMenuClick={() => setIsSideMenuOpen(true)}/>
        
-       {/* 메인 영역: 지도 뷰일 때는 풀스크린 높이 조절 */}
        <main className={`flex-1 w-full ${view === 'resource_map' ? 'h-[calc(100dvh-64px)]' : 'pb-24'}`}>
           
-          {/* =========================================
-              1. 신규 홈 화면 (Home)
-          ========================================= */}
           {view === 'home' && (
             <div className="flex flex-col gap-6 animate-fade-in max-w-3xl mx-auto px-4 py-6">
-              {/* 하이라이트 배너 */}
               <div className="w-full h-56 bg-slate-800 rounded-2xl relative overflow-hidden shadow-lg flex items-end p-6 group cursor-pointer" onClick={() => setView('resource_map')}>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
-                {/* 갤러리 최신 이미지를 배경으로 깔거나, 없으면 기본 컬러/패턴 */}
                 <div className="absolute inset-0 bg-[#2563EB]/20 bg-[url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2038&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay group-hover:scale-105 transition-transform duration-700"></div>
                 <div className="relative z-20">
                   <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.0 업데이트</span>
@@ -812,7 +751,6 @@ const MainApp = () => {
                 </div>
               </div>
 
-              {/* 체험자원 지도 CTA 버튼 */}
               <button onClick={() => setView('resource_map')} className="w-full bg-[#2563EB] text-white rounded-2xl py-5 px-5 flex justify-between items-center shadow-lg hover:bg-blue-700 transition-transform active:scale-[0.98]">
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 p-3 rounded-full"><MapPin size={28} /></div>
@@ -824,7 +762,6 @@ const MainApp = () => {
                 <ChevronRight size={28} className="opacity-80" />
               </button>
 
-              {/* 2x2 퀵 메뉴 그리드 */}
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { id: 'issue_list', title: '월간 자료실', icon: <Book size={28}/>, color: 'bg-indigo-50 text-indigo-600' },
@@ -841,12 +778,8 @@ const MainApp = () => {
             </div>
           )}
 
-          {/* =========================================
-              2. 포털형 체험자원 지도 (Resource Map)
-          ========================================= */}
           {view === 'resource_map' && (
             <div className="flex flex-col md:flex-row w-full h-full">
-              {/* 좌측(PC) / 상단(Mobile) : 패널 */}
               <div className="w-full md:w-[400px] h-2/5 md:h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shadow-md z-10 shrink-0">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800">
                   <div className="flex items-center gap-2 mb-3">
@@ -870,18 +803,26 @@ const MainApp = () => {
                 </div>
               </div>
 
-              {/* 우측(PC) / 하단(Mobile) : 카카오맵 */}
+              {/* ✅ 자체 Hook을 활용한 로딩 및 렌더링 처리 */}
               <div className="flex-1 h-3/5 md:h-full relative bg-gray-200">
-                <Map center={{ lat: 35.8242238, lng: 127.1479532 }} style={{ width: "100%", height: "100%" }} level={10}>
-                  <MapMarker position={{ lat: 35.8242238, lng: 127.1479532 }}>
-                    <div style={{ padding: "5px", color: "#000", fontSize: "12px", textAlign: "center", fontWeight: "bold" }}>전라북도청</div>
-                  </MapMarker>
-                </Map>
+                 {mapLoading ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 font-bold bg-white dark:bg-slate-900">
+                       <Loader2 className="animate-spin text-blue-500 mb-2" size={32} />
+                       지도를 불러오는 중입니다...
+                    </div>
+                 ) : mapError ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-red-500 font-bold bg-white dark:bg-slate-900">
+                       <AlertTriangle size={32} className="mb-2" />
+                       지도 로드에 실패했습니다. API 키를 확인해주세요.
+                    </div>
+                 ) : (
+                    <div ref={mapContainerRef} className="w-full h-full" />
+                 )}
               </div>
             </div>
           )}
 
-          {/* 기존 뷰 컴포넌트들 유지 */}
+          {/* 기존 컴포넌트 유지 */}
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           {view === 'gallery' && <Gallery userRole={role} onUploadClick={(t) => { setUploadType(t); setIsUploadOpen(true); }}/>}
@@ -890,7 +831,6 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
        
-       {/* 지도 뷰가 아닐 때만 하단 Footer 노출 */}
        {view !== 'resource_map' && <Footer />}
        
        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => window.location.reload()}/>
