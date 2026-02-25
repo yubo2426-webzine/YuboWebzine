@@ -17,7 +17,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-pdf": "^10.3.0",
-    "react-kakao-maps-sdk": "^1.1.27",
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
