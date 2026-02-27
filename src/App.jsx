@@ -19,14 +19,13 @@ import imgFacebook from './assets/facebook_icon.png';
 import imgX from './assets/x_icon.svg';
 
 // ------------------------------------------------------------------
-// ✅ [React 19 호환] 자체 구현한 useKakaoLoader 커스텀 훅 (무한 로딩 방어 완벽 패치)
+// ✅ [React 19 호환] 자체 구현한 useKakaoLoader 커스텀 훅
 // ------------------------------------------------------------------
 const useCustomKakaoLoader = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // 1. 이미 완전히 로드된 경우 즉시 종료
     if (window.kakao && window.kakao.maps) {
       setLoading(false);
       return;
@@ -35,7 +34,6 @@ const useCustomKakaoLoader = () => {
     const scriptId = 'kakao-map-script';
     let script = document.getElementById(scriptId);
 
-    // 2. 스크립트 태그가 없다면 새로 생성 (첫 번째 렌더링)
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
@@ -44,7 +42,6 @@ const useCustomKakaoLoader = () => {
       document.head.appendChild(script);
     }
 
-    // 3. 로딩 완료/실패 이벤트를 무조건 연결
     const handleLoad = () => {
       window.kakao.maps.load(() => setLoading(false));
     };
@@ -57,7 +54,6 @@ const useCustomKakaoLoader = () => {
     script.addEventListener('load', handleLoad);
     script.addEventListener('error', handleError);
 
-    // 4. 컴포넌트가 사라질 때 이벤트 리스너 정리
     return () => {
       script.removeEventListener('load', handleLoad);
       script.removeEventListener('error', handleError);
@@ -660,7 +656,12 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); 
 
-  // ✅ 커스텀 useKakaoLoader 훅 적용
+  // ✅ [자원 지도 상태 관리]
+  const [resources, setResources] = useState([]);           // DB에서 불러온 전체 데이터
+  const [searchKeyword, setSearchKeyword] = useState('');   // 검색어
+  const [selectedRegion, setSelectedRegion] = useState('전체'); // 지역 필터
+  const [selectedResource, setSelectedResource] = useState(null); // 클릭한 마커(체험처) 정보
+  
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRef = useRef(null);
 
@@ -682,38 +683,86 @@ const MainApp = () => {
 
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border text-center"><AlertTriangle size={32} className="mx-auto text-red-500 mb-4"/><h1 className="text-xl font-bold mb-2">Supabase 설정 필요</h1><p className="text-gray-600 text-sm">Vercel 환경변수를 확인해주세요.</p></div></div>;
 
+  // 초기 데이터 불러오기 (Auth, Issues, Resources)
   useEffect(() => {
     const initAuth = async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) { setUser(session.user); const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single(); setRole(data?.role || 'general'); }}; initAuth();
     const fetchIssues = async () => { const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); if (data) setIssues(data); }; fetchIssues();
+    
+    // ✅ Supabase에서 체험자원(Resources) 데이터 불러오기
+    const fetchResources = async () => { 
+      const { data } = await supabase.from('resources').select('*'); 
+      if (data) setResources(data); 
+    }; 
+    fetchResources();
   }, []);
 
-  // 🚨 [핵심 패치] React 19 호환: 훅에서 로딩이 끝나면 지도를 렌더링 (백지 현상 100% 해결)
+  // ✅ 검색어와 지역 필터가 적용된 리스트
+  const filteredResources = resources.filter(res => {
+    const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
+    const matchKeyword = res.name.includes(searchKeyword) || res.address.includes(searchKeyword);
+    return matchRegion && matchKeyword;
+  });
+
+  // ✅ 지도 렌더링 및 마커 표시 (동적 업데이트)
   useEffect(() => {
     if (view === 'resource_map' && !mapLoading && !mapError && mapContainerRef.current) {
       if (window.kakao && window.kakao.maps) {
         
-        // 1. 엄격모드 방어: 중복 렌더링 방지를 위해 컨테이너 내부 싹 비우기
-        mapContainerRef.current.innerHTML = '';
+        mapContainerRef.current.innerHTML = ''; // 초기화
         
-        const options = {
-          center: new window.kakao.maps.LatLng(35.8242238, 127.1479532),
-          level: 10
-        };
+        // 1. 맵 기본 설정
+        let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532); // 기본 전북도청
+        let level = 10;
         
-        const map = new window.kakao.maps.Map(mapContainerRef.current, options);
-        const marker = new window.kakao.maps.Marker({ position: options.center });
-        marker.setMap(map);
+        // 리스트에서 클릭한 경우 해당 위치로 줌인
+        if (selectedResource) {
+          centerPos = new window.kakao.maps.LatLng(selectedResource.lat, selectedResource.lng);
+          level = 4;
+        }
 
-        // 2. 사이즈 인식 버그 방어: DOM 렌더링이 완전히 끝난 후 사이즈 재계산 (relayout)
+        const map = new window.kakao.maps.Map(mapContainerRef.current, { center: centerPos, level: level });
+        
+        // 2. 마커 생성 및 범위 조절을 위한 Bounds 객체
+        const bounds = new window.kakao.maps.LatLngBounds();
+        let hasMarkers = false;
+
+        filteredResources.forEach(res => {
+          const position = new window.kakao.maps.LatLng(res.lat, res.lng);
+          
+          // 마커 생성
+          const marker = new window.kakao.maps.Marker({ position: position });
+          marker.setMap(map);
+          bounds.extend(position); // 마커를 포함하도록 범위 확장
+          hasMarkers = true;
+
+          // 인포윈도우 (마커 호버 시 이름 표시)
+          const infowindow = new window.kakao.maps.InfoWindow({
+            content: `<div style="padding:5px;font-size:13px;color:black;font-weight:bold;text-align:center;width:150px;">${res.name}</div>`
+          });
+          
+          window.kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
+          window.kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
+          
+          // 마커 클릭 시 리스트 선택과 동일한 효과
+          window.kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
+        });
+
+        // 3. 지연 렌더링을 통한 화면 크기 버그 방지 및 시점 자동 조절
         setTimeout(() => {
           if (map) {
-            map.relayout();
-            map.setCenter(options.center);
+            map.relayout(); // 0x0 버그 방지
+            
+            // 특정 항목을 클릭한 게 아니라면, 필터링된 모든 마커가 보이도록 화면 줌아웃
+            if (!selectedResource && hasMarkers) {
+              map.setBounds(bounds);
+            } else if (selectedResource) {
+              map.setCenter(centerPos);
+            }
           }
         }, 150);
       }
     }
-  }, [view, mapLoading, mapError]);
+  }, [view, mapLoading, mapError, filteredResources, selectedResource]); // 필터나 선택 항목이 바뀌면 지도 다시 그림
 
   const handleUpload = async (data) => {
     setIsUploading(true);
@@ -813,32 +862,72 @@ const MainApp = () => {
             </div>
           )}
 
+          {/* =========================================
+              포털형 체험자원 지도 (DB 연동 완료)
+          ========================================= */}
           {view === 'resource_map' && (
             <div className="flex flex-col md:flex-row w-full h-full">
+              {/* 좌측(PC) / 상단(Mobile) : 검색 및 리스트 패널 */}
               <div className="w-full md:w-[400px] h-2/5 md:h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shadow-md z-10 shrink-0">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Filter size={18} className="text-[#2563EB]" />
-                    <span className="font-bold text-gray-900 dark:text-white">체험자원 검색</span>
+                
+                {/* 1. 검색창 및 지역 필터 */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Filter size={18} className="text-[#2563EB]" />
+                      <span className="font-bold text-gray-900 dark:text-white">체험자원 검색</span>
+                    </div>
+                    <span className="text-sm font-bold text-blue-600">{filteredResources.length}건</span>
                   </div>
-                  <input type="text" placeholder="체험처명 또는 지역 검색" className="w-full h-11 px-4 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]" />
+                  <input 
+                    type="text" 
+                    placeholder="체험처명 또는 주소 검색" 
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    className="w-full h-11 px-4 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]" 
+                  />
                   <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
-                    {['전체', '전주시', '군산시', '익산시', '완주군'].map(region => (
-                      <button key={region} className="px-4 py-1.5 bg-gray-100 dark:bg-slate-800 text-sm font-medium rounded-full whitespace-nowrap text-gray-700 dark:text-gray-300 hover:bg-[#2563EB] hover:text-white transition-colors">
+                    {['전체', '전주시', '익산시', '군산시', '완주군'].map(region => (
+                      <button 
+                        key={region} 
+                        onClick={() => { setSelectedRegion(region); setSelectedResource(null); }}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${selectedRegion === region ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'}`}
+                      >
                         {region}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-950">
-                  <div className="text-center text-gray-400 py-10 flex flex-col items-center gap-2">
-                    <MapPin size={32} className="opacity-20" />
-                    <span>데이터베이스 연동 대기 중입니다.</span>
-                  </div>
+
+                {/* 2. 실제 DB 연동된 리스트 출력 */}
+                <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950 p-2">
+                  {filteredResources.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {filteredResources.map(res => (
+                        <div 
+                          key={res.id} 
+                          onClick={() => setSelectedResource(res)}
+                          className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedResource?.id === res.id ? 'bg-blue-50 border-blue-300 dark:bg-slate-800 dark:border-blue-500' : 'bg-white border-gray-200 dark:bg-slate-900 dark:border-gray-800 hover:border-blue-200 shadow-sm'}`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{res.name}</h3>
+                            <span className="text-[11px] font-bold px-2 py-0.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded text-nowrap">{res.category}</span>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 truncate">{res.address}</p>
+                          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">📞 {res.phone || '연락처 없음'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-400 py-16 flex flex-col items-center gap-3">
+                      <Search size={32} className="opacity-20" />
+                      <span>검색된 체험자원이 없습니다.</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* ✅ [핵심 패치] 컨테이너에 확실한 style(높이 보장)을 주어 0x0 사이즈 버그 방어 */}
+              {/* 우측(PC) / 하단(Mobile) : 카카오맵 */}
               <div className="flex-1 h-3/5 md:h-full relative bg-gray-200">
                  {mapLoading ? (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 font-bold bg-white dark:bg-slate-900">
@@ -851,11 +940,7 @@ const MainApp = () => {
                        지도 로드에 실패했습니다. API 키를 확인해주세요.
                     </div>
                  ) : (
-                    <div 
-                       ref={mapContainerRef} 
-                       className="w-full h-full relative" 
-                       style={{ width: '100%', height: '100%', minHeight: '400px' }} 
-                    />
+                    <div ref={mapContainerRef} className="w-full h-full relative" style={{ width: '100%', height: '100%', minHeight: '400px' }} />
                  )}
               </div>
             </div>
