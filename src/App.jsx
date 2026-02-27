@@ -44,7 +44,7 @@ const useCustomKakaoLoader = () => {
       document.head.appendChild(script);
     }
 
-    // 3. 로딩 완료/실패 이벤트를 무조건 연결 (두 번째 렌더링이어도 연결되도록)
+    // 3. 로딩 완료/실패 이벤트를 무조건 연결
     const handleLoad = () => {
       window.kakao.maps.load(() => setLoading(false));
     };
@@ -660,7 +660,7 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); 
 
-  // ✅ React 19 호환: 커스텀 useKakaoLoader 훅 적용
+  // ✅ 커스텀 useKakaoLoader 훅 적용
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRef = useRef(null);
 
@@ -687,17 +687,30 @@ const MainApp = () => {
     const fetchIssues = async () => { const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); if (data) setIssues(data); }; fetchIssues();
   }, []);
 
-  // ✅ React 19 호환: 훅에서 로딩이 끝나면 지도를 렌더링
+  // 🚨 [핵심 패치] React 19 호환: 훅에서 로딩이 끝나면 지도를 렌더링 (백지 현상 100% 해결)
   useEffect(() => {
     if (view === 'resource_map' && !mapLoading && !mapError && mapContainerRef.current) {
       if (window.kakao && window.kakao.maps) {
+        
+        // 1. 엄격모드 방어: 중복 렌더링 방지를 위해 컨테이너 내부 싹 비우기
+        mapContainerRef.current.innerHTML = '';
+        
         const options = {
           center: new window.kakao.maps.LatLng(35.8242238, 127.1479532),
           level: 10
         };
+        
         const map = new window.kakao.maps.Map(mapContainerRef.current, options);
         const marker = new window.kakao.maps.Marker({ position: options.center });
         marker.setMap(map);
+
+        // 2. 사이즈 인식 버그 방어: DOM 렌더링이 완전히 끝난 후 사이즈 재계산 (relayout)
+        setTimeout(() => {
+          if (map) {
+            map.relayout();
+            map.setCenter(options.center);
+          }
+        }, 150);
       }
     }
   }, [view, mapLoading, mapError]);
@@ -825,7 +838,7 @@ const MainApp = () => {
                 </div>
               </div>
 
-              {/* ✅ 자체 Hook을 활용한 로딩 및 렌더링 처리 */}
+              {/* ✅ [핵심 패치] 컨테이너에 확실한 style(높이 보장)을 주어 0x0 사이즈 버그 방어 */}
               <div className="flex-1 h-3/5 md:h-full relative bg-gray-200">
                  {mapLoading ? (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 font-bold bg-white dark:bg-slate-900">
@@ -838,7 +851,11 @@ const MainApp = () => {
                        지도 로드에 실패했습니다. API 키를 확인해주세요.
                     </div>
                  ) : (
-                    <div ref={mapContainerRef} className="w-full h-full" />
+                    <div 
+                       ref={mapContainerRef} 
+                       className="w-full h-full relative" 
+                       style={{ width: '100%', height: '100%', minHeight: '400px' }} 
+                    />
                  )}
               </div>
             </div>
