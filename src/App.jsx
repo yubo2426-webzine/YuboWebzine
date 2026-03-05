@@ -681,7 +681,7 @@ const MainApp = () => {
   const [selectedResource, setSelectedResource] = useState(null);
   
   // ✅ [대시보드 전용 데이터 상태 관리]
-  const [recentNotices, setRecentNotices] = useState([]); [cite: 96, 97]
+  const [recentNotices, setRecentNotices] = useState([]);
 
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRef = useRef(null);
