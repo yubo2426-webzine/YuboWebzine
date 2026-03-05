@@ -851,17 +851,17 @@ const MainApp = () => {
        
        <main className={`flex-1 w-full ${view === 'resource_map' ? 'h-[calc(100dvh-64px)]' : 'pb-24'}`}>
           
-          {/* ✅ v26.1.0 대시보드형 홈 화면 개편 (PC 정보량 극대화) */}
+          {/* ✅ 하이브리드 홈 화면: 모바일(2x2 메뉴) + PC(대시보드) */}
           {view === 'home' && (
-            <div className="flex flex-col gap-8 animate-fade-in max-w-7xl mx-auto px-4 py-8 w-full">
+            <div className="flex flex-col gap-6 lg:gap-8 animate-fade-in max-w-7xl mx-auto px-4 py-6 lg:py-8 w-full">
               
-              {/* 1. 상단 체험자원 지도 배너 (가로폭 확장) */}
+              {/* 1. 상단 체험자원 지도 배너 (공통 유지) */}
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1 h-56 md:h-64 bg-slate-800 rounded-2xl relative overflow-hidden shadow-lg flex items-end p-6 group cursor-pointer" onClick={() => setView('resource_map')}>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
                   <div className="absolute inset-0 bg-[#2563EB]/20 bg-[url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2038&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay group-hover:scale-105 transition-transform duration-700"></div>
                   <div className="relative z-20">
-                    <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.1 업데이트</span>
+                    <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.1.1 업데이트</span>
                     <h2 className="text-white text-2xl md:text-3xl font-black leading-snug">우리 동네 영유아 체험자원을<br/>한눈에 찾아보세요!</h2>
                   </div>
                 </div>
@@ -878,8 +878,23 @@ const MainApp = () => {
                 </button>
               </div>
 
-              {/* 2. PC 대시보드 위젯 영역 (2단 분할 레이아웃) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
+              {/* 📱 2. 모바일/태블릿 전용 2x2 퀵 메뉴 (v26.0 디자인) - PC에서는 숨김 */}
+              <div className="grid lg:hidden grid-cols-2 gap-4 mt-2">
+                {[
+                  { id: 'issue_list', title: '월간 자료실', icon: <Book size={28}/>, color: 'bg-indigo-50 text-indigo-600' },
+                  { id: 'notice', title: '기관 소식', icon: <CalendarIcon size={28}/>, color: 'bg-emerald-50 text-emerald-600' },
+                  { id: 'gallery', title: '갤러리', icon: <ImageIcon size={28}/>, color: 'bg-amber-50 text-amber-600' },
+                  { id: 'news', title: '뉴스룸', icon: <Newspaper size={28}/>, color: 'bg-rose-50 text-rose-600' }
+                ].map(menu => (
+                  <div key={menu.id} onClick={() => setView(menu.id)} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]">
+                    <div className={`p-4 rounded-full ${menu.color} dark:bg-slate-700 dark:text-white`}>{menu.icon}</div>
+                    <span className="font-bold text-gray-800 dark:text-gray-100">{menu.title}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 💻 3. PC 전용 대시보드 위젯 영역 (v26.1 디자인) - 모바일에서는 숨김 */}
+              <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
                 
                 {/* 좌측 패널 (lg: 2칸 차지) - 월간 자료실 & 기관 소식 */}
                 <div className="lg:col-span-2 flex flex-col gap-8">
@@ -930,7 +945,7 @@ const MainApp = () => {
                       <button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-[#2563EB] flex items-center gap-1 transition-colors">더보기 <ChevronRight size={16}/></button>
                     </div>
                     
-                    {/* 뉴스피드 위젯 (limit prop 활용하여 헤더 숨김 처리됨) */}
+                    {/* 뉴스피드 위젯 (limit prop 활용) */}
                     <div className="-mx-4 flex-1">
                       <NewsFeed limit={4} isAdmin={role === 'admin'} />
                     </div>
