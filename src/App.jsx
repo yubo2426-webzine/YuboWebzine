@@ -9,7 +9,6 @@ import {
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, MapPin, Filter
 } from 'lucide-react';
-
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -98,6 +97,7 @@ const SocialShare = () => {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
   const btnClass = "w-12 h-12 rounded-full overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform cursor-pointer bg-white flex items-center justify-center";
+
   return (
     <div className="flex justify-center gap-5 py-6">
        <button onClick={shareKakao} className={btnClass} title="카카오톡"><img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover" /></button>
@@ -121,7 +121,8 @@ const useHistoryState = (initialState) => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
   const setHistoryState = (newState) => {
-    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`); setState(newState); }
+    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`);
+      setState(newState); }
   };
   return [state, setHistoryState];
 };
@@ -177,8 +178,10 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     if (!supabase) return;
     e.preventDefault(); setLoading(true); setError(null);
     try {
-      if (isSignUp) { const { error } = await supabase.auth.signUp({ email, password }); if (error) throw error; alert("가입 확인 메일을 보냈습니다."); setIsSignUp(false); } 
-      else { const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) throw error; onLoginSuccess(); onClose(); }
+      if (isSignUp) { const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error; alert("가입 확인 메일을 보냈습니다."); setIsSignUp(false); } 
+      else { const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error; onLoginSuccess(); onClose(); }
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -220,7 +223,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
           </div>
           <div className="p-6">
             {isUploading ?
-             <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-lg text-gray-600">전송 중...</p></div> : (
+            <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-lg text-gray-600">전송 중...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-5">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목 입력" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/></div>
@@ -235,7 +238,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      <div>
                         <label className={getLabelClass}>파일</label>
                         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 relative cursor-pointer group">
-                          <div className="space-y-1 text-center">
+                           <div className="space-y-1 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500"/>
                               <div className="flex text-base text-gray-600 justify-center">
                                  <label className="relative cursor-pointer text-blue-600 hover:text-blue-500"><span>업로드</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])}/></label>
@@ -320,10 +323,12 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [pdfDoc, pageNum, scale, size]);
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches); pinchStartScale.current = scale; } 
     else { isPinching.current = false; touchStartX.current = e.changedTouches[0].screenX; }
   };
+
   const handleTouchMove = (e) => {
     if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) {
         e.preventDefault();
@@ -331,6 +336,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         contentWrapperRef.current.style.transform = `scale(${dist / pinchStartDist.current})`; 
     }
   };
+
   const handleTouchEnd = (e) => {
     if (isPinching.current) {
         if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none';
@@ -344,6 +350,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         }
     }
   };
+
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none" tabIndex={0}>
        <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50">
@@ -390,6 +397,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
     if(data) setNews(data);
     setLoading(false);
   };
+
   useEffect(() => { fetchNews(); }, [limit]);
 
   const handleNewsClick = (item) => {
@@ -404,6 +412,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
         setNews(prev => prev.filter(n => n.id !== id));
     }
   };
+
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!limit && (
@@ -443,9 +452,11 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [filter, setFilter] = useState('all'); 
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
+
   useEffect(() => {
     const f = async () => { if(supabase) { const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false }); if(data) setNotices(data); }}; f();
   }, []);
+
   const handleDelete = async (id) => {
     if(confirm('삭제하시겠습니까?')) {
         await supabase.from('notices').delete().eq('id', id);
@@ -453,18 +464,21 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
         setSelectedNotice(null);
     }
   };
+
   const handleNoticeClick = (item) => {
       incrementViewCount('notices', item.id, item.views);
       const updated = { ...item, views: (item.views || 0) + 1 };
       setNotices(prev => prev.map(n => n.id === item.id ? updated : n));
       setSelectedNotice(updated);
   };
+
   const filteredNotices = notices.filter(n => {
       if(filter === 'all') return true;
       if(filter === 'notice') return n.category !== 'event';
       if(filter === 'event') return n.category === 'event';
       return true;
   });
+
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!initialMode && (
@@ -555,14 +569,18 @@ const Gallery = ({ userRole, onUploadClick, limit, isWidget }) => {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(null);
   useEffect(() => { const f = async () => { if(supabase) { let q = supabase.from('gallery').select('*').order('created_at', { ascending: false }); if(limit) q = q.limit(limit); const { data } = await q; if(data) setImages(data); }}; f(); }, [limit]);
+
   const handleDelete = async (id) => {
-    if(confirm('사진을 삭제하시겠습니까?')) { await supabase.from('gallery').delete().eq('id', id); setImages(prev => prev.filter(img => img.id !== id)); }
+    if(confirm('사진을 삭제하시겠습니까?')) { await supabase.from('gallery').delete().eq('id', id);
+    setImages(prev => prev.filter(img => img.id !== id)); }
   };
+
   const handleImageClick = (img) => {
       setSelected(img);
       incrementViewCount('gallery', img.id, img.views);
       setImages(prev => prev.map(i => i.id === img.id ? {...i, views: (i.views || 0) + 1} : i));
   };
+
   return (
     <div className={`w-full ${isWidget ? '' : 'max-w-7xl mx-auto px-4 py-16'}`}>
       {!isWidget && <div className="flex justify-between items-center mb-6 pb-4 border-b"><h2 className="text-3xl font-bold flex items-center gap-2"><span className="w-1.5 h-8 bg-blue-600 rounded-sm"></span>활동 갤러리</h2>{(userRole === 'team' || userRole === 'admin') && <button onClick={() => onUploadClick('gallery')} className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-bold flex gap-2"><ImageIcon size={18}/> 사진 올리기</button>}</div>}
@@ -657,11 +675,14 @@ const MainApp = () => {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); 
 
   // ✅ [자원 지도 상태 관리]
-  const [resources, setResources] = useState([]);           // DB에서 불러온 전체 데이터
-  const [searchKeyword, setSearchKeyword] = useState('');   // 검색어
-  const [selectedRegion, setSelectedRegion] = useState('전체'); // 지역 필터
-  const [selectedResource, setSelectedResource] = useState(null); // 클릭한 마커(체험처) 정보
+  const [resources, setResources] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('전체');
+  const [selectedResource, setSelectedResource] = useState(null);
   
+  // ✅ [대시보드 전용 데이터 상태 관리]
+  const [recentNotices, setRecentNotices] = useState([]); [cite: 96, 97]
+
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRef = useRef(null);
 
@@ -683,17 +704,30 @@ const MainApp = () => {
 
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border text-center"><AlertTriangle size={32} className="mx-auto text-red-500 mb-4"/><h1 className="text-xl font-bold mb-2">Supabase 설정 필요</h1><p className="text-gray-600 text-sm">Vercel 환경변수를 확인해주세요.</p></div></div>;
 
-  // 초기 데이터 불러오기 (Auth, Issues, Resources)
+  // 초기 데이터 불러오기 (Auth, Issues, Resources, Notices)
   useEffect(() => {
     const initAuth = async () => { const { data: { session } } = await supabase.auth.getSession(); if (session) { setUser(session.user); const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single(); setRole(data?.role || 'general'); }}; initAuth();
     const fetchIssues = async () => { const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false }); if (data) setIssues(data); }; fetchIssues();
     
     // ✅ Supabase에서 체험자원(Resources) 데이터 불러오기
     const fetchResources = async () => { 
-      const { data } = await supabase.from('resources').select('*'); 
-      if (data) setResources(data); 
+       const { data } = await supabase.from('resources').select('*'); 
+       if (data) setResources(data); 
     }; 
+
+    // ✅ 홈 화면 대시보드 위젯용 최신 소식 2건 불러오기
+    const fetchNotices = async () => {
+      if(!supabase) return;
+      const { data } = await supabase
+        .from('notices')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(2);
+      if (data) setRecentNotices(data);
+    };
+
     fetchResources();
+    fetchNotices();
   }, []);
 
   // ✅ 검색어와 지역 필터가 적용된 리스트
@@ -707,52 +741,39 @@ const MainApp = () => {
   useEffect(() => {
     if (view === 'resource_map' && !mapLoading && !mapError && mapContainerRef.current) {
       if (window.kakao && window.kakao.maps) {
-        
         mapContainerRef.current.innerHTML = ''; // 초기화
         
-        // 1. 맵 기본 설정
         let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532); // 기본 전북도청
         let level = 10;
         
-        // 리스트에서 클릭한 경우 해당 위치로 줌인
         if (selectedResource) {
           centerPos = new window.kakao.maps.LatLng(selectedResource.lat, selectedResource.lng);
           level = 4;
         }
 
         const map = new window.kakao.maps.Map(mapContainerRef.current, { center: centerPos, level: level });
-        
-        // 2. 마커 생성 및 범위 조절을 위한 Bounds 객체
         const bounds = new window.kakao.maps.LatLngBounds();
         let hasMarkers = false;
 
         filteredResources.forEach(res => {
           const position = new window.kakao.maps.LatLng(res.lat, res.lng);
-          
-          // 마커 생성
           const marker = new window.kakao.maps.Marker({ position: position });
           marker.setMap(map);
-          bounds.extend(position); // 마커를 포함하도록 범위 확장
+          bounds.extend(position);
           hasMarkers = true;
 
-          // 인포윈도우 (마커 호버 시 이름 표시)
           const infowindow = new window.kakao.maps.InfoWindow({
             content: `<div style="padding:5px;font-size:13px;color:black;font-weight:bold;text-align:center;width:150px;">${res.name}</div>`
           });
-          
+
           window.kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
           window.kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
-          
-          // 마커 클릭 시 리스트 선택과 동일한 효과
           window.kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
         });
 
-        // 3. 지연 렌더링을 통한 화면 크기 버그 방지 및 시점 자동 조절
         setTimeout(() => {
           if (map) {
-            map.relayout(); // 0x0 버그 방지
-            
-            // 특정 항목을 클릭한 게 아니라면, 필터링된 모든 마커가 보이도록 화면 줌아웃
+            map.relayout();
             if (!selectedResource && hasMarkers) {
               map.setBounds(bounds);
             } else if (selectedResource) {
@@ -762,22 +783,28 @@ const MainApp = () => {
         }, 150);
       }
     }
-  }, [view, mapLoading, mapError, filteredResources, selectedResource]); // 필터나 선택 항목이 바뀌면 지도 다시 그림
+  }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
   const handleUpload = async (data) => {
     setIsUploading(true);
     try {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice', author_id: user.id }]);
-       else if (data.type === 'gallery' && data.file) { const fn = `${Date.now()}_${data.file.name}`; await supabase.storage.from('gallery').upload(fn, data.file); const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fn); await supabase.from('gallery').insert([{ title: data.title, image_url: publicUrl, author_id: user.id }]); }
+       else if (data.type === 'gallery' && data.file) { const fn = `${Date.now()}_${data.file.name}`; await supabase.storage.from('gallery').upload(fn, data.file);
+       const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fn); await supabase.from('gallery').insert([{ title: data.title, image_url: publicUrl, author_id: user.id }]);
+       }
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-blue-100', icon: '📘' }]);
-       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`; await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }]; await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
+       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`;
+       await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
+       await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
        alert("완료되었습니다!"); setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
 
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
-  const handleIssueClick = (issue) => { incrementViewCount('issues', issue.id, issue.views); const updatedIssue = { ...issue, views: (issue.views || 0) + 1 }; setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); setCurrentIssue(updatedIssue); setView('issue_detail'); };
+  
+  const handleIssueClick = (issue) => { incrementViewCount('issues', issue.id, issue.views); const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
+  setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); setCurrentIssue(updatedIssue); setView('issue_detail'); };
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -810,7 +837,7 @@ const MainApp = () => {
                </ul>
              </nav>
              <div className="p-5 border-t border-gray-100 dark:border-gray-800">
-               {role === 'admin' ? 
+               {role === 'admin' ?
                  <Button onClick={() => { handleLogout(); setIsSideMenuOpen(false); }} className="w-full justify-center bg-gray-100 text-gray-700 border-none hover:bg-gray-200">로그아웃</Button> 
                  : 
                  <Button onClick={() => { setIsAuthOpen(true); setIsSideMenuOpen(false); }} className="w-full justify-center"><User size={16} className="mr-2" /> 관리자 로그인</Button>
@@ -824,40 +851,92 @@ const MainApp = () => {
        
        <main className={`flex-1 w-full ${view === 'resource_map' ? 'h-[calc(100dvh-64px)]' : 'pb-24'}`}>
           
+          {/* ✅ v26.1.0 대시보드형 홈 화면 개편 (PC 정보량 극대화) */}
           {view === 'home' && (
-            <div className="flex flex-col gap-6 animate-fade-in max-w-3xl mx-auto px-4 py-6">
-              <div className="w-full h-56 bg-slate-800 rounded-2xl relative overflow-hidden shadow-lg flex items-end p-6 group cursor-pointer" onClick={() => setView('resource_map')}>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
-                <div className="absolute inset-0 bg-[#2563EB]/20 bg-[url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2038&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay group-hover:scale-105 transition-transform duration-700"></div>
-                <div className="relative z-20">
-                  <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.0 업데이트</span>
-                  <h2 className="text-white text-2xl md:text-3xl font-black leading-snug">우리 동네 영유아 체험자원을<br/>한눈에 찾아보세요!</h2>
+            <div className="flex flex-col gap-8 animate-fade-in max-w-7xl mx-auto px-4 py-8 w-full">
+              
+              {/* 1. 상단 체험자원 지도 배너 (가로폭 확장) */}
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 h-56 md:h-64 bg-slate-800 rounded-2xl relative overflow-hidden shadow-lg flex items-end p-6 group cursor-pointer" onClick={() => setView('resource_map')}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
+                  <div className="absolute inset-0 bg-[#2563EB]/20 bg-[url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=2038&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay group-hover:scale-105 transition-transform duration-700"></div>
+                  <div className="relative z-20">
+                    <span className="bg-[#2563EB] text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">v26.1 업데이트</span>
+                    <h2 className="text-white text-2xl md:text-3xl font-black leading-snug">우리 동네 영유아 체험자원을<br/>한눈에 찾아보세요!</h2>
+                  </div>
                 </div>
+
+                <button onClick={() => setView('resource_map')} className="w-full md:w-80 bg-[#2563EB] text-white rounded-2xl py-6 px-6 flex justify-between items-center shadow-lg hover:bg-blue-700 transition-transform active:scale-[0.98]">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-3 rounded-full"><MapPin size={28} /></div>
+                    <div className="text-left">
+                      <div className="text-blue-100 text-sm font-medium">전북특별자치도 14개 시군</div>
+                      <div className="font-bold text-xl">내 주변 체험자원 찾기</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={28} className="opacity-80" />
+                </button>
               </div>
 
-              <button onClick={() => setView('resource_map')} className="w-full bg-[#2563EB] text-white rounded-2xl py-5 px-5 flex justify-between items-center shadow-lg hover:bg-blue-700 transition-transform active:scale-[0.98]">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 p-3 rounded-full"><MapPin size={28} /></div>
-                  <div className="text-left">
-                    <div className="text-blue-100 text-sm font-medium">전북특별자치도 14개 시군</div>
-                    <div className="font-bold text-xl">내 주변 체험자원 찾기</div>
-                  </div>
-                </div>
-                <ChevronRight size={28} className="opacity-80" />
-              </button>
+              {/* 2. PC 대시보드 위젯 영역 (2단 분할 레이아웃) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
+                
+                {/* 좌측 패널 (lg: 2칸 차지) - 월간 자료실 & 기관 소식 */}
+                <div className="lg:col-span-2 flex flex-col gap-8">
+                  
+                  {/* [위젯] 월간 자료실 (최신 2건) */}
+                  <section>
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-900 dark:border-gray-100">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white"><Book className="text-[#2563EB]" size={24}/> 최신 월간 자료실</h3>
+                      <button onClick={() => setView('issue_list')} className="text-sm font-bold text-gray-500 hover:text-[#2563EB] flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {issues.slice(0, 2).map(issue => (
+                        <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} />
+                      ))}
+                      {issues.length === 0 && <div className="col-span-2 py-10 text-center text-gray-400 bg-gray-50 dark:bg-slate-800 rounded-xl border border-dashed">등록된 자료가 없습니다.</div>}
+                    </div>
+                  </section>
 
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { id: 'issue_list', title: '월간 자료실', icon: <Book size={28}/>, color: 'bg-indigo-50 text-indigo-600' },
-                  { id: 'notice', title: '기관 소식', icon: <CalendarIcon size={28}/>, color: 'bg-emerald-50 text-emerald-600' },
-                  { id: 'gallery', title: '갤러리', icon: <ImageIcon size={28}/>, color: 'bg-amber-50 text-amber-600' },
-                  { id: 'news', title: '뉴스룸', icon: <Newspaper size={28}/>, color: 'bg-rose-50 text-rose-600' }
-                ].map(menu => (
-                  <div key={menu.id} onClick={() => setView(menu.id)} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]">
-                    <div className={`p-4 rounded-full ${menu.color} dark:bg-slate-700 dark:text-white`}>{menu.icon}</div>
-                    <span className="font-bold text-gray-800 dark:text-gray-100">{menu.title}</span>
-                  </div>
-                ))}
+                  {/* [위젯] 기관 소식 (최신 2건) */}
+                  <section>
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-900 dark:border-gray-100">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white"><CalendarIcon className="text-[#2563EB]" size={24}/> 기관 소식</h3>
+                      <button onClick={() => setView('notice')} className="text-sm font-bold text-gray-500 hover:text-[#2563EB] flex items-center gap-1 transition-colors">전체보기 <ChevronRight size={16}/></button>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {recentNotices.map(n => (
+                        <div key={n.id} onClick={() => setView('notice')} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer flex items-center justify-between group">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <KRDSBadge variant={n.category === 'event' ? 'primary' : 'neutral'}>{n.category === 'event' ? '행사' : '공지'}</KRDSBadge>
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-[#2563EB] transition-colors line-clamp-1">{n.title}</h4>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-400 hidden sm:block">{new Date(n.created_at).toLocaleDateString()}</span>
+                            <ChevronRight className="text-gray-300 group-hover:text-[#2563EB]" size={20}/>
+                          </div>
+                        </div>
+                      ))}
+                      {recentNotices.length === 0 && <div className="py-8 text-center text-gray-400 bg-gray-50 dark:bg-slate-800 rounded-xl border border-dashed">등록된 소식이 없습니다.</div>}
+                    </div>
+                  </section>
+                </div>
+
+                {/* 우측 패널 (lg: 1칸 차지) - 뉴스룸 (최신 4건) */}
+                <div className="lg:col-span-1 flex flex-col">
+                  <section className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-2 pb-2 border-b-2 border-gray-900 dark:border-gray-100">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white"><Newspaper className="text-[#2563EB]" size={24}/> 최신 뉴스룸</h3>
+                      <button onClick={() => setView('news')} className="text-sm font-bold text-gray-500 hover:text-[#2563EB] flex items-center gap-1 transition-colors">더보기 <ChevronRight size={16}/></button>
+                    </div>
+                    
+                    {/* 뉴스피드 위젯 (limit prop 활용하여 헤더 숨김 처리됨) */}
+                    <div className="-mx-4 flex-1">
+                      <NewsFeed limit={4} isAdmin={role === 'admin'} />
+                    </div>
+                  </section>
+                </div>
+
               </div>
             </div>
           )}
@@ -874,7 +953,7 @@ const MainApp = () => {
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 z-10">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Filter size={18} className="text-[#2563EB]" />
+                       <Filter size={18} className="text-[#2563EB]" />
                       <span className="font-bold text-gray-900 dark:text-white">체험자원 검색</span>
                     </div>
                     <span className="text-sm font-bold text-blue-600">{filteredResources.length}건</span>
