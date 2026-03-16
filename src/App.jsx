@@ -8,7 +8,7 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
-  Compass, CloudSun, Wind
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Frog 
 } from 'lucide-react';
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -66,7 +66,7 @@ const useCustomKakaoLoader = () => {
 };
 
 // ------------------------------------------------------------------
-// 🏛️ [Soft UI System] 
+// 🏛️ [Soft Dark UI System] 
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner ${className}`} {...props} />
@@ -74,10 +74,10 @@ const KRDSInput = ({ className, ...props }) => (
 
 const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   const styles = {
-    primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/50 dark:text-sky-300',
-    success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300',
-    warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300',
-    neutral: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300',
+    primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800',
+    success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800',
+    warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800',
+    neutral: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 border border-gray-200/50 dark:border-slate-700',
   };
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
@@ -101,13 +101,13 @@ const SocialShare = () => {
   const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
   
-  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-all cursor-pointer bg-white flex items-center justify-center p-1";
+  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1";
   return (
     <div className="flex justify-center gap-4 py-4">
        <button onClick={shareKakao} className={btnClass} title="카카오톡"><img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full" /></button>
        <button onClick={shareBand} className={btnClass} title="밴드"><img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full" /></button>
        <button onClick={shareFacebook} className={btnClass} title="페이스북"><img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full" /></button>
-       <button onClick={shareX} className={`${btnClass} bg-black p-3`} title="X"><img src={icons.x} alt="X" className="w-full h-full object-contain filter invert" /></button>
+       <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X"><img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0" /></button>
     </div>
   );
 };
@@ -180,13 +180,13 @@ const Footer = ({ onSecretAdminUnlock }) => {
   };
 
   return (
-    <footer className="w-full bg-slate-50 dark:bg-slate-900 border-t border-gray-100 dark:border-gray-800 py-12 mt-auto z-10 relative">
+    <footer className="w-full bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 py-12 mt-auto z-10 relative transition-colors">
       <div className="max-w-7xl mx-auto px-4 text-center">
          <div className="mb-6">
-           <p className="text-sm font-black text-gray-500 dark:text-gray-400 mb-2">콘텐츠 공유하기</p>
+           <p className="text-sm font-black text-gray-500 dark:text-slate-400 mb-2">콘텐츠 공유하기</p>
            <SocialShare />
          </div>
-         <p onClick={handleSecretClick} className="text-sm text-gray-400 dark:text-gray-500 font-medium cursor-default select-none">
+         <p onClick={handleSecretClick} className="text-sm text-gray-400 dark:text-slate-500 font-medium cursor-default select-none">
            © 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>Contact: help@korea-kids-platform.kr
          </p>
       </div>
@@ -201,41 +201,41 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   if (!isOpen) return null;
   const [file, setFile] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
-  const getLabelClass = "block text-sm font-black text-slate-700 dark:text-gray-300 mb-2 ml-1";
+  const getLabelClass = "block text-sm font-black text-slate-700 dark:text-slate-300 mb-2 ml-1";
   
   return (
-    <div className="fixed inset-0 bg-slate-900/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
-       <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.1)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-gray-700 flex flex-col">
-          <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-700 bg-white dark:bg-slate-900 flex justify-between items-center sticky top-0 z-10">
+    <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
+       <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.2)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-700 flex flex-col">
+          <div className="px-8 py-6 border-b border-gray-50 dark:border-slate-700 bg-white dark:bg-slate-900 flex justify-between items-center sticky top-0 z-10">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
                {type === 'notice' && <><Megaphone className="text-amber-500" size={28}/> 기관 소식 작성</>}
                {type === 'issue' && <><Book className="text-teal-500" size={28}/> 월간호 발행</>}
                {type === 'article' && <><FileText className="text-sky-500" size={28}/> 자료 등록</>}
             </h2>
-            <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><X className="text-slate-500"/></button>
+            <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X className="text-slate-500 dark:text-slate-400"/></button>
           </div>
           <div className="p-8">
             {isUploading ? 
-            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600">서버에 안전하게 저장 중입니다...</p></div> : (
+            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-6">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
                   
                   {type === 'notice' && (
                      <>
-                        <div><label className={getLabelClass}>상세 내용</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-amber-400 h-36 resize-none shadow-inner" placeholder="내용 입력" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} required/></div>
+                        <div><label className={getLabelClass}>상세 내용</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-amber-400 h-36 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="내용 입력" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} required/></div>
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
-                  {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
+                  {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
                   {type === 'article' && (
                      <div>
                         <label className={getLabelClass}>PDF 파일 첨부</label>
-                        <div className="mt-1 flex justify-center px-6 pt-8 pb-8 bg-gray-50 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-[2rem] hover:bg-sky-50 dark:hover:bg-slate-700 relative cursor-pointer group transition-colors">
+                        <div className="mt-1 flex justify-center px-6 pt-8 pb-8 bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] hover:bg-sky-50 dark:hover:bg-slate-800 relative cursor-pointer group transition-colors">
                            <div className="space-y-3 text-center">
-                              <Paperclip className="mx-auto h-12 w-12 text-slate-300 group-hover:text-sky-500 transition-colors"/>
+                              <Paperclip className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-500 group-hover:text-sky-500 transition-colors"/>
                               <div className="flex text-base justify-center">
-                                 <label className="relative cursor-pointer text-sky-600 font-black hover:text-sky-700"><span>파일 찾아보기</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/></label>
+                                 <label className="relative cursor-pointer text-sky-600 dark:text-sky-400 font-black hover:text-sky-700"><span>파일 찾아보기</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/></label>
                               </div>
                               <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서를 선택해주세요'}</p>
                            </div>
@@ -243,7 +243,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                      </div>
                   )}
                   <div className="flex gap-4 pt-4 mt-8">
-                    <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-lg font-black hover:bg-slate-200 transition-colors">취소</button>
+                    <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-lg font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">취소</button>
                     <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-black hover:bg-emerald-600 shadow-md transition-colors">등록 완료</button>
                   </div>
                </form>
@@ -329,35 +329,35 @@ const CustomPDFViewer = ({ article, onBack }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-100 dark:bg-slate-900 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none">
-       <div className="h-16 bg-white dark:bg-slate-800 flex items-center justify-between px-4 shadow-sm z-50">
-          <div className="flex items-center gap-2"><button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full"><ArrowLeft className="text-slate-700"/></button><h2 className="font-black text-lg text-slate-800 truncate max-w-[150px] md:max-w-md">{article.title}</h2></div>
+    <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none">
+       <div className="h-16 bg-white dark:bg-slate-900 flex items-center justify-between px-4 shadow-sm z-50 border-b border-gray-100 dark:border-slate-800">
+          <div className="flex items-center gap-2"><button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><ArrowLeft className="text-slate-700 dark:text-slate-300"/></button><h2 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2></div>
           <div className="flex items-center gap-1">
-             <div className="hidden md:flex items-center bg-slate-100 rounded-full mr-2 px-2"><button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2"><ZoomOut size={18}/></button><span className="text-sm w-12 text-center font-bold">{Math.round(scale * 100)}%</span><button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2"><ZoomIn size={18}/></button></div>
-             <button onClick={() => window.open(article.fileUrl || article.file_url, '_blank')} className="p-2 text-slate-600"><Download size={24}/></button>
-             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-sky-100 text-sky-600' : 'text-slate-600'}`}><ListIcon size={24}/></button>
+             <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-full mr-2 px-2"><button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomOut size={18}/></button><span className="text-sm w-12 text-center font-bold text-slate-800 dark:text-white">{Math.round(scale * 100)}%</span><button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomIn size={18}/></button></div>
+             <button onClick={() => window.open(article.fileUrl || article.file_url, '_blank')} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
+             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}><ListIcon size={24}/></button>
           </div>
        </div>
        <div className="flex-1 overflow-hidden flex relative">
-          <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 shadow-lg z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
-             <div className="p-5 font-black border-b border-slate-100 text-lg">목차 ({pdfDoc?.numPages}p)</div>
+          <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-900 shadow-lg border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
+             <div className="p-5 font-black border-b border-slate-100 dark:border-slate-800 text-lg dark:text-white">목차 ({pdfDoc?.numPages}p)</div>
              <div className="overflow-y-auto h-full p-3 space-y-1 pb-20">
                 {pdfDoc && Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1).map((num) => (
-                   <button key={num} onClick={() => { setPageNumber(num); if(window.innerWidth<768) setIsSidebarOpen(false); }} className={`w-full text-left p-3 rounded-xl text-base font-bold ${pageNum === num ? 'bg-sky-50 text-sky-600' : 'text-slate-600 hover:bg-slate-50'}`}>Page {num}</button>
+                   <button key={num} onClick={() => { setPageNumber(num); if(window.innerWidth<768) setIsSidebarOpen(false); }} className={`w-full text-left p-3 rounded-xl text-base font-bold transition-colors ${pageNum === num ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Page {num}</button>
                 ))}
              </div>
           </div>
-          <div className="flex-1 overflow-auto bg-slate-200 dark:bg-slate-900 flex justify-center items-center p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+          <div className="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950 flex justify-center items-center p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              <div className="absolute left-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.max(1, p-1));}} />
              <div className="absolute right-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages||1, p+1));}} />
              <div ref={contentWrapperRef} className="shadow-2xl transition-transform duration-75 origin-center"><canvas ref={canvasRef} className="bg-white block rounded-md mx-auto"/></div>
           </div>
        </div>
-       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-6 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] flex items-center gap-8 z-50">
-          <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="text-slate-600 hover:text-sky-600"><ChevronLeft size={24}/></button>
-          <span className="font-mono font-black text-lg text-slate-800">{pageNum} <span className="text-slate-400">/ {pdfDoc?.numPages || '-'}</span></span>
-          <button onClick={() => setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p+1))} className="text-slate-600 hover:text-sky-600"><ChevronRight size={24}/></button>
+       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-800/90 backdrop-blur px-6 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] flex items-center gap-8 z-50 border border-white/50 dark:border-slate-700">
+          <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronLeft size={24}/></button>
+          <span className="font-mono font-black text-lg text-slate-800 dark:text-white">{pageNum} <span className="text-slate-400 dark:text-slate-500">/ {pdfDoc?.numPages || '-'}</span></span>
+          <button onClick={() => setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p+1))} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronRight size={24}/></button>
        </div>
     </div>
   );
@@ -395,27 +395,27 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!limit && (
-        <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+        <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 rounded-2xl"><Newspaper size={32} className="text-rose-500"/></span> 교육 뉴스룸</h2>
+              <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 교육 뉴스룸</h2>
            </div>
-           {onBack && <button onClick={onBack} className="text-sm font-bold text-slate-500 hover:text-rose-500 flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm"><Home size={18}/> 홈으로</button>}
+           {onBack && <button onClick={onBack} className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm"><Home size={18}/> 홈으로</button>}
         </div>
       )}
       <div className="flex flex-col gap-4">
          {news.map((item, idx) => (
-            <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 transition-all relative">
+            <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
                <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                      <KRDSBadge variant={item.author?.includes('Google') ? 'neutral' : 'primary'}>{item.author || '뉴스'}</KRDSBadge>
-                     <span className="text-sm text-slate-400 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
+                     <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
                   </div>
-                  <h3 className="font-black text-xl text-slate-800 dark:text-white group-hover:text-rose-500 transition-colors line-clamp-2 leading-snug">{item.title}</h3>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
+                  <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{item.title}</h3>
+                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
                </div>
                <div className="flex items-center justify-end gap-2">
-                   {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors"><ArrowUpRight size={20} className="text-slate-300 group-hover:text-rose-500"/></div>}
-                   {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 hover:text-red-500 p-2 bg-white rounded-full shadow-sm"><Trash2 size={16}/></button>}
+                   {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
+                   {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
                </div>
             </div>
          ))}
@@ -459,68 +459,68 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!initialMode && (
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
-           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800"><span className="p-2 bg-amber-100 rounded-2xl"><Megaphone className="text-amber-500" size={32}/></span> 기관 소식</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800 dark:text-white"><span className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-2xl"><Megaphone className="text-amber-500 dark:text-amber-400" size={32}/></span> 기관 소식</h2>
            <div className="flex flex-wrap gap-3 w-full md:w-auto">
-              <div className="bg-white shadow-sm p-1.5 rounded-2xl flex border border-slate-100">
+              <div className="bg-white dark:bg-slate-800 shadow-sm p-1.5 rounded-2xl flex border border-slate-100 dark:border-slate-700">
                   {['all', 'notice', 'event'].map(f => (
-                      <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 text-sm font-black rounded-xl transition-all ${filter === f ? 'bg-amber-50 text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}>{f === 'all' ? '전체' : f === 'notice' ? '공지' : '행사'}</button>
+                      <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 text-sm font-black rounded-xl transition-all ${filter === f ? 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>{f === 'all' ? '전체' : f === 'notice' ? '공지' : '행사'}</button>
                   ))}
               </div>
-              {userRole === 'admin' && <button onClick={() => onWriteClick('notice')} className="bg-amber-500 text-white px-5 py-2 rounded-2xl text-sm font-black shadow-md hover:bg-amber-600 flex gap-2 items-center"><Plus size={18}/> 새 소식 작성</button>}
+              {userRole === 'admin' && <button onClick={() => onWriteClick('notice')} className="bg-amber-500 dark:bg-amber-600 text-white px-5 py-2 rounded-2xl text-sm font-black shadow-md hover:bg-amber-600 dark:hover:bg-amber-500 flex gap-2 items-center"><Plus size={18}/> 새 소식 작성</button>}
            </div>
         </div>
       )}
       
       <div className="grid gap-4">
          {filteredNotices.map(n => (
-            <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-amber-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
+            <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-500/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
                <div className="flex-1">
                  <div className="flex items-center gap-3 mb-3">
                     <KRDSBadge variant={n.category === 'event' ? 'warning' : 'neutral'}>{n.category === 'event' ? '행사안내' : '일반공지'}</KRDSBadge>
-                    <span className="text-sm font-bold text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
+                    <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
-                 <h3 className="text-xl font-black mb-2 line-clamp-1 text-slate-800 group-hover:text-amber-600 transition-colors">{n.title}</h3>
-                 <p className="text-base font-medium text-slate-500 dark:text-gray-400 line-clamp-1">{n.content}</p>
-                 {n.event_date && <div className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-600 bg-amber-50 px-4 py-2 rounded-xl"><CalendarIcon size={18}/> 행사일: {n.event_date}</div>}
+                 <h3 className="text-xl font-black mb-2 line-clamp-1 text-slate-800 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{n.title}</h3>
+                 <p className="text-base font-medium text-slate-500 dark:text-slate-400 line-clamp-1">{n.content}</p>
+                 {n.event_date && <div className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-xl border border-amber-100/50 dark:border-amber-800/50"><CalendarIcon size={18}/> 행사일: {n.event_date}</div>}
                </div>
-               <div className="hidden md:flex w-12 h-12 rounded-full bg-slate-50 items-center justify-center group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors shrink-0">
-                  <ArrowRight size={20} className="text-slate-300 group-hover:text-amber-500"/>
+               <div className="hidden md:flex w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 items-center justify-center group-hover:bg-amber-50 dark:group-hover:bg-amber-900/40 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors shrink-0">
+                  <ArrowRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-amber-500 dark:group-hover:text-amber-400"/>
                </div>
             </div>
          ))}
-         {filteredNotices.length === 0 && <div className="py-16 text-center text-slate-400 font-bold bg-white rounded-[2rem] border border-slate-100">등록된 소식이 없습니다.</div>}
+         {filteredNotices.length === 0 && <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">등록된 소식이 없습니다.</div>}
       </div>
 
       {selectedNotice && (
-        <div className="fixed inset-0 bg-slate-900/40 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedNotice(null)}>
-           <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.1)] flex flex-col relative" onClick={e => e.stopPropagation()}>
-              <div className="sticky top-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-8 py-6 border-b border-slate-100 dark:border-gray-700 flex justify-between items-start z-10">
+        <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedNotice(null)}>
+           <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.2)] flex flex-col relative border border-slate-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-8 py-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-start z-10">
                  <div>
                     <div className="flex items-center gap-3 mb-3">
                        <KRDSBadge variant={selectedNotice.category === 'event' ? 'warning' : 'neutral'}>{selectedNotice.category === 'event' ? '행사' : '공지'}</KRDSBadge>
-                       <span className="text-sm font-bold text-slate-400">{new Date(selectedNotice.created_at).toLocaleDateString()}</span>
+                       <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{new Date(selectedNotice.created_at).toLocaleDateString()}</span>
                     </div>
                     <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-snug">{selectedNotice.title}</h2>
                  </div>
-                 <button onClick={() => setSelectedNotice(null)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><X size={20} className="text-slate-600"/></button>
+                 <button onClick={() => setSelectedNotice(null)} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X size={20} className="text-slate-600 dark:text-slate-300"/></button>
               </div>
               <div className="p-8">
                  {selectedNotice.event_date && (
-                    <div className="mb-8 p-5 bg-amber-50 dark:bg-blue-900/20 rounded-2xl flex items-center gap-4">
-                       <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm"><CalendarIcon className="text-amber-500" size={24}/></div>
-                       <div><div className="text-sm font-black text-amber-600 mb-1">예정된 행사일</div><div className="text-lg font-black text-slate-800">{selectedNotice.event_date}</div></div>
+                    <div className="mb-8 p-5 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center gap-4 border border-amber-100 dark:border-amber-800/50">
+                       <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm"><CalendarIcon className="text-amber-500 dark:text-amber-400" size={24}/></div>
+                       <div><div className="text-sm font-black text-amber-600 dark:text-amber-500 mb-1">예정된 행사일</div><div className="text-lg font-black text-slate-800 dark:text-white">{selectedNotice.event_date}</div></div>
                     </div>
                  )}
-                 <p className="text-lg leading-relaxed whitespace-pre-wrap text-slate-700 font-medium">{selectedNotice.content}</p>
+                 <p className="text-lg leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300 font-medium">{selectedNotice.content}</p>
               </div>
-              <div className="px-8 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 flex justify-between items-center text-sm">
-                 <div className="flex items-center gap-4 font-bold text-slate-400">
+              <div className="px-8 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-sm">
+                 <div className="flex items-center gap-4 font-bold text-slate-400 dark:text-slate-500">
                      <span className="flex items-center gap-1.5"><User size={16}/> 관리자</span>
                      <span className="flex items-center gap-1.5"><Eye size={16}/> 조회수 {selectedNotice.views || 0}</span>
                  </div>
                  {userRole === 'admin' && (
-                    <button onClick={() => handleDelete(selectedNotice.id)} className="text-rose-500 hover:text-rose-600 font-black flex items-center gap-1 bg-white px-4 py-2 rounded-xl shadow-sm"><Trash2 size={16}/> 삭제</button>
+                    <button onClick={() => handleDelete(selectedNotice.id)} className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-black flex items-center gap-1 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm"><Trash2 size={16}/> 삭제</button>
                  )}
               </div>
            </div>
@@ -531,43 +531,55 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
 };
 
 const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-gray-700 rounded-[2rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all h-full">
-    <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-700 dark:to-slate-800`}>
-       <div className="p-6 text-center w-full h-full flex flex-col justify-center items-center group-hover:scale-105 transition-transform duration-500">
-          <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm text-teal-600 dark:text-teal-300 text-sm font-black px-4 py-1.5 rounded-full mb-4 shadow-sm">Vol.{issue.vol}</div>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight line-clamp-2">{issue.title}</h3>
+  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
+    
+    <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
+       <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/50 opacity-60 z-0"><Frog size={32} strokeWidth={1.5}/></div>
+       <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/50 opacity-60 z-0"><Sprout size={32}/></div>
+       <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-5"><Book size={150} className="text-teal-200 dark:text-teal-400" strokeWidth={0.5}/></div>
+       
+       <div className="p-8 text-center w-full h-full flex flex-col justify-center items-center group-hover:scale-105 transition-transform duration-500 z-10 relative">
+          <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm text-teal-600 dark:text-teal-400 text-sm font-black px-5 py-2 rounded-full mb-6 shadow-sm border border-white dark:border-slate-700">Vol.{issue.vol}</div>
+          <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 tracking-tight">{issue.title}</h3>
        </div>
     </div>
-    <div className="p-6 md:p-8 flex-1 flex flex-col">
-      <div className="flex justify-between items-center mb-4"><span className="text-sm font-bold text-slate-400">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-300 hover:text-rose-500 bg-slate-50 p-2 rounded-full"><Trash2 size={16}/></button>}</div>
-      <p className="text-base font-medium text-slate-500 dark:text-gray-400 line-clamp-2 mt-auto leading-relaxed">{issue.description || "내용 없음"}</p>
+    
+    <div className="p-10 flex-1 flex flex-col relative z-10">
+      <div className="flex justify-between items-center mb-6"><span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-900 p-2 rounded-full transition-colors"><Trash2 size={16}/></button>}</div>
+      <p className="text-base font-medium text-slate-500 dark:text-slate-400 line-clamp-2 mt-auto leading-relaxed max-w-[90%]">{issue.description || "내용 없음"}</p>
+      
+      <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs font-bold text-slate-400 dark:text-slate-500">
+         <span className="flex items-center gap-1.5"><Eye size={18}/> {issue.views || 0}</span>
+         <span className="flex items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg"><Paperclip size={18} className="text-slate-300 dark:text-slate-600"/> 4개</span>
+      </div>
     </div>
   </div>
 );
 
-// ------------------------------------------------------------------
-// 🧭 네비게이션바
-// ------------------------------------------------------------------
-const Navbar = ({ onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme, onMenuClick, role }) => (
-  <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-100 dark:border-gray-800 shadow-sm h-20 flex items-center">
-    <div className="container mx-auto px-4 w-full flex items-center justify-between">
+// 🧭 [Soft UI System] 
+const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleTheme, isDarkMode, role }) => (
+  <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 shadow-sm h-20 flex items-center relative transition-colors">
+    <div className="absolute top-2 left-10 text-emerald-200 dark:text-emerald-900/50 opacity-60"><Flower2 size={24}/></div>
+    <div className="absolute bottom-2 right-10 text-sky-200 dark:text-sky-900/50 opacity-60"><Sprout size={24}/></div>
+
+    <div className="container mx-auto px-4 w-full flex items-center justify-between relative z-10">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
-         <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:rotate-12 transition-transform"><Sparkles size={24}/></div>
-         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-emerald-500 transition-colors">지식 플랫폼</h1>
-         {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 text-rose-600 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
+         <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-teal-400 dark:from-emerald-500 dark:to-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:rotate-12 transition-transform"><Sparkles size={24}/></div>
+         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">지식 플랫폼</h1>
+         {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
       </div>
-      <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2 py-2 rounded-full border border-slate-100 dark:border-gray-700">
+      <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-gray-400'}`}>
+          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
             {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '기관소식' : '뉴스룸'}
           </button>
         ))}
       </nav>
       <div className="flex items-center gap-2">
-        <button onClick={toggleTheme} className="p-3 text-slate-400 bg-white hover:bg-slate-50 rounded-full border border-slate-100 shadow-sm transition-all">
+        <button onClick={toggleTheme} className="p-3 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm transition-all">
           {isDarkMode ? <Sun size={20} className="text-amber-400"/> : <Moon size={20}/>}
         </button>
-        <button onClick={onMenuClick} className="p-3 text-slate-700 bg-white hover:bg-slate-50 rounded-full border border-slate-100 shadow-sm transition-all">
+        <button onClick={onMenuClick} className="p-3 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full border border-slate-100 dark:border-slate-700 shadow-sm transition-all">
           <Menu size={20} />
         </button>
       </div>
@@ -575,9 +587,7 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, isDarkMode, toggleThem
   </header>
 );
 
-// ------------------------------------------------------------------
 // 🚀 메인 애플리케이션
-// ------------------------------------------------------------------
 const MainApp = () => {
   const [role, setRole] = useState('guest'); 
   const [view, setView] = useHistoryState('home'); 
@@ -614,6 +624,7 @@ const MainApp = () => {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
+  // 초기 데이터 불러오기 
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
@@ -668,7 +679,6 @@ const MainApp = () => {
     if (view === 'resource_map') renderMap(mapContainerRefStandalone);
   }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
-  // ✅ 홈 화면에서 검색 실행 시 지도 탭으로 이동하는 함수
   const handleSearchSubmit = () => {
     setView('resource_map');
   };
@@ -687,34 +697,36 @@ const MainApp = () => {
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
   const handleIssueClick = (issue) => { incrementViewCount('issues', issue.id, issue.views); const updatedIssue = { ...issue, views: (issue.views || 0) + 1 }; setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); setCurrentIssue(updatedIssue); setView('issue_detail'); };
 
-  if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-white"><AlertTriangle className="text-red-500 mb-4" size={40}/>DB 연결 오류</div>;
+  if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900"><AlertTriangle className="text-red-500 mb-4" size={40}/>DB 연결 오류</div>;
 
   return (
     <>
     <style>{globalStyles}</style>
-    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100">
+    {/* ✅ 전체 배경색에 다크모드 적용 (Soft Slate Tone) */}
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
        
        {/* 우측 슬라이드 메뉴 */}
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
-           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSideMenuOpen(false)} />
-           <div className="relative w-[320px] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col rounded-l-[2.5rem] overflow-hidden">
-             <div className="flex items-center justify-between p-8 border-b border-slate-50 dark:border-gray-800">
-               <span className="font-black text-2xl flex items-center gap-2"><LayoutGrid className="text-emerald-500"/> 전체 메뉴</span>
-               <button onClick={() => setIsSideMenuOpen(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200"><X size={20} /></button>
+           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSideMenuOpen(false)} />
+           <div className="relative w-[320px] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col rounded-l-[2.5rem] overflow-hidden border-l border-white/10">
+             <div className="flex items-center justify-between p-8 border-b border-slate-50 dark:border-slate-800 relative">
+                <div className="absolute top-2 right-10 text-emerald-200 dark:text-emerald-900/50 opacity-60"><Flower2 size={24}/></div>
+                <span className="font-black text-2xl flex items-center gap-2 relative z-10 dark:text-white"><LayoutGrid className="text-emerald-500"/> 전체 메뉴</span>
+                <button onClick={() => setIsSideMenuOpen(false)} className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 relative z-10"><X size={20} className="dark:text-slate-300" /></button>
              </div>
              <nav className="flex-1 overflow-y-auto p-6">
                <ul className="flex flex-col gap-3">
                  {[
-                   { id: 'home', icon: <Home size={24} className="text-sky-500" />, label: '홈으로' },
-                   { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500" />, label: '체험자원 지도' },
-                   { id: 'issue_list', icon: <Book size={24} className="text-teal-500"/>, label: '월간 자료실' },
-                   { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500"/>, label: '기관 소식' },
-                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500"/>, label: '교육 뉴스룸' }
+                   { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈으로' },
+                   { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500 dark:text-emerald-400" />, label: '체험자원 지도' },
+                   { id: 'issue_list', icon: <Book size={24} className="text-teal-500 dark:text-teal-400"/>, label: '월간 자료실' },
+                   { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500 dark:text-amber-400"/>, label: '기관 소식' },
+                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '교육 뉴스룸' }
                  ].map((item) => (
                    <li key={item.id}>
-                     <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-5 rounded-3xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all text-left font-black text-lg text-slate-700">
-                       <div className="flex items-center gap-4 bg-white shadow-sm p-3 rounded-2xl">{item.icon} {item.label}</div>
+                     <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-5 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all text-left font-black text-lg text-slate-700 dark:text-slate-200">
+                       <div className="flex items-center gap-4 bg-white dark:bg-slate-950 shadow-sm dark:shadow-none p-3 rounded-2xl border dark:border-slate-800">{item.icon} {item.label}</div>
                      </button>
                    </li>
                  ))}
@@ -724,160 +736,166 @@ const MainApp = () => {
          </div>
        )}
 
-       <Navbar onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onMenuClick={() => setIsSideMenuOpen(true)} role={role}/>
+       <Navbar onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} onMenuClick={() => setIsSideMenuOpen(true)} isDarkMode={isDarkMode} toggleTheme={toggleTheme} role={role}/>
        
        <main className="flex-1 w-full pb-24">
           
-          {/* ✅ 검색 포털로 변경된 홈 화면 (지도 삭제됨) */}
+          {/* ✅ 홈 화면 (Kid-Friendly & Soft Dark Mode) */}
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
                
-               <section className="relative w-full py-32 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] flex flex-col items-center justify-center px-4 overflow-hidden">
+               <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
                  
-                 {/* 스마트 날씨/미세먼지 위젯 (우측 상단 플로팅) */}
-                 <div className="absolute top-10 right-10 xl:right-20 bg-white/70 backdrop-blur-xl border border-white rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
-                    <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
-                       <MapPin size={18} className="text-emerald-500"/> 전북특별자치도 전주시
+                 {/* 스마트 날씨 위젯 */}
+                 <div className="absolute top-10 right-10 xl:right-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
+                       <MapPin size={18} className="text-emerald-500 dark:text-emerald-400"/> 전북특별자치도 전주시
                     </div>
                     <div className="flex items-center justify-between gap-6">
                        <div className="flex items-center gap-3">
                           <CloudSun size={48} className="text-amber-500" strokeWidth={1.5} />
-                          <span className="text-4xl font-black text-slate-800 tracking-tighter">18<span className="text-2xl">°C</span></span>
+                          <span className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">18<span className="text-2xl">°C</span></span>
                        </div>
                     </div>
                     <div className="flex gap-2 text-xs font-black mt-1">
-                       <div className="bg-white/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 border border-slate-100">미세 <span className="text-blue-500">좋음</span></div>
-                       <div className="bg-white/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 border border-slate-100">초미세 <span className="text-emerald-500">보통</span></div>
+                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">미세 <span className="text-blue-500 dark:text-blue-400">좋음</span></div>
+                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">초미세 <span className="text-emerald-500 dark:text-emerald-400">보통</span></div>
                     </div>
                  </div>
 
-                 <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0">
-                   <span className="bg-white/80 backdrop-blur-sm text-emerald-600 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
-                   <h2 className="text-5xl md:text-6xl font-black text-slate-800 leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600">지식 플랫폼</span></h2>
+                 <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0 relative pb-16">
+                   <div className="absolute top-0 right-1/4 text-sky-300 dark:text-sky-900/50 opacity-60 z-0 animate-pulse"><Sprout size={56}/></div>
+                   <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Frog size={72} strokeWidth={1}/></div>
+
+                   <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
+                   <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-white leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600 dark:text-emerald-400">지식 플랫폼</span></h2>
                    
-                   {/* ✅ 나침반 검색 버튼 연동 */}
-                   <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-full mb-8">
+                   <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-full mb-8 relative z-20">
                      <input 
                        type="text" placeholder="어떤 체험을 찾으시나요? (예: 박물관)" 
-                       className="w-full h-20 md:h-24 pl-10 pr-24 rounded-full text-xl font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/30 border border-white/50 shadow-inner"
+                       className="w-full h-20 md:h-24 pl-10 pr-24 rounded-full text-xl font-black text-slate-800 dark:text-white bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/30 border border-white/50 dark:border-slate-700 shadow-inner"
                        value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearchSubmit(); }}
                      />
-                     <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-20 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 transition-colors shadow-md">
+                     <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-20 bg-emerald-500 dark:bg-emerald-600 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors shadow-md">
                        <Compass size={32} strokeWidth={2.5}/>
                      </button>
                    </div>
 
-                   {/* ✅ 해시태그 클릭 시 지도 화면으로 즉시 전환 */}
-                   <div className="flex gap-2.5 justify-center flex-wrap">
+                   <div className="flex gap-2.5 justify-center flex-wrap Relative z-20">
                      {['전체', '전주시', '익산시', '군산시', '완주군'].map(tag => (
-                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-black rounded-full shadow-sm text-sm transition-all border border-white hover:border-emerald-300 hover:text-emerald-600">#{tag}</button>
+                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-6 py-2.5 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-full shadow-sm text-sm transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
                      ))}
                    </div>
                  </div>
                  
-                 {/* 둥둥 떠다니는 나침반 일러스트 애니메이션 */}
-                 <div className="absolute right-[5%] bottom-[10%] opacity-20 select-none pointer-events-none animate-float">
-                    <Compass size={380} className="text-sky-600" strokeWidth={1} />
+                 <div className="absolute right-[5%] bottom-[10%] opacity-20 dark:opacity-10 select-none pointer-events-none animate-float">
+                    <Compass size={380} className="text-sky-600 dark:text-sky-400" strokeWidth={1} />
                  </div>
-                 <div className="absolute left-[5%] top-[15%] opacity-10 select-none pointer-events-none transform -rotate-12">
-                    <Wind size={250} className="text-emerald-500" strokeWidth={1} />
+                 <div className="absolute left-[5%] top-[15%] opacity-10 dark:opacity-5 select-none pointer-events-none transform -rotate-12">
+                    <Wind size={250} className="text-emerald-500 dark:text-emerald-400" strokeWidth={1} />
                  </div>
                </section>
 
-               {/* 퀵 메뉴 (link_wrap) */}
-               <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-20">
-                 <div className="bg-white rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] py-10 px-8 flex justify-around items-center gap-4 border border-slate-50/50">
+               <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-28">
+                 <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] py-10 px-8 flex justify-around items-center gap-4 border border-slate-50/50 dark:border-slate-700">
                    {[
-                      { id: 'map', title: '체험지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 group-hover:bg-emerald-500', action: () => setView('resource_map') },
-                      { id: 'issue_list', title: '월간자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 group-hover:bg-teal-500', action: () => setView('issue_list') },
-                      { id: 'notice', title: '기관소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 group-hover:bg-amber-500', action: () => setView('notice') },
-                      { id: 'news', title: '교육뉴스룸', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 group-hover:bg-rose-500', action: () => setView('news') }
+                      { id: 'map', title: '체험지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 group-hover:bg-emerald-500 dark:group-hover:bg-emerald-500 group-hover:text-white', decorators: [<Flower2 key="f1" size={20} className="text-emerald-300 dark:text-emerald-500/50 absolute -top-1 -right-1"/>, <Heart key="h1" size={12} className="text-emerald-200 dark:text-emerald-500/50 absolute bottom-1 -left-1"/>] },
+                      { id: 'issue_list', title: '월간자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400 group-hover:bg-teal-500 dark:group-hover:bg-teal-500 group-hover:text-white' },
+                      { id: 'notice', title: '기관소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 group-hover:bg-amber-500 dark:group-hover:bg-amber-500 group-hover:text-white', decorators: [<Sprout key="s1" size={20} className="text-amber-300 dark:text-amber-500/50 absolute -top-1 -left-1"/>, <Flower2 key="f2" size={12} className="text-amber-200 dark:text-amber-500/50 absolute bottom-1 -right-1"/>] },
+                      { id: 'news', title: '교육뉴스룸', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 group-hover:bg-rose-500 dark:group-hover:bg-rose-500 group-hover:text-white' }
                    ].map(menu => (
-                      <div key={menu.id} onClick={menu.action} className="flex flex-col items-center gap-4 cursor-pointer group">
-                         <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center group-hover:text-white transition-all shadow-inner group-hover:shadow-[0_15px_30px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 ${menu.color}`}>{menu.icon}</div>
-                         <span className="font-black text-slate-700 text-base md:text-lg">{menu.title}</span>
+                      <div key={menu.id} onClick={() => setView(menu.id === 'map' ? 'resource_map' : menu.id)} className="flex flex-col items-center gap-4 cursor-pointer group relative">
+                         <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all shadow-inner group-hover:shadow-[0_15px_30px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 relative border border-transparent dark:border-slate-700 group-hover:border-transparent ${menu.color}`}>{menu.icon}{menu.decorators}</div>
+                         <span className="font-black text-slate-700 dark:text-slate-300 text-base md:text-lg">{menu.title}</span>
                       </div>
                    ))}
                  </div>
                </section>
 
-               {/* 위젯 영역 (main_board) */}
-               <section className="max-w-7xl mx-auto px-4 pb-10">
+               <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                   <div className="bg-white rounded-[3rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100">
-                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-5">
-                         <h3 className="text-2xl md:text-3xl font-black text-slate-800">최근 기관 소식</h3>
-                         <button onClick={() => setView('notice')} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors"><Plus size={28} className="text-slate-400"/></button>
+                   
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                      <div className="absolute -top-4 -left-4 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0"><Frog size={80} strokeWidth={1}/></div>
+
+                      <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
+                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 기관 소식 <Frog size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
+                         <button onClick={() => setView('notice')} className="text-base font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col relative z-10 pl-2">
                         {recentNotices.map(n => (
-                           <div key={n.id} onClick={() => {setView('notice');}} className="py-5 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                              <div className="flex items-center gap-4 w-full">
-                                 <span className={`text-sm font-black px-3 py-1 rounded-full ${n.category === 'event' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
-                                 <span className="font-bold text-slate-700 group-hover:text-amber-600 line-clamp-1 text-lg flex-1">{n.title}</span>
-                                 <span className="text-sm font-bold text-slate-400 hidden md:block">{new Date(n.created_at).toLocaleDateString()}</span>
+                           <div key={n.id} onClick={() => {setView('notice');}} className="py-6 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                              <div className="flex items-center gap-5 w-full">
+                                 <span className={`text-sm font-black px-4 py-1.5 rounded-full border ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 line-clamp-1 text-xl flex-1 tracking-tight">{n.title}</span>
+                                 <span className="text-base font-bold text-slate-400 dark:text-slate-500 hidden md:block">{new Date(n.created_at).toLocaleDateString()}</span>
                               </div>
                            </div>
                         ))}
                       </div>
                    </div>
 
-                   <div className="bg-white rounded-[3rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100">
-                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-5">
-                         <h3 className="text-2xl md:text-3xl font-black text-slate-800">최신 월간 웹진</h3>
-                         <button onClick={() => setView('issue_list')} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors"><Plus size={28} className="text-slate-400"/></button>
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                      <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
+                      <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
+
+                      <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
+                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 tracking-tight">최신 월간 웹진 <Flower2 size={36} className="text-sky-500 dark:text-sky-400" strokeWidth={2}/></h3>
+                         <button onClick={() => setView('issue_list')} className="text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
-                      <div className="grid grid-cols-2 gap-6 pt-2">
+                      <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2">
                         {issues.slice(0, 2).map(issue => (
-                           <div key={issue.id} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} className="aspect-square bg-gradient-to-br from-teal-50 to-emerald-50 rounded-[2rem] flex flex-col items-center justify-center p-6 cursor-pointer hover:shadow-[0_15px_30px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all group border border-white">
-                              <span className="text-teal-600 font-black text-sm bg-white px-4 py-1.5 rounded-full mb-5 shadow-sm">Vol.{issue.vol}</span>
-                              <h4 className="text-2xl font-black text-slate-800 text-center line-clamp-2 leading-snug group-hover:scale-105 transition-transform">{issue.title}</h4>
-                           </div>
+                           <IssueCard key={issue.id} issue={issue} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
                         ))}
                       </div>
                    </div>
+
                  </div>
                </section>
             </div>
           )}
 
-          {/* ✅ 단독 탭으로 분리된 체험자원 지도 (resource_map) */}
+          {/* ✅ 단독 탭 체험자원 지도 (resource_map, 모바일 화면 역전(Map on top) 완벽 구현) */}
           {view === 'resource_map' && (
-             <div className="flex flex-col md:flex-row w-full h-[calc(100vh-80px)] relative bg-slate-100 animate-in fade-in">
-                <div className="w-full md:w-[480px] bg-white flex flex-col border-r border-slate-200 z-10 shrink-0 h-1/2 md:h-full relative shadow-xl">
-                   <div className="p-8 border-b border-slate-100 bg-white sticky top-0 z-20">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
-                        <div><h2 className="text-2xl font-black text-slate-800 tracking-tight">체험자원 지도</h2></div>
+             <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
+                
+                {/* 좌측(PC)/하단(Mobile) 리스트 (.map_list_wrap) */}
+                <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
+                   <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Frog size={32} strokeWidth={1.5}/></div>
+
+                   <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-20 relative">
+                      <div className="flex items-center gap-3 mb-6 relative z-10">
+                        <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
+                        <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
                       </div>
-                      <div className="relative mb-5">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
-                        <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 border-none rounded-[1.5rem] focus:bg-white focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
+                      <div className="relative mb-5 z-10">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20}/>
+                        <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-[1.5rem] text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 z-10 relative">
                         {['전체', '전주시', '익산시', '군산시', '완주군'].map(region => (
-                          <button key={region} onClick={() => { setSelectedRegion(region); setSelectedResource(null); }} className={`px-5 py-2.5 text-sm font-black rounded-full transition-all border ${selectedRegion === region ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}>{region}</button>
+                          <button key={region} onClick={() => { setSelectedRegion(region); setSelectedResource(null); }} className={`px-5 py-2.5 text-sm font-black rounded-full transition-all border ${selectedRegion === region ? 'bg-emerald-500 dark:bg-emerald-600 text-white border-emerald-500 dark:border-emerald-600 shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400'}`}>{region}</button>
                         ))}
                       </div>
                    </div>
-                   <div className="p-4 bg-slate-50 flex justify-between items-center border-b border-slate-100">
-                      <div className="font-black text-slate-700 px-4">총 <span className="text-emerald-600 text-xl">{filteredResources.length}</span>건</div>
+                   <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
+                      <div className="font-black text-slate-700 dark:text-slate-300 px-4">총 <span className="text-emerald-600 dark:text-emerald-400 text-xl">{filteredResources.length}</span>건</div>
                    </div>
-                   <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 custom-scrollbar pb-24 bg-slate-50/50">
+                   <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 md:gap-5 custom-scrollbar pb-24 bg-slate-50/20 dark:bg-slate-900/20">
                      {filteredResources.map(res => (
-                       <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-6 rounded-[1.5rem] cursor-pointer transition-all border bg-white group ${selectedResource?.id === res.id ? 'border-emerald-500 ring-4 ring-emerald-50 shadow-md' : 'border-slate-100 hover:border-emerald-300 hover:shadow-sm'}`}>
+                       <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-6 rounded-[1.5rem] cursor-pointer transition-all border bg-white dark:bg-slate-800 group ${selectedResource?.id === res.id ? 'border-emerald-500 dark:border-emerald-500 ring-4 ring-emerald-50 dark:ring-emerald-900/30 shadow-[0_15px_30px_rgba(16,185,129,0.15)]' : 'border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-sm'}`}>
                          <div className="flex flex-wrap gap-1.5 mb-4">
-                            <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">#{res.category}</span>
-                            <span className="text-[11px] font-black text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full">#누리과정</span>
+                            <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-100/50 dark:border-emerald-800 px-2.5 py-1 rounded-full">#{res.category}</span>
+                            <span className="text-[11px] font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/40 border border-sky-100/50 dark:border-sky-800 px-2.5 py-1 rounded-full">#누리과정</span>
                          </div>
-                         <h4 className="font-black text-2xl text-slate-800 mb-5 group-hover:text-emerald-600 transition-colors tracking-tight">{res.name}</h4>
+                         <h4 className="font-black text-xl md:text-2xl text-slate-800 dark:text-white mb-5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">{res.name}</h4>
                          <ul className="flex flex-col gap-3">
-                            <li className="flex items-start gap-3 text-sm font-bold text-slate-500">
-                               <div className="p-1.5 bg-slate-50 rounded-lg shrink-0 mt-0.5"><MapPin size={16} className="text-slate-400"/></div>
+                            <li className="flex items-start gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
+                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0 mt-0.5"><MapPin size={16} className="text-slate-400 dark:text-slate-500"/></div>
                                <span className="leading-snug pt-1">{res.address}</span>
                             </li>
-                            <li className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                               <div className="p-1.5 bg-slate-50 rounded-lg shrink-0"><Phone size={16} className="text-slate-400"/></div>
+                            <li className="flex items-center gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
+                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0"><Phone size={16} className="text-slate-400 dark:text-slate-500"/></div>
                                <span className="pt-0.5">{res.phone || '연락처 정보 없음'}</span>
                             </li>
                          </ul>
@@ -885,21 +903,25 @@ const MainApp = () => {
                      ))}
                    </div>
                 </div>
-                <div className="flex-1 relative h-1/2 md:h-full">
-                   {mapLoading ? <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
+
+                {/* 우측(PC)/상단(Mobile) 카카오맵 (.map_view) */}
+                <div className="w-full md:flex-1 relative h-[45%] md:h-full bg-slate-100 dark:bg-slate-950 relative">
+                   <div className="absolute bottom-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float"><Compass size={150} strokeWidth={1}/></div>
+
+                   {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
                    : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
                    
-                   {/* 바텀 시트 (마커 클릭 시) */}
-                   <div className={`absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] z-20 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
+                   {/* 모바일 화면에서는 바텀 시트가 화면 맨 아래에서 올라오도록 fixed로 고정 */}
+                   <div className={`fixed md:absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
                       {selectedResource && (
-                        <div className="p-10 pb-12 relative">
-                           <button className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
+                        <div className="p-8 md:p-10 pb-12 relative border-t border-slate-100 dark:border-slate-700">
+                           <button className="absolute top-6 right-6 p-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
                            <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                           <h3 className="text-4xl font-black text-slate-800 mb-4 tracking-tight">{selectedResource.name}</h3>
-                           <p className="text-slate-500 font-bold text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500"/> {selectedResource.address}</p>
+                           <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight leading-tight pr-12">{selectedResource.name}</h3>
+                           <p className="text-slate-500 dark:text-slate-400 font-bold text-base md:text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500 dark:text-emerald-400"/> {selectedResource.address}</p>
                            <div className="grid grid-cols-2 gap-4">
-                              <button className="bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
-                              <button className="bg-slate-100 text-slate-700 py-5 rounded-2xl font-black text-xl flex justify-center items-center gap-3 hover:bg-slate-200 transition-colors"><Phone size={24}/> 전화 연결</button>
+                              <button className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
+                              <button className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl flex justify-center items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><Phone size={24}/> 전화 연결</button>
                            </div>
                         </div>
                       )}
@@ -910,10 +932,67 @@ const MainApp = () => {
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
-          {view === 'issue_list' && <div className="pt-12 max-w-7xl mx-auto px-4">{/* 이전과 동일 */}</div>}
+          
+          {/* ✅ 자료실 목록 탭 */}
+          {view === 'issue_list' && (
+            <div className="pt-16 max-w-7xl mx-auto px-4 animate-in fade-in mb-28">
+              <div className="flex items-center justify-between mb-12 pb-8 border-b border-slate-800 dark:border-slate-700 relative overflow-hidden px-10">
+                <div className="absolute top-4 left-4 text-teal-100 dark:text-teal-900/30 opacity-60 z-0"><Book size={48} className="text-teal-200 dark:text-teal-800"/></div>
+                <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">월간 자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
+                {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}
+              </div>
+            </div>
+          )}
+
+          {view === 'issue_detail' && currentIssue && (
+            <div className="max-w-6xl mx-auto px-4 py-16 animate-in fade-in mb-28">
+              <button onClick={() => setView('issue_list')} className="mb-10 flex items-center gap-2.5 font-black text-slate-400 dark:text-slate-500 hover:text-teal-500 dark:hover:text-teal-400 bg-slate-50 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-6 py-3 rounded-full transition-colors w-max"><ArrowLeft size={20}/> 자료실 목록</button>
+              
+              <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[3rem] p-10 md:p-16 mb-16 shadow-[0_20px_60px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-12 items-start relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-teal-50 dark:bg-teal-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-70 pointer-events-none z-0"></div>
+                <div className="w-36 h-36 bg-teal-50 dark:bg-teal-900/40 rounded-[2.5rem] flex items-center justify-center text-7xl shadow-inner z-10 shrink-0 border border-teal-100 dark:border-teal-800 relative">
+                   <div className="absolute top-2 right-2 text-teal-200 dark:text-teal-700 opacity-60"><Frog size={28}/></div>
+                   {currentIssue.icon}
+                </div>
+                <div className="z-10 relative flex-1 pt-2">
+                  <span className="inline-block px-5 py-2 bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 text-sm font-black rounded-full mb-6 border border-teal-100/50 dark:border-teal-800 shadow-sm">Vol.{currentIssue.vol}</span>
+                  <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-8 tracking-tighter leading-tight">{currentIssue.title}</h1>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed max-w-3xl pb-2">{currentIssue.description}</p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-800 dark:border-slate-700 px-8 relative overflow-hidden">
+                <div className="absolute top-4 left-4 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><FileText size={40} className="text-sky-200 dark:text-sky-800"/></div>
+                <h3 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3 relative z-10">수록 자료 목록 <FileText size={28} className="text-sky-500 dark:text-sky-400"/></h3>
+                {role === 'admin' && <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-md bg-sky-500 dark:bg-sky-600 text-white px-6 py-3 rounded-2xl font-black hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors relative z-10"><Plus size={20} /> 자료 추가</button>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4">
+                {currentIssue.articles?.map(art => (
+                  <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] hover:border-sky-300 dark:hover:border-sky-500/50 hover:shadow-[0_15px_40px_rgba(14,165,233,0.1)] cursor-pointer transition-all flex items-center gap-6 relative overflow-hidden">
+                    <div className="absolute -bottom-4 -right-4 text-sky-50 dark:text-sky-900/20 opacity-60 z-0 group-hover:scale-110 transition-transform"><FileText size={80} className="text-sky-100 dark:text-sky-800/50"/></div>
+
+                    <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:bg-sky-50 dark:group-hover:bg-sky-900/40 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors shadow-inner shrink-0 relative z-10"><FileText size={36}/></div>
+                    <div className="flex-1 relative z-10">
+                      <div className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors mb-2 tracking-tight line-clamp-1">{art.title}</div>
+                      <div className="flex items-center gap-3.5 text-sm font-bold text-slate-400 dark:text-slate-500"><span>PDF 문서</span>{art.views > 0 && <span className="flex items-center gap-1.5 text-sky-500 dark:text-sky-400"><Eye size={16}/> {art.views}</span>}</div>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-sky-50 dark:group-hover:bg-sky-900/40 shrink-0 relative z-10 transition-colors"><ArrowRight className="text-slate-300 dark:text-slate-600 group-hover:text-sky-500 dark:group-hover:text-sky-400" size={24}/></div>
+                  </div>
+                ))}
+                {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-28 text-center font-black text-xl text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[2.5rem] flex flex-col items-center gap-4"><Frog size={64} className="text-emerald-200 dark:text-emerald-800/50" strokeWidth={1}/>등록된 자료가 없습니다.</div>}
+              </div>
+            </div>
+          )}
+          
+          {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
        
        {view !== 'resource_map' && view !== 'article_view' && <Footer onSecretAdminUnlock={() => setRole('admin')} />}
+       
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
     </div>
     </>
