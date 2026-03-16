@@ -530,7 +530,8 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
+// ✅ [추가] 자료실 카드 내에서 PDF 추가가 가능하도록 onAddArticle 속성 연결
+const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
     
     <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
@@ -545,12 +546,21 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
     </div>
     
     <div className="p-10 flex-1 flex flex-col relative z-10">
-      <div className="flex justify-between items-center mb-6"><span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>{isAdmin && <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-900 p-2 rounded-full transition-colors"><Trash2 size={16}/></button>}</div>
+      {/* ✅ [개선] 관리자 모드 시 삭제 버튼 옆에 자료(PDF) 추가 버튼 탑재 */}
+      <div className="flex justify-between items-center mb-6">
+        <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>
+        {isAdmin && (
+           <div className="flex gap-2">
+              <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-sky-600 bg-sky-50 dark:bg-sky-900/30 p-2 rounded-full transition-colors" title="이 호수에 자료 추가"><Plus size={16}/></button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-900 p-2 rounded-full transition-colors" title="호수 삭제"><Trash2 size={16}/></button>
+           </div>
+        )}
+      </div>
       <p className="text-base font-medium text-slate-500 dark:text-slate-400 line-clamp-2 mt-auto leading-relaxed max-w-[90%]">{issue.description || "내용 없음"}</p>
       
       <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs font-bold text-slate-400 dark:text-slate-500">
          <span className="flex items-center gap-1.5"><Eye size={18}/> {issue.views || 0}</span>
-         <span className="flex items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg"><Paperclip size={18} className="text-slate-300 dark:text-slate-600"/> 4개</span>
+         <span className="flex items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg"><Paperclip size={18} className="text-slate-300 dark:text-slate-600"/> {(issue.articles || []).length}개</span>
       </div>
     </div>
   </div>
@@ -681,6 +691,13 @@ const MainApp = () => {
 
   const handleSearchSubmit = () => {
     setView('resource_map');
+  };
+
+  // ✅ 업로드 헬퍼: 어느 호수에 PDF를 올릴지 상태 세팅 후 모달 오픈
+  const openArticleUploadForIssue = (issue) => {
+     setCurrentIssue(issue);
+     setUploadType('article');
+     setIsUploadOpen(true);
   };
 
   const handleUpload = async (data) => {
@@ -845,7 +862,7 @@ const MainApp = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2">
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>
+                           <IssueCard key={issue.id} issue={issue} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>
                         ))}
                       </div>
                    </div>
@@ -942,7 +959,7 @@ const MainApp = () => {
                 {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue}/>)}
+                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>)}
               </div>
             </div>
           )}
