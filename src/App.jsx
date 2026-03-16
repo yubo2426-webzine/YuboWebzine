@@ -56,13 +56,13 @@ const useCustomKakaoLoader = () => {
 // 🏛️ [Soft UI System] 아이꿈터 스타일 컴포넌트
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
-  <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all shadow-inner ${className}`} {...props} />
+  <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner ${className}`} {...props} />
 );
 
 const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   const styles = {
     primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/50 dark:text-sky-300',
-    success: 'bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-300',
+    success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300',
     warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300',
     neutral: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300',
   };
@@ -182,7 +182,7 @@ const Footer = ({ onSecretAdminUnlock }) => {
 };
 
 // ------------------------------------------------------------------
-// 📝 업로드 모달 (완전 복원)
+// 📝 업로드 모달
 // ------------------------------------------------------------------
 const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) => {
   if (!isOpen) return null;
@@ -195,22 +195,22 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
        <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.1)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-gray-700 flex flex-col">
           <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-700 bg-white dark:bg-slate-900 flex justify-between items-center sticky top-0 z-10">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-               {type === 'notice' && <><Megaphone className="text-sky-500" size={28}/> 기관 소식 작성</>}
+               {type === 'notice' && <><Megaphone className="text-amber-500" size={28}/> 기관 소식 작성</>}
                {type === 'issue' && <><Book className="text-teal-500" size={28}/> 월간호 발행</>}
-               {type === 'article' && <><FileText className="text-amber-500" size={28}/> 자료 등록</>}
+               {type === 'article' && <><FileText className="text-sky-500" size={28}/> 자료 등록</>}
             </h2>
             <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><X className="text-slate-500"/></button>
           </div>
           <div className="p-8">
             {isUploading ? 
-            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-sky-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600">서버에 안전하게 저장 중입니다...</p></div> : (
+            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600">서버에 안전하게 저장 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-6">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
                   
                   {type === 'notice' && (
                      <>
-                        <div><label className={getLabelClass}>상세 내용</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-sky-400 h-36 resize-none shadow-inner" placeholder="내용 입력" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} required/></div>
+                        <div><label className={getLabelClass}>상세 내용</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-amber-400 h-36 resize-none shadow-inner" placeholder="내용 입력" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} required/></div>
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
@@ -231,7 +231,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   )}
                   <div className="flex gap-4 pt-4 mt-8">
                     <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-lg font-black hover:bg-slate-200 transition-colors">취소</button>
-                    <button type="submit" className="flex-1 py-4 bg-sky-500 text-white rounded-2xl text-lg font-black hover:bg-sky-600 shadow-md transition-colors">등록 완료</button>
+                    <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-black hover:bg-emerald-600 shadow-md transition-colors">등록 완료</button>
                   </div>
                </form>
             )}
@@ -242,7 +242,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
 };
 
 // ------------------------------------------------------------------
-// 📄 PDF 뷰어 (완전 복원)
+// 📄 PDF 뷰어
 // ------------------------------------------------------------------
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
@@ -351,7 +351,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
 };
 
 // ------------------------------------------------------------------
-// 📑 컨텐츠 컴포넌트들 (소프트 UI 적용하여 완전 복원)
+// 📑 컨텐츠 컴포넌트들 (소식, 뉴스, 월간지)
 // ------------------------------------------------------------------
 const NewsFeed = ({ limit, isAdmin, onBack }) => {
   const [news, setNews] = useState([]);
@@ -382,7 +382,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!limit && (
-        <div className="flex justify-between items-center mb-8 pb-4">
+        <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
            <div className="flex items-center gap-3">
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 rounded-2xl"><Newspaper size={32} className="text-rose-500"/></span> 교육 뉴스룸</h2>
            </div>
@@ -446,33 +446,33 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!initialMode && (
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800"><span className="p-2 bg-sky-100 rounded-2xl"><Megaphone className="text-sky-500" size={32}/></span> 기관 소식</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
+           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800"><span className="p-2 bg-amber-100 rounded-2xl"><Megaphone className="text-amber-500" size={32}/></span> 기관 소식</h2>
            <div className="flex flex-wrap gap-3 w-full md:w-auto">
               <div className="bg-white shadow-sm p-1.5 rounded-2xl flex border border-slate-100">
                   {['all', 'notice', 'event'].map(f => (
-                      <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 text-sm font-black rounded-xl transition-all ${filter === f ? 'bg-sky-50 text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>{f === 'all' ? '전체' : f === 'notice' ? '공지' : '행사'}</button>
+                      <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 text-sm font-black rounded-xl transition-all ${filter === f ? 'bg-amber-50 text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}>{f === 'all' ? '전체' : f === 'notice' ? '공지' : '행사'}</button>
                   ))}
               </div>
-              {userRole === 'admin' && <button onClick={() => onWriteClick('notice')} className="bg-sky-500 text-white px-5 py-2 rounded-2xl text-sm font-black shadow-md hover:bg-sky-600 flex gap-2 items-center"><Plus size={18}/> 새 소식 작성</button>}
+              {userRole === 'admin' && <button onClick={() => onWriteClick('notice')} className="bg-amber-500 text-white px-5 py-2 rounded-2xl text-sm font-black shadow-md hover:bg-amber-600 flex gap-2 items-center"><Plus size={18}/> 새 소식 작성</button>}
            </div>
         </div>
       )}
       
       <div className="grid gap-4">
          {filteredNotices.map(n => (
-            <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-sky-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
+            <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-amber-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
                <div className="flex-1">
                  <div className="flex items-center gap-3 mb-3">
-                    <KRDSBadge variant={n.category === 'event' ? 'primary' : 'neutral'}>{n.category === 'event' ? '행사안내' : '일반공지'}</KRDSBadge>
+                    <KRDSBadge variant={n.category === 'event' ? 'warning' : 'neutral'}>{n.category === 'event' ? '행사안내' : '일반공지'}</KRDSBadge>
                     <span className="text-sm font-bold text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
                  </div>
-                 <h3 className="text-xl font-black mb-2 line-clamp-1 text-slate-800 group-hover:text-sky-600 transition-colors">{n.title}</h3>
+                 <h3 className="text-xl font-black mb-2 line-clamp-1 text-slate-800 group-hover:text-amber-600 transition-colors">{n.title}</h3>
                  <p className="text-base font-medium text-slate-500 dark:text-gray-400 line-clamp-1">{n.content}</p>
-                 {n.event_date && <div className="mt-4 inline-flex items-center gap-2 text-sm font-black text-sky-600 bg-sky-50 px-4 py-2 rounded-xl"><CalendarIcon size={18}/> 행사일: {n.event_date}</div>}
+                 {n.event_date && <div className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-600 bg-amber-50 px-4 py-2 rounded-xl"><CalendarIcon size={18}/> 행사일: {n.event_date}</div>}
                </div>
-               <div className="hidden md:flex w-12 h-12 rounded-full bg-slate-50 items-center justify-center group-hover:bg-sky-50 group-hover:text-sky-500 transition-colors shrink-0">
-                  <ArrowRight size={20} className="text-slate-300 group-hover:text-sky-500"/>
+               <div className="hidden md:flex w-12 h-12 rounded-full bg-slate-50 items-center justify-center group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors shrink-0">
+                  <ArrowRight size={20} className="text-slate-300 group-hover:text-amber-500"/>
                </div>
             </div>
          ))}
@@ -485,7 +485,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
               <div className="sticky top-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-8 py-6 border-b border-slate-100 dark:border-gray-700 flex justify-between items-start z-10">
                  <div>
                     <div className="flex items-center gap-3 mb-3">
-                       <KRDSBadge variant={selectedNotice.category === 'event' ? 'primary' : 'neutral'}>{selectedNotice.category === 'event' ? '행사' : '공지'}</KRDSBadge>
+                       <KRDSBadge variant={selectedNotice.category === 'event' ? 'warning' : 'neutral'}>{selectedNotice.category === 'event' ? '행사' : '공지'}</KRDSBadge>
                        <span className="text-sm font-bold text-slate-400">{new Date(selectedNotice.created_at).toLocaleDateString()}</span>
                     </div>
                     <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-snug">{selectedNotice.title}</h2>
@@ -494,9 +494,9 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
               </div>
               <div className="p-8">
                  {selectedNotice.event_date && (
-                    <div className="mb-8 p-5 bg-sky-50 dark:bg-blue-900/20 rounded-2xl flex items-center gap-4">
-                       <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm"><CalendarIcon className="text-sky-500" size={24}/></div>
-                       <div><div className="text-sm font-black text-sky-600 mb-1">예정된 행사일</div><div className="text-lg font-black text-slate-800">{selectedNotice.event_date}</div></div>
+                    <div className="mb-8 p-5 bg-amber-50 dark:bg-blue-900/20 rounded-2xl flex items-center gap-4">
+                       <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm"><CalendarIcon className="text-amber-500" size={24}/></div>
+                       <div><div className="text-sm font-black text-amber-600 mb-1">예정된 행사일</div><div className="text-lg font-black text-slate-800">{selectedNotice.event_date}</div></div>
                     </div>
                  )}
                  <p className="text-lg leading-relaxed whitespace-pre-wrap text-slate-700 font-medium">{selectedNotice.content}</p>
@@ -533,20 +533,20 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
 );
 
 // ------------------------------------------------------------------
-// 🧭 네비게이션바 (Soft UI)
+// 🧭 네비게이션바
 // ------------------------------------------------------------------
 const Navbar = ({ onHomeClick, onViewChange, currentView, isDarkMode, toggleTheme, onMenuClick, role }) => (
-  <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-gray-800 shadow-sm h-20 flex items-center">
+  <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-100 dark:border-gray-800 shadow-sm h-20 flex items-center">
     <div className="container mx-auto px-4 w-full flex items-center justify-between">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
-         <div className="w-11 h-11 bg-gradient-to-br from-sky-400 to-teal-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:rotate-12 transition-transform"><Sparkles size={24}/></div>
-         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-sky-500 transition-colors">지식 플랫폼</h1>
+         <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:rotate-12 transition-transform"><Sparkles size={24}/></div>
+         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-emerald-500 transition-colors">지식 플랫폼</h1>
          {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 text-rose-600 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
       </div>
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2 py-2 rounded-full border border-slate-100 dark:border-gray-700">
-        {['home', 'resource_map', 'issue_list', 'notice', 'news'].map(key => (
-          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-gray-400'}`}>
-            {key === 'home' ? '홈' : key === 'resource_map' ? '체험지도' : key === 'issue_list' ? '자료실' : key === 'notice' ? '기관소식' : '뉴스룸'}
+        {['home', 'issue_list', 'notice', 'news'].map(key => (
+          <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-gray-400'}`}>
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '기관소식' : '뉴스룸'}
           </button>
         ))}
       </nav>
@@ -563,7 +563,7 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, isDarkMode, toggleThem
 );
 
 // ------------------------------------------------------------------
-// 🚀 메인 애플리케이션
+// 🚀 메인 애플리케이션 (아이꿈터 One-Page 통합형)
 // ------------------------------------------------------------------
 const MainApp = () => {
   const [role, setRole] = useState('guest'); 
@@ -612,7 +612,7 @@ const MainApp = () => {
       const resResources = await supabase.from('resources').select('*');
       if (resResources.data) setResources(resResources.data);
       
-      const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(2);
+      const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
       if(resNotices.data) setRecentNotices(resNotices.data);
     };
     fetchData();
@@ -624,9 +624,9 @@ const MainApp = () => {
     return matchRegion && matchKeyword;
   });
 
-  // ✅ 지도 렌더링 
+  // ✅ 지도 렌더링 (홈 화면에 통합)
   useEffect(() => {
-    if (view === 'resource_map' && !mapLoading && !mapError && mapContainerRef.current) {
+    if (view === 'home' && !mapLoading && !mapError && mapContainerRef.current) {
       if (window.kakao && window.kakao.maps) {
         mapContainerRef.current.innerHTML = ''; 
         let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532); // 기본 전북도청
@@ -656,6 +656,10 @@ const MainApp = () => {
     }
   }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
+  const scrollToMap = () => {
+    document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleUpload = async (data) => {
     setIsUploading(true);
     try {
@@ -673,25 +677,24 @@ const MainApp = () => {
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-gray-50"><AlertTriangle className="text-red-500 mb-4" size={40}/>DB 연결 오류</div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100">
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100">
        
        {/* 우측 슬라이드 메뉴 */}
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSideMenuOpen(false)} />
-           <div className="relative w-[320px] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col rounded-l-[2rem] overflow-hidden">
+           <div className="relative w-[320px] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col rounded-l-[2.5rem] overflow-hidden">
              <div className="flex items-center justify-between p-8 border-b border-slate-50 dark:border-gray-800">
-               <span className="font-black text-2xl flex items-center gap-2"><LayoutGrid className="text-sky-500"/> 전체 메뉴</span>
+               <span className="font-black text-2xl flex items-center gap-2"><LayoutGrid className="text-emerald-500"/> 전체 메뉴</span>
                <button onClick={() => setIsSideMenuOpen(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200"><X size={20} /></button>
              </div>
              <nav className="flex-1 overflow-y-auto p-6">
                <ul className="flex flex-col gap-3">
                  {[
                    { id: 'home', icon: <Home size={24} className="text-sky-500" />, label: '홈으로' },
-                   { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500" />, label: '내 주변 체험지도' },
                    { id: 'issue_list', icon: <Book size={24} className="text-teal-500"/>, label: '월간 자료실' },
                    { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500"/>, label: '기관 소식' },
-                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500"/>, label: '뉴스룸' }
+                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500"/>, label: '교육 뉴스룸' }
                  ].map((item) => (
                    <li key={item.id}>
                      <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-5 rounded-3xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all text-left font-black text-lg text-slate-700">
@@ -707,150 +710,143 @@ const MainApp = () => {
 
        <Navbar onHomeClick={() => setView('home')} onViewChange={setView} currentView={view} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onMenuClick={() => setIsSideMenuOpen(true)} role={role}/>
        
-       <main className={`flex-1 w-full ${view === 'resource_map' ? 'h-[calc(100dvh-80px)] overflow-hidden' : 'pb-24'}`}>
+       <main className="flex-1 w-full pb-20">
           
-          {/* ✅ 아이꿈터 스타일 전면 개편 홈 화면 (Dashboard) */}
+          {/* ✅ 아이꿈터 완벽 클론: 원페이지(One-Page) 대시보드 */}
           {view === 'home' && (
-            <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-in fade-in">
+            <div className="w-full animate-in fade-in">
                
-               {/* 1. 파스텔톤 대형 히어로 배너 */}
-               <div className="bg-gradient-to-br from-sky-100 via-teal-50 to-emerald-100 rounded-[2.5rem] p-8 md:p-14 shadow-sm flex items-center justify-between overflow-hidden relative border border-white">
-                 <div className="z-10 relative">
-                   <span className="bg-white text-sky-600 font-black px-4 py-1.5 rounded-full text-sm shadow-sm mb-6 inline-flex items-center gap-2"><Sparkles size={16}/> 아이꿈터 테마 적용 완료</span>
-                   <h2 className="text-4xl md:text-[3.5rem] font-black text-slate-800 leading-[1.2] mb-6 tracking-tight">아이들의 미래를 잇는<br/><span className="text-sky-600">지식 플랫폼</span></h2>
-                   <p className="text-slate-600 font-black text-lg md:text-xl">우리 동네 유보통합 자원과 최신 교육 정보를 한눈에!</p>
+               {/* 1. 히어로 영역 (visual_wrap) - 검색창과 해시태그 포함 */}
+               <section className="relative w-full py-20 bg-gradient-to-br from-emerald-100 via-teal-50 to-sky-100 flex flex-col items-center justify-center px-4 overflow-hidden shadow-sm">
+                 <div className="z-10 relative flex flex-col items-center text-center w-full max-w-3xl">
+                   <span className="bg-white text-emerald-600 font-black px-5 py-2 rounded-full text-sm shadow-sm mb-6 inline-flex items-center gap-2"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
+                   <h2 className="text-4xl md:text-5xl font-black text-slate-800 leading-[1.3] mb-8 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600">지식 플랫폼</span></h2>
+                   
+                   {/* 중앙 검색창 */}
+                   <div className="w-full relative shadow-[0_10px_40px_rgba(0,0,0,0.08)] rounded-full">
+                     <input 
+                       type="text" placeholder="어떤 체험을 찾으시나요? (예: 박물관)" 
+                       className="w-full h-16 md:h-20 pl-8 pr-20 rounded-full text-lg md:text-xl font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/50 border-none"
+                       value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') scrollToMap(); }}
+                     />
+                     <button onClick={scrollToMap} className="absolute right-2 top-2 bottom-2 w-12 md:w-16 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 transition-colors shadow-md"><Search size={28}/></button>
+                   </div>
+
+                   {/* 해시태그 추천 */}
+                   <div className="flex gap-2 mt-6 justify-center flex-wrap">
+                     {['전체', '전주시', '익산시', '군산시', '완주군'].map(tag => (
+                        <button key={tag} onClick={() => { setSelectedRegion(tag); scrollToMap(); }} className="px-5 py-2 bg-white/60 hover:bg-white text-emerald-700 font-black rounded-full shadow-sm text-sm transition-colors border border-emerald-100/50 hover:border-emerald-300">#{tag}</button>
+                     ))}
+                   </div>
                  </div>
-                 {/* 장식용 아이콘 */}
-                 <div className="absolute right-0 bottom-0 opacity-20 translate-x-1/4 translate-y-1/4 select-none pointer-events-none">
-                    <MapIcon size={350} className="text-teal-600" />
-                 </div>
-               </div>
+                 <div className="absolute right-10 bottom-10 opacity-10 select-none pointer-events-none"><MapIcon size={300} /></div>
+               </section>
 
-               {/* 2. 아이꿈터 스타일 둥근 퀵 메뉴 그리드 */}
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                 {[
-                    { id: 'resource_map', title: '체험자원 지도', desc: '내 주변 자원 찾기', icon: <MapPin size={32}/>, color: 'text-emerald-500 bg-emerald-50' },
-                    { id: 'issue_list', title: '월간 자료실', desc: '유보통합 웹진', icon: <Book size={32}/>, color: 'text-teal-500 bg-teal-50' },
-                    { id: 'notice', title: '기관 소식', desc: '공지 및 행사일정', icon: <CalendarIcon size={32}/>, color: 'text-amber-500 bg-amber-50' },
-                    { id: 'news', title: '뉴스룸', desc: '최신 교육 뉴스', icon: <Newspaper size={32}/>, color: 'text-rose-500 bg-rose-50' }
-                 ].map(menu => (
-                    <div key={menu.id} onClick={() => setView(menu.id)} className="bg-white rounded-[2.5rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all cursor-pointer flex flex-col items-center text-center border border-slate-50">
-                       <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center mb-5 ${menu.color} shadow-inner`}>
-                          {menu.icon}
-                       </div>
-                       <h3 className="text-xl font-black text-slate-800 mb-1">{menu.title}</h3>
-                       <p className="text-sm font-bold text-slate-400">{menu.desc}</p>
-                    </div>
-                 ))}
-               </div>
-
-               {/* 3. 위젯 영역: 최신 소식 및 웹진 */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6">
-                 {/* 최신 소식 */}
-                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                       <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3"><span className="p-2 bg-amber-50 text-amber-500 rounded-2xl"><Megaphone size={24}/></span> 최신 기관 소식</h3>
-                       <button onClick={() => setView('notice')} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-sky-50 hover:text-sky-500 transition-colors"><Plus size={20}/></button>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      {recentNotices.map(n => (
-                         <div key={n.id} onClick={() => setView('notice')} className="p-5 rounded-[1.5rem] bg-slate-50 hover:bg-sky-50 transition-colors cursor-pointer flex items-center justify-between group">
-                            <div className="flex items-center gap-4">
-                               <KRDSBadge variant={n.category === 'event' ? 'primary' : 'neutral'}>{n.category === 'event' ? '행사' : '공지'}</KRDSBadge>
-                               <span className="font-black text-slate-700 group-hover:text-sky-600 line-clamp-1 text-lg">{n.title}</span>
-                            </div>
-                            <ChevronRight className="text-slate-300 group-hover:text-sky-500 shrink-0"/>
-                         </div>
-                      ))}
-                    </div>
-                 </div>
-
-                 {/* 최신 자료실 */}
-                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                    <div className="flex justify-between items-center mb-6">
-                       <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3"><span className="p-2 bg-teal-50 text-teal-500 rounded-2xl"><Book size={24}/></span> 월간 웹진</h3>
-                       <button onClick={() => setView('issue_list')} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-sky-50 hover:text-sky-500 transition-colors"><Plus size={20}/></button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {issues.slice(0, 2).map(issue => (
-                         <div key={issue.id} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} className="aspect-square bg-gradient-to-br from-teal-50 to-emerald-50 rounded-[2rem] flex flex-col items-center justify-center p-4 cursor-pointer hover:shadow-md transition-all group">
-                            <span className="text-teal-600 font-black text-sm bg-white px-3 py-1 rounded-full mb-3 shadow-sm">Vol.{issue.vol}</span>
-                            <h4 className="text-xl font-black text-slate-800 text-center line-clamp-2 group-hover:scale-105 transition-transform">{issue.title}</h4>
-                         </div>
-                      ))}
-                    </div>
-                 </div>
-               </div>
-
-            </div>
-          )}
-
-          {/* ✅ 지도 화면 (별도 탭으로 분리) */}
-          {view === 'resource_map' && (
-            <div className="flex flex-col md:flex-row w-full h-full relative">
-              {/* 좌측: 둥근 모서리의 검색 칩 필터 패널 */}
-              <div className="absolute top-4 left-4 right-4 md:static md:w-[420px] md:h-full z-10 flex flex-col pointer-events-none md:pointer-events-auto">
-                <div className="bg-white/95 backdrop-blur-xl p-6 rounded-[2rem] md:rounded-none md:border-r border-slate-100 shadow-[0_20px_40px_rgba(0,0,0,0.08)] pointer-events-auto h-auto md:h-full flex flex-col">
-                  
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center"><MapPin size={24}/></div>
-                    <div><h2 className="text-2xl font-black text-slate-800 tracking-tight">체험자원 지도</h2></div>
-                  </div>
-
-                  <div className="relative mb-5">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
-                    <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 border-none rounded-[1.5rem] focus:bg-white focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-2 md:mb-6">
-                    {['전체', '전주시', '익산시', '군산시', '완주군'].map(region => (
-                      <button key={region} onClick={() => { setSelectedRegion(region); setSelectedResource(null); }} className={`px-5 py-2.5 text-sm font-black rounded-full transition-all border ${selectedRegion === region ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}>{region}</button>
-                    ))}
-                  </div>
-
-                  {/* PC 전용 리스트 */}
-                  <div className="hidden md:flex flex-col flex-1 overflow-y-auto mt-2 pr-2 custom-scrollbar">
-                    <div className="text-sm font-black text-emerald-600 mb-4 px-1">검색 결과 {filteredResources.length}건</div>
-                    <div className="flex flex-col gap-4">
-                      {filteredResources.map(res => (
-                        <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-6 rounded-[1.5rem] cursor-pointer transition-all border ${selectedResource?.id === res.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-50 shadow-[0_8px_30px_rgba(16,185,129,0.15)]' : 'bg-slate-50 border-transparent hover:bg-white hover:shadow-md'}`}>
-                          <KRDSBadge variant="success" className="mb-3">{res.category}</KRDSBadge>
-                          <h3 className="font-black text-xl text-slate-800 mb-2">{res.name}</h3>
-                          <p className="text-sm font-bold text-slate-500 truncate">{res.address}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 백그라운드 카카오맵 */}
-              <div className="absolute inset-0 md:relative md:flex-1 bg-slate-100 z-0">
-                 {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
-                 : <div ref={mapContainerRef} className="w-full h-full" />}
-              </div>
-
-              {/* 모바일 바텀 시트 (마커 클릭 시) */}
-              <div className={`fixed md:hidden bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[100] transform transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                 {selectedResource && (
-                   <div className="p-8 pb-12 relative">
-                      <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
-                      <button className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full text-slate-500" onClick={() => setSelectedResource(null)}><X size={20}/></button>
-                      
-                      <div className="flex gap-2 mb-5">
-                         <KRDSBadge variant="success">{selectedResource.category}</KRDSBadge>
-                         <KRDSBadge variant="primary">누리과정 연계</KRDSBadge>
+               {/* 2. 퀵 메뉴 (link_wrap) - 원형 아이콘 배열 */}
+               <section className="max-w-5xl mx-auto px-4 -mt-10 relative z-20">
+                 <div className="bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.06)] p-8 flex justify-around items-center gap-4 border border-slate-50">
+                   {[
+                      { id: 'map', title: '체험지도', icon: <MapPin size={32}/>, color: 'text-emerald-500 bg-emerald-50 group-hover:bg-emerald-500', action: () => scrollToMap() },
+                      { id: 'issue_list', title: '월간자료실', icon: <Book size={32}/>, color: 'text-teal-500 bg-teal-50 group-hover:bg-teal-500', action: () => setView('issue_list') },
+                      { id: 'notice', title: '기관소식', icon: <CalendarIcon size={32}/>, color: 'text-amber-500 bg-amber-50 group-hover:bg-amber-500', action: () => setView('notice') },
+                      { id: 'news', title: '교육뉴스룸', icon: <Newspaper size={32}/>, color: 'text-rose-500 bg-rose-50 group-hover:bg-rose-500', action: () => setView('news') }
+                   ].map(menu => (
+                      <div key={menu.id} onClick={menu.action} className="flex flex-col items-center gap-3 cursor-pointer group">
+                         <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center group-hover:text-white transition-all shadow-inner group-hover:shadow-[0_10px_20px_rgba(0,0,0,0.1)] group-hover:-translate-y-1 ${menu.color}`}>{menu.icon}</div>
+                         <span className="font-black text-slate-700 text-sm md:text-base">{menu.title}</span>
                       </div>
-                      <h3 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">{selectedResource.name}</h3>
-                      <p className="text-slate-500 font-bold flex items-start gap-2 mb-8"><MapPin size={18} className="mt-0.5 shrink-0 text-emerald-500"/> {selectedResource.address}</p>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                         <button className="bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg shadow-md flex justify-center items-center gap-2 hover:bg-emerald-600"><CheckCircle2 size={24}/> 상세 보기</button>
-                         <button className="bg-emerald-50 text-emerald-600 py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 hover:bg-emerald-100"><Phone size={24}/> 전화 연결</button>
+                   ))}
+                 </div>
+               </section>
+
+               {/* 3. 지도 및 리스트 영역 (main_map) */}
+               <section id="map-section" className="max-w-7xl mx-auto px-4 py-20 scroll-mt-20">
+                 <div className="flex items-center gap-3 mb-8">
+                    <h3 className="text-3xl font-black text-slate-800">내 주변 유보통합 자원</h3>
+                    <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-black">검색결과 {filteredResources.length}건</span>
+                 </div>
+                 
+                 <div className="flex flex-col md:flex-row h-[650px] bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden relative">
+                    {/* 좌측: 리스트 */}
+                    <div className="w-full md:w-[420px] bg-slate-50 flex flex-col border-r border-slate-100 z-10 shrink-0 h-1/2 md:h-full">
+                       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 custom-scrollbar">
+                         {filteredResources.map(res => (
+                           <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-6 rounded-[1.5rem] cursor-pointer transition-all border ${selectedResource?.id === res.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-50 shadow-md' : 'bg-white border-slate-100 hover:border-emerald-200 shadow-sm'}`}>
+                             <KRDSBadge variant="success" className="mb-3">{res.category}</KRDSBadge>
+                             <h4 className="font-black text-xl text-slate-800 mb-2">{res.name}</h4>
+                             <p className="text-sm font-bold text-slate-500 truncate">{res.address}</p>
+                           </div>
+                         ))}
+                         {filteredResources.length === 0 && <div className="text-center text-slate-400 py-10 font-bold">검색 결과가 없습니다.</div>}
+                       </div>
+                    </div>
+                    
+                    {/* 우측: 카카오맵 */}
+                    <div className="flex-1 relative bg-slate-200 h-1/2 md:h-full">
+                       {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
+                       : <div ref={mapContainerRef} className="w-full h-full" />}
+                       
+                       {/* 바텀 시트 (마커 클릭 시) */}
+                       <div className={`absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md rounded-t-[2.5rem] shadow-[0_-20px_40px_rgba(0,0,0,0.1)] z-20 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
+                          {selectedResource && (
+                            <div className="p-8 pb-10 relative">
+                               <button className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200" onClick={() => setSelectedResource(null)}><X size={20}/></button>
+                               <div className="flex gap-2 mb-4"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
+                               <h3 className="text-3xl font-black text-slate-800 mb-2">{selectedResource.name}</h3>
+                               <p className="text-slate-500 font-bold flex items-center gap-2 mb-6"><MapPin size={18} className="text-emerald-500"/> {selectedResource.address}</p>
+                               <div className="grid grid-cols-2 gap-4">
+                                  <button className="bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg shadow-md flex justify-center items-center gap-2 hover:bg-emerald-600"><CheckCircle2 size={20}/> 프로그램 보기</button>
+                                  <button className="bg-slate-100 text-slate-700 py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-2 hover:bg-slate-200"><Phone size={20}/> 전화 연결</button>
+                               </div>
+                            </div>
+                          )}
+                       </div>
+                    </div>
+                 </div>
+               </section>
+
+               {/* 4. 위젯 영역 (main_board) - 소식 및 자료실 */}
+               <section className="max-w-7xl mx-auto px-4 pb-20">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   
+                   {/* 기관 소식 위젯 */}
+                   <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-slate-100">
+                      <div className="flex justify-between items-center mb-8">
+                         <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3"><span className="p-2.5 bg-amber-50 text-amber-500 rounded-2xl"><Megaphone size={28}/></span> 최근 기관 소식</h3>
+                         <button onClick={() => setView('notice')} className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center hover:bg-amber-50 hover:text-amber-500 transition-colors"><Plus size={24}/></button>
+                      </div>
+                      <div className="flex flex-col gap-4">
+                        {recentNotices.map(n => (
+                           <div key={n.id} onClick={() => {setView('notice');}} className="p-6 rounded-[1.5rem] bg-slate-50 hover:bg-amber-50 transition-colors cursor-pointer flex items-center justify-between group">
+                              <div className="flex items-center gap-4">
+                                 <KRDSBadge variant={n.category === 'event' ? 'warning' : 'neutral'}>{n.category === 'event' ? '행사' : '공지'}</KRDSBadge>
+                                 <span className="font-black text-slate-700 group-hover:text-amber-600 line-clamp-1 text-lg">{n.title}</span>
+                              </div>
+                              <ChevronRight className="text-slate-300 group-hover:text-amber-500 shrink-0"/>
+                           </div>
+                        ))}
                       </div>
                    </div>
-                 )}
-              </div>
+
+                   {/* 월간 자료실 위젯 */}
+                   <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-slate-100">
+                      <div className="flex justify-between items-center mb-8">
+                         <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3"><span className="p-2.5 bg-teal-50 text-teal-500 rounded-2xl"><Book size={28}/></span> 최신 월간 웹진</h3>
+                         <button onClick={() => setView('issue_list')} className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center hover:bg-teal-50 hover:text-teal-500 transition-colors"><Plus size={24}/></button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {issues.slice(0, 2).map(issue => (
+                           <div key={issue.id} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} className="aspect-square bg-gradient-to-br from-teal-50 to-emerald-50 rounded-[2rem] flex flex-col items-center justify-center p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+                              <span className="text-teal-600 font-black text-sm bg-white px-4 py-1.5 rounded-full mb-4 shadow-sm">Vol.{issue.vol}</span>
+                              <h4 className="text-2xl font-black text-slate-800 text-center line-clamp-2 group-hover:scale-105 transition-transform">{issue.title}</h4>
+                           </div>
+                        ))}
+                      </div>
+                   </div>
+
+                 </div>
+               </section>
+
             </div>
           )}
 
@@ -886,18 +882,18 @@ const MainApp = () => {
 
               <div className="flex justify-between items-center mb-8 pb-4">
                 <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">수록 자료 목록</h3>
-                {role === 'admin' && <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-md bg-amber-500 text-white px-5 py-2.5 rounded-2xl font-black hover:bg-amber-600"><Plus size={20} /> 자료 추가</button>}
+                {role === 'admin' && <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-md bg-sky-500 text-white px-5 py-2.5 rounded-2xl font-black hover:bg-sky-600"><Plus size={20} /> 자료 추가</button>}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {currentIssue.articles?.map(art => (
-                  <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-6 bg-white border border-slate-100 rounded-[2rem] hover:border-amber-200 hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)] cursor-pointer transition-all flex items-center gap-5">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors shadow-inner"><FileText size={32}/></div>
+                  <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-6 bg-white border border-slate-100 rounded-[2rem] hover:border-sky-200 hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)] cursor-pointer transition-all flex items-center gap-5">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-sky-50 group-hover:text-sky-500 transition-colors shadow-inner"><FileText size={32}/></div>
                     <div className="flex-1">
-                      <div className="font-black text-lg text-slate-800 group-hover:text-amber-500 transition-colors mb-1">{art.title}</div>
-                      <div className="flex items-center gap-3 text-sm font-bold text-slate-400"><span>PDF 문서</span>{art.views > 0 && <span className="flex items-center gap-1 text-amber-500"><Eye size={16}/> {art.views}</span>}</div>
+                      <div className="font-black text-lg text-slate-800 group-hover:text-sky-500 transition-colors mb-1">{art.title}</div>
+                      <div className="flex items-center gap-3 text-sm font-bold text-slate-400"><span>PDF 문서</span>{art.views > 0 && <span className="flex items-center gap-1 text-sky-500"><Eye size={16}/> {art.views}</span>}</div>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-amber-50"><ArrowRight className="text-slate-300 group-hover:text-amber-500" size={20}/></div>
+                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-sky-50"><ArrowRight className="text-slate-300 group-hover:text-sky-500" size={20}/></div>
                   </div>
                 ))}
                 {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-20 text-center font-black text-slate-400 bg-white border border-slate-100 rounded-[2.5rem]">등록된 자료가 없습니다.</div>}
@@ -908,7 +904,8 @@ const MainApp = () => {
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
        </main>
        
-       {view !== 'resource_map' && <Footer onSecretAdminUnlock={() => setRole('admin')} />}
+       {/* PDF 뷰어가 아닐 때만 Footer 렌더링 */}
+       {view !== 'article_view' && <Footer onSecretAdminUnlock={() => setRole('admin')} />}
        
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
     </div>
