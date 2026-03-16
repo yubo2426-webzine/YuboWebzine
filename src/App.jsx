@@ -8,7 +8,7 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
-  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Frog 
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit 
 } from 'lucide-react';
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -534,7 +534,7 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
     
     <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
-       <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/50 opacity-60 z-0"><Frog size={32} strokeWidth={1.5}/></div>
+       <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/50 opacity-60 z-0"><Rabbit size={32} strokeWidth={1.5}/></div>
        <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/50 opacity-60 z-0"><Sprout size={32}/></div>
        <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-5"><Book size={150} className="text-teal-200 dark:text-teal-400" strokeWidth={0.5}/></div>
        
@@ -765,7 +765,7 @@ const MainApp = () => {
 
                  <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0 relative pb-16">
                    <div className="absolute top-0 right-1/4 text-sky-300 dark:text-sky-900/50 opacity-60 z-0 animate-pulse"><Sprout size={56}/></div>
-                   <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Frog size={72} strokeWidth={1}/></div>
+                   <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Rabbit size={72} strokeWidth={1}/></div>
 
                    <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
                    <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-white leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600 dark:text-emerald-400">지식 플랫폼</span></h2>
@@ -816,10 +816,10 @@ const MainApp = () => {
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                    
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                      <div className="absolute -top-4 -left-4 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0"><Frog size={80} strokeWidth={1}/></div>
+                      <div className="absolute -top-4 -left-4 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
                       <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
-                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 기관 소식 <Frog size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
+                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 기관 소식 <Rabbit size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
                          <button onClick={() => setView('notice')} className="text-base font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
                       <div className="flex flex-col relative z-10 pl-2">
@@ -861,7 +861,7 @@ const MainApp = () => {
                 
                 {/* 좌측(PC)/하단(Mobile) 리스트 (.map_list_wrap) */}
                 <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
-                   <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Frog size={32} strokeWidth={1.5}/></div>
+                   <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
 
                    <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-20 relative">
                       <div className="flex items-center gap-3 mb-6 relative z-10">
@@ -954,7 +954,7 @@ const MainApp = () => {
               <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[3rem] p-10 md:p-16 mb-16 shadow-[0_20px_60px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-12 items-start relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-teal-50 dark:bg-teal-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-70 pointer-events-none z-0"></div>
                 <div className="w-36 h-36 bg-teal-50 dark:bg-teal-900/40 rounded-[2.5rem] flex items-center justify-center text-7xl shadow-inner z-10 shrink-0 border border-teal-100 dark:border-teal-800 relative">
-                   <div className="absolute top-2 right-2 text-teal-200 dark:text-teal-700 opacity-60"><Frog size={28}/></div>
+                   <div className="absolute top-2 right-2 text-teal-200 dark:text-teal-700 opacity-60"><Rabbit size={28}/></div>
                    {currentIssue.icon}
                 </div>
                 <div className="z-10 relative flex-1 pt-2">
@@ -983,7 +983,7 @@ const MainApp = () => {
                     <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-sky-50 dark:group-hover:bg-sky-900/40 shrink-0 relative z-10 transition-colors"><ArrowRight className="text-slate-300 dark:text-slate-600 group-hover:text-sky-500 dark:group-hover:text-sky-400" size={24}/></div>
                   </div>
                 ))}
-                {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-28 text-center font-black text-xl text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[2.5rem] flex flex-col items-center gap-4"><Frog size={64} className="text-emerald-200 dark:text-emerald-800/50" strokeWidth={1}/>등록된 자료가 없습니다.</div>}
+                {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-28 text-center font-black text-xl text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[2.5rem] flex flex-col items-center gap-4"><Rabbit size={64} className="text-emerald-200 dark:text-emerald-800/50" strokeWidth={1}/>등록된 자료가 없습니다.</div>}
               </div>
             </div>
           )}
