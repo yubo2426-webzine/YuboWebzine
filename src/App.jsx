@@ -8,7 +8,7 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
-  Compass, CloudSun, Wind // 날씨, 나침반 아이콘 추가
+  Compass, CloudSun, Wind
 } from 'lucide-react';
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -18,7 +18,7 @@ import imgBand from './assets/band_icon.svg';
 import imgFacebook from './assets/facebook_icon.png';
 import imgX from './assets/x_icon.svg';
 
-// ✅ [추가] 둥둥 떠다니는 나침반 애니메이션 CSS
+// ✅ 둥둥 떠다니는 나침반 애니메이션 CSS
 const globalStyles = `
   @keyframes float-rotate {
     0% { transform: translateY(0px) rotate(0deg); }
@@ -66,7 +66,7 @@ const useCustomKakaoLoader = () => {
 };
 
 // ------------------------------------------------------------------
-// 🏛️ [Soft UI System] 아이꿈터 스타일 컴포넌트
+// 🏛️ [Soft UI System] 
 // ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner ${className}`} {...props} />
@@ -597,7 +597,6 @@ const MainApp = () => {
   const [selectedResource, setSelectedResource] = useState(null);
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
-  const mapContainerRef = useRef(null);
   const mapContainerRefStandalone = useRef(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -666,12 +665,12 @@ const MainApp = () => {
   };
 
   useEffect(() => {
-    if (view === 'home') renderMap(mapContainerRef);
     if (view === 'resource_map') renderMap(mapContainerRefStandalone);
   }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
-  const scrollToMap = () => {
-    document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // ✅ 홈 화면에서 검색 실행 시 지도 탭으로 이동하는 함수
+  const handleSearchSubmit = () => {
+    setView('resource_map');
   };
 
   const handleUpload = async (data) => {
@@ -729,13 +728,13 @@ const MainApp = () => {
        
        <main className="flex-1 w-full pb-24">
           
-          {/* ✅ 날씨 위젯과 나침반 애니메이션이 포함된 홈 화면 */}
+          {/* ✅ 검색 포털로 변경된 홈 화면 (지도 삭제됨) */}
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
                
-               <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] flex flex-col items-center justify-center px-4 overflow-hidden">
+               <section className="relative w-full py-32 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] flex flex-col items-center justify-center px-4 overflow-hidden">
                  
-                 {/* ✅ 스마트 날씨/미세먼지 위젯 (우측 상단 플로팅) */}
+                 {/* 스마트 날씨/미세먼지 위젯 (우측 상단 플로팅) */}
                  <div className="absolute top-10 right-10 xl:right-20 bg-white/70 backdrop-blur-xl border border-white rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
                     <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
                        <MapPin size={18} className="text-emerald-500"/> 전북특별자치도 전주시
@@ -756,36 +755,40 @@ const MainApp = () => {
                    <span className="bg-white/80 backdrop-blur-sm text-emerald-600 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
                    <h2 className="text-5xl md:text-6xl font-black text-slate-800 leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600">지식 플랫폼</span></h2>
                    
+                   {/* ✅ 나침반 검색 버튼 연동 */}
                    <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-full mb-8">
                      <input 
                        type="text" placeholder="어떤 체험을 찾으시나요? (예: 박물관)" 
-                       className="w-full h-20 md:h-24 pl-10 pr-24 rounded-full text-xl font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/30 border border-white/50"
-                       value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') scrollToMap(); }}
+                       className="w-full h-20 md:h-24 pl-10 pr-24 rounded-full text-xl font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/30 border border-white/50 shadow-inner"
+                       value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearchSubmit(); }}
                      />
-                     <button onClick={scrollToMap} className="absolute right-3 top-3 bottom-3 w-14 md:w-20 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 transition-colors shadow-md"><Search size={32}/></button>
+                     <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-20 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 transition-colors shadow-md">
+                       <Compass size={32} strokeWidth={2.5}/>
+                     </button>
                    </div>
 
+                   {/* ✅ 해시태그 클릭 시 지도 화면으로 즉시 전환 */}
                    <div className="flex gap-2.5 justify-center flex-wrap">
                      {['전체', '전주시', '익산시', '군산시', '완주군'].map(tag => (
-                        <button key={tag} onClick={() => { setSelectedRegion(tag); scrollToMap(); }} className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-black rounded-full shadow-sm text-sm transition-all border border-white hover:border-emerald-300 hover:text-emerald-600">#{tag}</button>
+                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-black rounded-full shadow-sm text-sm transition-all border border-white hover:border-emerald-300 hover:text-emerald-600">#{tag}</button>
                      ))}
                    </div>
                  </div>
                  
-                 {/* ✅ [추가] 둥둥 떠다니는 나침반 일러스트 애니메이션 */}
+                 {/* 둥둥 떠다니는 나침반 일러스트 애니메이션 */}
                  <div className="absolute right-[5%] bottom-[10%] opacity-20 select-none pointer-events-none animate-float">
                     <Compass size={380} className="text-sky-600" strokeWidth={1} />
                  </div>
-                 {/* 배경 꾸밈 요소 2 */}
                  <div className="absolute left-[5%] top-[15%] opacity-10 select-none pointer-events-none transform -rotate-12">
                     <Wind size={250} className="text-emerald-500" strokeWidth={1} />
                  </div>
                </section>
 
-               <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-28">
+               {/* 퀵 메뉴 (link_wrap) */}
+               <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-20">
                  <div className="bg-white rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] py-10 px-8 flex justify-around items-center gap-4 border border-slate-50/50">
                    {[
-                      { id: 'map', title: '체험지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 group-hover:bg-emerald-500', action: () => scrollToMap() },
+                      { id: 'map', title: '체험지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 group-hover:bg-emerald-500', action: () => setView('resource_map') },
                       { id: 'issue_list', title: '월간자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 group-hover:bg-teal-500', action: () => setView('issue_list') },
                       { id: 'notice', title: '기관소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 group-hover:bg-amber-500', action: () => setView('notice') },
                       { id: 'news', title: '교육뉴스룸', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 group-hover:bg-rose-500', action: () => setView('news') }
@@ -798,67 +801,8 @@ const MainApp = () => {
                  </div>
                </section>
 
-               <section id="map-section" className="max-w-7xl mx-auto px-4 py-10 scroll-mt-24 mb-20">
-                 <div className="mb-10 text-center md:text-left">
-                    <h3 className="text-3xl md:text-4xl font-black text-slate-800 mb-4 tracking-tight">내 주변 <span className="text-emerald-600">유보통합 자원</span></h3>
-                    <p className="text-slate-500 font-bold text-lg">내 위치를 중심으로 등록된 유보통합 자원 리스트입니다.</p>
-                 </div>
-                 
-                 <div className="flex flex-col md:flex-row h-[800px] bg-white rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden relative">
-                    <div className="w-full md:w-[480px] bg-slate-50/50 flex flex-col border-r border-slate-100 z-10 shrink-0 h-1/2 md:h-full relative">
-                       <div className="p-8 border-b border-slate-200/60 bg-white/90 backdrop-blur-md flex justify-between items-center sticky top-0 z-20">
-                          <div className="font-black text-slate-700 text-xl">총 <span className="text-emerald-600 text-2xl ml-1">{filteredResources.length}</span>건</div>
-                          <div className="flex gap-2">
-                             <button className="p-3 bg-emerald-50 text-emerald-600 rounded-xl shadow-sm"><ListIcon size={20}/></button>
-                             <button className="p-3 bg-white text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"><LayoutGrid size={20}/></button>
-                          </div>
-                       </div>
-                       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 custom-scrollbar bg-slate-50/30 pb-24">
-                         {filteredResources.map(res => (
-                           <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-8 rounded-[2rem] cursor-pointer transition-all border bg-white group ${selectedResource?.id === res.id ? 'border-emerald-500 ring-4 ring-emerald-50 shadow-[0_15px_40px_rgba(16,185,129,0.15)]' : 'border-slate-100 hover:border-emerald-300 hover:shadow-lg'}`}>
-                             <div className="flex flex-wrap gap-2 mb-5">
-                                <span className="text-[12px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100/50">#{res.category}</span>
-                                <span className="text-[12px] font-black text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-100/50">#누리과정</span>
-                             </div>
-                             <h4 className="font-black text-2xl text-slate-800 mb-6 group-hover:text-emerald-600 transition-colors tracking-tight">{res.name}</h4>
-                             <ul className="flex flex-col gap-4">
-                                <li className="flex items-start gap-3 text-base font-bold text-slate-500">
-                                   <div className="p-2 bg-slate-50 rounded-xl shrink-0 mt-0.5"><MapPin size={18} className="text-slate-400"/></div>
-                                   <span className="leading-snug pt-1.5">{res.address}</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-base font-bold text-slate-500">
-                                   <div className="p-2 bg-slate-50 rounded-xl shrink-0"><Phone size={18} className="text-slate-400"/></div>
-                                   <span className="pt-0.5">{res.phone || '연락처 정보 없음'}</span>
-                                </li>
-                             </ul>
-                           </div>
-                         ))}
-                       </div>
-                    </div>
-                    
-                    <div className="flex-1 relative bg-slate-100 h-1/2 md:h-full">
-                       {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-emerald-500" size={48} /></div> 
-                       : <div ref={mapContainerRef} className="w-full h-full" />}
-                       
-                       <div className={`absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] z-20 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                          {selectedResource && (
-                            <div className="p-10 pb-12 relative">
-                               <button className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
-                               <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                               <h3 className="text-4xl font-black text-slate-800 mb-4 tracking-tight">{selectedResource.name}</h3>
-                               <p className="text-slate-500 font-bold text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500"/> {selectedResource.address}</p>
-                               <div className="grid grid-cols-2 gap-4">
-                                  <button className="bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
-                                  <button className="bg-slate-100 text-slate-700 py-5 rounded-2xl font-black text-xl flex justify-center items-center gap-3 hover:bg-slate-200 transition-colors"><Phone size={24}/> 전화 연결</button>
-                               </div>
-                            </div>
-                          )}
-                       </div>
-                    </div>
-                 </div>
-               </section>
-
-               <section className="max-w-7xl mx-auto px-4 pb-24">
+               {/* 위젯 영역 (main_board) */}
+               <section className="max-w-7xl mx-auto px-4 pb-10">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                    <div className="bg-white rounded-[3rem] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100">
                       <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-5">
@@ -897,10 +841,9 @@ const MainApp = () => {
             </div>
           )}
 
-          {/* 서브 페이지 렌더링 영역 */}
+          {/* ✅ 단독 탭으로 분리된 체험자원 지도 (resource_map) */}
           {view === 'resource_map' && (
              <div className="flex flex-col md:flex-row w-full h-[calc(100vh-80px)] relative bg-slate-100 animate-in fade-in">
-                {/* 단독 탭 지도 코드 */}
                 <div className="w-full md:w-[480px] bg-white flex flex-col border-r border-slate-200 z-10 shrink-0 h-1/2 md:h-full relative shadow-xl">
                    <div className="p-8 border-b border-slate-100 bg-white sticky top-0 z-20">
                       <div className="flex items-center gap-3 mb-6">
@@ -945,13 +888,29 @@ const MainApp = () => {
                 <div className="flex-1 relative h-1/2 md:h-full">
                    {mapLoading ? <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
                    : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
+                   
+                   {/* 바텀 시트 (마커 클릭 시) */}
+                   <div className={`absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] z-20 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
+                      {selectedResource && (
+                        <div className="p-10 pb-12 relative">
+                           <button className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
+                           <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
+                           <h3 className="text-4xl font-black text-slate-800 mb-4 tracking-tight">{selectedResource.name}</h3>
+                           <p className="text-slate-500 font-bold text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500"/> {selectedResource.address}</p>
+                           <div className="grid grid-cols-2 gap-4">
+                              <button className="bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
+                              <button className="bg-slate-100 text-slate-700 py-5 rounded-2xl font-black text-xl flex justify-center items-center gap-3 hover:bg-slate-200 transition-colors"><Phone size={24}/> 전화 연결</button>
+                           </div>
+                        </div>
+                      )}
+                   </div>
                 </div>
              </div>
           )}
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
-          {view === 'issue_list' && <div className="pt-12 max-w-7xl mx-auto px-4">{/* 생략 없이 모두 복구됨 (v26.4.1 참조) */}</div>}
+          {view === 'issue_list' && <div className="pt-12 max-w-7xl mx-auto px-4">{/* 이전과 동일 */}</div>}
        </main>
        
        {view !== 'resource_map' && view !== 'article_view' && <Footer onSecretAdminUnlock={() => setRole('admin')} />}
