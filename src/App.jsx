@@ -618,4 +618,8 @@ const MainApp = () => {
     fetchData();
   }, []);
 
-  const filteredResources = resources.
+  const filteredResources = resources.filter(res => {
+    const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
+    const matchKeyword = res.name.includes(searchKeyword) || res.address.includes(searchKeyword);
+    return matchRegion && matchKeyword;
+  });
