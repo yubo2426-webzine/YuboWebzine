@@ -109,7 +109,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// ✅ [최적화 1] 세션 스토리지 기반 중복 조회수 방지
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
@@ -233,7 +232,8 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                                  <span className="relative text-sky-600 dark:text-sky-400 font-black hover:text-sky-700">파일 찾아보기</span>
                                  <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/>
                               </div>
-                              <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서 (15MB 이하 권장)'}</p>
+                              {/* ✅ PDF 권장 용량을 50MB로 상향 적용 */}
+                              <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서 (50MB 이하 권장)'}</p>
                            </div>
                         </label>
                      </div>
@@ -395,7 +395,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
            <div className="flex items-center gap-3">
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 뉴스</h2>
            </div>
-           {/* ✅ [개선 2] 새로고침 버튼 복원 */}
            <button onClick={fetchNews} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm transition-colors disabled:opacity-50">
              <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> 새로고침
            </button>
@@ -598,13 +597,17 @@ const MainApp = () => {
   const [issues, setIssues] = useState([]);
   const [currentIssue, setCurrentIssue] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
+  
+  // ✅ 상태 관리 추가 (최근 뉴스 및 홈 탭 상태)
   const [recentNotices, setRecentNotices] = useState([]);
+  const [recentNews, setRecentNews] = useState([]);
+  const [activeHomeTab, setActiveHomeTab] = useState('notice'); // 'notice' | 'news'
+
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   
-  // ✅ [개선 4] 검색 관련 콤보박스(자원형태) 상태 추가
   const [resources, setResources] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('전체');
@@ -613,6 +616,9 @@ const MainApp = () => {
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
+
+  // ✅ 전북특별자치도 14개 시군 데이터 정의
+  const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -640,11 +646,14 @@ const MainApp = () => {
       
       const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
       if(resNotices.data) setRecentNotices(resNotices.data);
+
+      // ✅ 최근 뉴스 데이터 추가 페치
+      const resNews = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(4);
+      if(resNews.data) setRecentNews(resNews.data);
     };
     fetchData();
   }, []);
 
-  // ✅ [개선 4] 형태 필터링 로직 추가
   const filteredResources = resources.filter(res => {
     const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
     const matchType = selectedType === '전체' || res.category === selectedType;
@@ -696,11 +705,11 @@ const MainApp = () => {
   };
 
   const handleUpload = async (data) => {
-    // ✅ [최적화 5] 15MB 업로드 용량 제한 방어 코드
+    // ✅ 업로드 50MB 용량 제한
     if (data.type === 'article' && data.file) {
-      const maxSize = 15 * 1024 * 1024;
+      const maxSize = 50 * 1024 * 1024;
       if (data.file.size > maxSize) {
-        alert("⚠️ 파일 크기가 너무 큽니다. 모바일 쾌적화를 위해 15MB 이하로 압축 후 업로드해주세요.");
+        alert("⚠️ 파일 크기가 너무 큽니다. 50MB 이하로 업로드해주세요.");
         return; 
       }
     }
@@ -801,15 +810,12 @@ const MainApp = () => {
                    <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
                    <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-white leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600 dark:text-emerald-400">지식 플랫폼</span></h2>
                    
-                   {/* ✅ [개선 4] 홈 화면 검색 UI: 콤보박스(Select) 2개로 개편 */}
                    <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-[2.5rem] mb-8 z-20 bg-white dark:bg-slate-800 border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden">
                      <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                        {/* ✅ 전북특별자치도 14개 시군 전체 적용 (검색 필터) */}
                         <select value={selectedRegion} onChange={(e)=>setSelectedRegion(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center border-r border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 지역 전체 =</option>
-                           <option value="전주시">전주시</option>
-                           <option value="익산시">익산시</option>
-                           <option value="군산시">군산시</option>
-                           <option value="완주군">완주군</option>
+                           {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
                         </select>
                         <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 자원형태 전체 =</option>
@@ -826,6 +832,13 @@ const MainApp = () => {
                           <Compass size={28} strokeWidth={2.5}/>
                         </button>
                      </div>
+                   </div>
+
+                   {/* ✅ 14개 시/군 해시태그로 나열 */}
+                   <div className="flex gap-2.5 justify-center flex-wrap Relative z-20 max-w-2xl">
+                     {jeonbukRegions.map(tag => (
+                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-5 py-2 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-full shadow-sm text-[13px] transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
+                     ))}
                    </div>
                  </div>
                  
@@ -856,20 +869,36 @@ const MainApp = () => {
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                    
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                      <div className="absolute -top-4 -left-4 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
+                   {/* ✅ [개선 3] 최근 소식 / 최근 뉴스 탭 UI 도입 */}
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[480px]">
+                      <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
                       <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
-                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 소식 <Rabbit size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
-                         <button onClick={() => setView('notice')} className="text-base font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"/></button>
+                         {/* 탭 컨트롤 UI (스크린샷 아이꿈터 벤치마킹) */}
+                         <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-700 shadow-inner">
+                            <button onClick={() => setActiveHomeTab('notice')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
+                            <button onClick={() => setActiveHomeTab('news')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
+                         </div>
+                         <button onClick={() => setView(activeHomeTab === 'notice' ? 'notice' : 'news')} className="text-sm md:text-base font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group">더보기 <ChevronRight size={18} className="text-indigo-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
+
+                      {/* 탭 내용 */}
                       <div className="flex flex-col relative z-10 pl-2">
-                        {recentNotices.map(n => (
-                           <div key={n.id} onClick={() => {setView('notice');}} className="py-6 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                        {activeHomeTab === 'notice' && recentNotices.map(n => (
+                           <div key={n.id} onClick={() => {setView('notice');}} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                               <div className="flex items-center gap-5 w-full">
-                                 <span className={`text-sm font-black px-4 py-1.5 rounded-full border ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
-                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 line-clamp-1 text-xl flex-1 tracking-tight">{n.title}</span>
-                                 <span className="text-base font-bold text-slate-400 dark:text-slate-500 hidden md:block">{new Date(n.created_at).toLocaleDateString()}</span>
+                                 <span className={`text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
+                                 <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
+                              </div>
+                           </div>
+                        ))}
+                        {activeHomeTab === 'news' && recentNews.map(n => (
+                           <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                              <div className="flex items-center gap-5 w-full">
+                                 <span className="text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 bg-rose-100 text-rose-600 border-rose-200/50 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800">{n.author || '뉴스'}</span>
+                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
+                                 <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
                               </div>
                            </div>
                         ))}
@@ -908,14 +937,11 @@ const MainApp = () => {
                         <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
                       </div>
 
-                      {/* ✅ [개선 4] 체험자원 지도 검색 필터 UI 개편 */}
+                      {/* ✅ 전북 14개 시/군 적용 필터 UI */}
                       <div className="relative mb-4 z-10 flex gap-2">
                          <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
                            <option value="전체">= 지역 전체 =</option>
-                           <option value="전주시">전주시</option>
-                           <option value="익산시">익산시</option>
-                           <option value="군산시">군산시</option>
-                           <option value="완주군">완주군</option>
+                           {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
                          </select>
                          <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
                            <option value="전체">= 형태 전체 =</option>
