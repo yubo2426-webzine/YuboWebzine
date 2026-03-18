@@ -130,12 +130,18 @@ const parseNewsData = (rawTitle) => {
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
-  if (sessionStorage.getItem(sessionKey)) return; 
-
+  if (sessionStorage.getItem(sessionKey)) return;
+  
   try { 
-    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
+    // 🚀 [수정] 동시 다발적인 조회 시 데이터 유실(Race Condition)을 막기 위해 RPC 호출로 변경
+    await supabase.rpc('increment_view_count', { 
+      target_table: table, 
+      target_id: id 
+    }); 
     sessionStorage.setItem(sessionKey, 'true');
-  } catch (e) { console.error(e); }
+  } catch (e) { 
+    console.error('조회수 업데이트 중 오류 발생:', e); 
+  }
 };
 
 const useHistoryState = (initialState) => {
