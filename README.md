@@ -23,37 +23,28 @@
 
 ## 📜 프로젝트 진행 로그 (Change Log)
 
-### [ v26.6.x ] Soft Dark Mode & Mobile Layout Optimization (Current)
+### 🎉 [ v1.0.0 ] Official Release (Current)
+**지식 플랫폼 정식 출시 및 아키텍처 안정화**
+- **홈 화면 탭 UI 도입:** 홈 화면에 '최근 소식 / 최근 뉴스'를 스와이프 없이 바로 볼 수 있는 직관적인 탭(Tab) UI 구축 및 Soft UI 적용.
+- **체험자원 검색 고도화:** 전북특별자치도 14개 시/군 전체 데이터 및 자원 형태를 콤보박스(Select) UI로 구현하여 검색 편의성 증대.
+- **뉴스 데이터 파싱 (Parser):** 구글 뉴스 RSS의 제목 구조(`기사 제목 - 언론사`)를 정규식으로 파싱하여 불필요한 꼬리표를 제거하고, 원출처(언론사명)를 추출해 세련된 뱃지로 노출.
+- **API 크레딧 최적화:** SessionStorage를 활용해 단일 세션 내 중복 조회수 업데이트(DB Write)를 차단하여 Supabase 무료 티어 크레딧 누수 완벽 방어.
+- **용량 방어 로직:** Supabase Storage 무료 한도에 맞춰 업로드 모달에 50MB 용량 초과 사전 차단 로직 적용.
+
+### [ Beta v0.9.x ] Soft Dark Mode & Mobile Layout Optimization
 - **소프트 다크모드:** 눈이 아픈 완전 블랙 대신 은은한 네이비(Slate-900) 배경과 야광(Neon)처럼 빛나는 파스텔 배지 조합으로 세련된 다크 테마 완성.
 - **모바일 지도 우선 배치(Mobile-First Map):** 모바일 기기 접속 시 지도가 리스트보다 상단에 위치하도록 화면 역전(flex-col-reverse) 적용.
 - **관리자 UX 고도화:** 월간 자료실 목록에서 즉시 PDF를 업로드할 수 있는 `[+ 자료 추가]` 퀵 버튼 신설.
 
-### [ v26.4.0 ~ 26.5.0 ] Search Portal & Kid-Friendly Elements
-- **홈 화면 검색 포털화:** 홈 화면을 가벼운 검색 포털로 전환. 메인 검색창이나 해시태그 클릭 시 체험자원 지도로 즉시 파라미터를 넘기며 라우팅.
-- **생동감 부여:** CSS Keyframe을 활용한 '둥둥 떠다니는 나침반' 애니메이션 및 실시간 날씨/미세먼지 글래스모피즘(Glassmorphism) 위젯 탑재.
-- **유아 친화적 감성:** 화면 곳곳에 토끼(Rabbit), 새싹(Sprout), 꽃(Flower2) 등의 아이콘을 적절히 배치하여 따뜻한 분위기 연출.
+### [ Beta v0.8.x ] Search Portal & Kid-Friendly Elements
+- **홈 화면 검색 포털화:** 홈 화면을 가벼운 검색 포털로 전환. 검색 시 체험자원 지도로 즉시 라우팅.
+- **생동감 부여:** '둥둥 떠다니는 나침반' 애니메이션 및 실시간 날씨/미세먼지 글래스모피즘 위젯 탑재.
 
-### [ v26.3.0 ] I-Kkumteo UI/UX Overhaul
-- **Soft UI 전면 도입:** 기존 공공기관 스타일(KRDS)을 탈피하여 곡률(rounded-3xl)과 파스텔톤(Sky, Teal, Amber, Rose)을 극대화한 '울산 아이꿈터' 디자인 완벽 벤치마킹.
-- **원페이지(One-Page) 대시보드:** 홈 화면에 위젯들을 유기적으로 결합하여 스크롤 한 번에 모든 정보를 파악할 수 있도록 개편.
-
-### [ v26.2.0 ] Privacy Patch & Bottom Sheet
-- **개인정보 보호 강화:** 로그인 창 원천 제거 및 히든 관리자 모드 적용, 초상권 보호를 위해 갤러리 기능 완전 삭제.
-- **바텀 시트(Bottom Sheet) 적용:** 모바일 환경에서 지도 위 마커 클릭 시 하단에서 스르륵 올라오는 상세 정보 패널 구현.
-
-### [ v26.0.0 ~ v26.1.1 ] Kakao Map Integration & Split View
-- **카카오맵 연동:** React 19 엄격 모드(Strict Mode) 충돌 및 백지(White Screen) 버그를 방어하는 커스텀 훅(`useCustomKakaoLoader`) 자체 구축.
-- **반응형 스플릿 뷰:** PC 화면에서 좌측 리스트 - 우측 카카오맵으로 이어지는 최적의 레이아웃 완성.
-- **데이터 끌어올리기(Lifting State):** 메인 대시보드에 최신 소식 및 웹진 위젯 구현.
-
-### [ v25.9.x ] Social Share & Image Stabilization
-- **4대 소셜 공유 연동:** 카카오톡, 밴드, 페이스북, X(트위터) 공유 기능 탑재 및 썸네일 Raw URL 최적화.
-- **이미지 안정화:** 외부 링크 엑박 방지를 위해 로컬 Asset 임포트 방식으로 아이콘 전면 교체.
-
-### [ v25.8.0 ~ v25.8.8 ] KRDS System & PDF Engine
-- **전자정부 표준(KRDS) 적용:** 초기 UI 신뢰감 향상을 위한 Pretendard GOV 폰트 및 Blue 기반 스타일링.
-- **하이브리드 PDF 뷰어:** 모바일 제스처(핀치 줌, 스와이프)와 PC 툴바 기능을 통합한 자체 PDF 렌더링 엔진 구축.
-- **조회수 트래킹:** 콘텐츠 클릭 시 DB 뷰 카운트 실시간 업데이트 로직 구현.
+### [ Beta v0.5.x ] I-Kkumteo UI/UX Overhaul & Privacy Patch
+- **Soft UI 전면 도입:** 곡률(rounded-[3rem])과 파스텔톤을 극대화한 '울산 아이꿈터' 디자인 완벽 벤치마킹.
+- **개인정보 보호 강화:** 로그인 창 원천 제거 및 히든 관리자 모드 적용.
+- **카카오맵 연동 최적화:** React 19 엄격 모드 충돌을 방어하는 커스텀 훅(`useCustomKakaoLoader`) 자체 구축.
+- **하이브리드 PDF 뷰어:** 모바일 제스처(핀치 줌, 스와이프)를 통합한 자체 PDF 렌더링 엔진 구축.
 
 ---
 
