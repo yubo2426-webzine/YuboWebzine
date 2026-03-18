@@ -109,6 +109,24 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+// ✅ [추가] 뉴스 원본 제목에서 '순수 기사 제목'과 '언론사명'을 분리하는 헬퍼 함수
+const parseNewsData = (rawTitle) => {
+  if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
+  
+  // 구글 뉴스 RSS의 경우 주로 "기사제목 - 언론사명" 형태를 띕니다.
+  const parts = rawTitle.split(' - ');
+  if (parts.length > 1) {
+    const publisher = parts.pop().trim(); // 마지막 요소가 언론사 (예: 웹이코노미)
+    let title = parts.join(' - ').trim(); // 나머지는 제목으로 재결합
+    
+    // 제목 끝에 남은 불필요한 태그 제거 (예: ' > 뉴스', ' |' 등)
+    title = title.replace(/\s*>\s*뉴스$/, '').replace(/\s*\|$/, '').trim();
+    
+    return { title, publisher };
+  }
+  return { title: rawTitle, publisher: '뉴스' };
+};
+
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
@@ -232,7 +250,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                                  <span className="relative text-sky-600 dark:text-sky-400 font-black hover:text-sky-700">파일 찾아보기</span>
                                  <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/>
                               </div>
-                              {/* ✅ PDF 권장 용량을 50MB로 상향 적용 */}
                               <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서 (50MB 이하 권장)'}</p>
                            </div>
                         </label>
@@ -401,23 +418,30 @@ const NewsFeed = ({ limit, isAdmin }) => {
         </div>
       )}
       <div className="flex flex-col gap-4">
-         {news.map((item, idx) => (
-            <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
-               <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                     <KRDSBadge variant={item.author?.includes('Google') ? 'neutral' : 'primary'}>{item.author || '뉴스'}</KRDSBadge>
-                     <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
-                  </div>
-                  <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{item.title}</h3>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
-               </div>
-               <div className="flex items-center justify-end gap-2">
-                   {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
-                  
-                   {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
-               </div>
-            </div>
-         ))}
+         {news.map((item, idx) => {
+            // ✅ [수정] 뉴스 원문 제목에서 언론사명 추출
+            const { title: cleanTitle, publisher } = parseNewsData(item.title);
+            
+            return (
+              <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
+                 <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                       {/* ✅ [수정] Google News 대신 추출된 언론사 뱃지 사용 */}
+                       <KRDSBadge variant="primary">{publisher}</KRDSBadge>
+                       <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
+                    </div>
+                    {/* ✅ [수정] 불필요한 꼬리표가 제거된 깔끔한 기사 제목 노출 */}
+                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{cleanTitle}</h3>
+                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
+                 </div>
+                 <div className="flex items-center justify-end gap-2">
+                     {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
+                    
+                     {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
+                 </div>
+              </div>
+            );
+         })}
       </div>
     </div>
   );
@@ -598,7 +622,6 @@ const MainApp = () => {
   const [currentIssue, setCurrentIssue] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
   
-  // ✅ 상태 관리 추가 (최근 뉴스 및 홈 탭 상태)
   const [recentNotices, setRecentNotices] = useState([]);
   const [recentNews, setRecentNews] = useState([]);
   const [activeHomeTab, setActiveHomeTab] = useState('notice'); // 'notice' | 'news'
@@ -617,7 +640,6 @@ const MainApp = () => {
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
 
-  // ✅ 전북특별자치도 14개 시군 데이터 정의
   const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -647,7 +669,6 @@ const MainApp = () => {
       const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
       if(resNotices.data) setRecentNotices(resNotices.data);
 
-      // ✅ 최근 뉴스 데이터 추가 페치
       const resNews = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(4);
       if(resNews.data) setRecentNews(resNews.data);
     };
@@ -705,7 +726,6 @@ const MainApp = () => {
   };
 
   const handleUpload = async (data) => {
-    // ✅ 업로드 50MB 용량 제한
     if (data.type === 'article' && data.file) {
       const maxSize = 50 * 1024 * 1024;
       if (data.file.size > maxSize) {
@@ -812,7 +832,6 @@ const MainApp = () => {
                    
                    <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-[2.5rem] mb-8 z-20 bg-white dark:bg-slate-800 border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden">
                      <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-                        {/* ✅ 전북특별자치도 14개 시군 전체 적용 (검색 필터) */}
                         <select value={selectedRegion} onChange={(e)=>setSelectedRegion(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center border-r border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 지역 전체 =</option>
                            {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
@@ -834,7 +853,6 @@ const MainApp = () => {
                      </div>
                    </div>
 
-                   {/* ✅ 14개 시/군 해시태그로 나열 */}
                    <div className="flex gap-2.5 justify-center flex-wrap Relative z-20 max-w-2xl">
                      {jeonbukRegions.map(tag => (
                         <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-5 py-2 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-full shadow-sm text-[13px] transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
@@ -869,12 +887,10 @@ const MainApp = () => {
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                    
-                   {/* ✅ [개선 3] 최근 소식 / 최근 뉴스 탭 UI 도입 */}
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[480px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
                       <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
-                         {/* 탭 컨트롤 UI (스크린샷 아이꿈터 벤치마킹) */}
                          <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-700 shadow-inner">
                             <button onClick={() => setActiveHomeTab('notice')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
                             <button onClick={() => setActiveHomeTab('news')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
@@ -882,7 +898,6 @@ const MainApp = () => {
                          <button onClick={() => setView(activeHomeTab === 'notice' ? 'notice' : 'news')} className="text-sm md:text-base font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group">더보기 <ChevronRight size={18} className="text-indigo-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
 
-                      {/* 탭 내용 */}
                       <div className="flex flex-col relative z-10 pl-2">
                         {activeHomeTab === 'notice' && recentNotices.map(n => (
                            <div key={n.id} onClick={() => {setView('notice');}} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
@@ -893,15 +908,18 @@ const MainApp = () => {
                               </div>
                            </div>
                         ))}
-                        {activeHomeTab === 'news' && recentNews.map(n => (
-                           <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                              <div className="flex items-center gap-5 w-full">
-                                 <span className="text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 bg-rose-100 text-rose-600 border-rose-200/50 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800">{n.author || '뉴스'}</span>
-                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
-                                 <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
-                              </div>
-                           </div>
-                        ))}
+                        {activeHomeTab === 'news' && recentNews.map(n => {
+                           // ✅ [수정] 홈 화면의 최근 뉴스 리스트: 뱃지 삭제 후 깨끗한 기사 제목과 날짜만 노출
+                           const { title: cleanTitle } = parseNewsData(n.title);
+                           return (
+                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                                <div className="flex items-center gap-5 w-full">
+                                   <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight pl-2">{cleanTitle}</span>
+                                   <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
+                                </div>
+                             </div>
+                           );
+                        })}
                       </div>
                    </div>
 
@@ -925,7 +943,6 @@ const MainApp = () => {
             </div>
           )}
 
-          {/* ✅ 단독 탭 체험자원 지도 */}
           {view === 'resource_map' && (
              <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
                 <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
@@ -937,7 +954,6 @@ const MainApp = () => {
                         <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
                       </div>
 
-                      {/* ✅ 전북 14개 시/군 적용 필터 UI */}
                       <div className="relative mb-4 z-10 flex gap-2">
                          <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
                            <option value="전체">= 지역 전체 =</option>
