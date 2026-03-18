@@ -18,7 +18,6 @@ import imgBand from './assets/band_icon.svg';
 import imgFacebook from './assets/facebook_icon.png';
 import imgX from './assets/x_icon.svg';
 
-// ✅ 둥둥 떠다니는 나침반 애니메이션 CSS
 const globalStyles = `
   @keyframes float-rotate {
     0% { transform: translateY(0px) rotate(0deg); }
@@ -30,9 +29,6 @@ const globalStyles = `
   }
 `;
 
-// ------------------------------------------------------------------
-// ✅ [React 19 호환] 자체 구현한 useKakaoLoader (지도 최적화)
-// ------------------------------------------------------------------
 const useCustomKakaoLoader = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -64,9 +60,6 @@ const useCustomKakaoLoader = () => {
   return [loading, error];
 };
 
-// ------------------------------------------------------------------
-// 🏛️ [Soft Dark UI System] 
-// ------------------------------------------------------------------
 const KRDSInput = ({ className, ...props }) => (
   <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner ${className}`} {...props} />
 );
@@ -112,16 +105,20 @@ const SocialShare = () => {
   );
 };
 
-// ------------------------------------------------------------------
-// 🛠️ Supabase 및 공통 Hooks
-// ------------------------------------------------------------------
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+// ✅ [최적화 1] 세션 스토리지 기반 중복 조회수 방지
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
-  try { await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); } catch (e) { console.error(e); }
+  const sessionKey = `viewed_${table}_${id}`;
+  if (sessionStorage.getItem(sessionKey)) return; 
+
+  try { 
+    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
+    sessionStorage.setItem(sessionKey, 'true');
+  } catch (e) { console.error(e); }
 };
 
 const useHistoryState = (initialState) => {
@@ -160,9 +157,6 @@ const loadPdfScript = () => {
   });
 };
 
-// ------------------------------------------------------------------
-// 🕵️ [보안] 히든 관리자 모드가 탑재된 Footer
-// ------------------------------------------------------------------
 const Footer = ({ onSecretAdminUnlock }) => {
   const [clicks, setClicks] = useState(0);
 
@@ -196,9 +190,6 @@ const Footer = ({ onSecretAdminUnlock }) => {
   );
 };
 
-// ------------------------------------------------------------------
-// 📝 업로드 모달
-// ------------------------------------------------------------------
 const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) => {
   if (!isOpen) return null;
   const [file, setFile] = useState(null);
@@ -210,8 +201,8 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
        <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.2)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-700 flex flex-col">
           <div className="px-8 py-6 border-b border-gray-50 dark:border-slate-700 bg-white dark:bg-slate-900 flex justify-between items-center sticky top-0 z-10">
             <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-               {type === 'notice' && <><Megaphone className="text-amber-500" size={28}/> 기관 소식 작성</>}
-               {type === 'issue' && <><Book className="text-teal-500" size={28}/> 월간호 발행</>}
+               {type === 'notice' && <><Megaphone className="text-amber-500" size={28}/> 소식 작성</>}
+               {type === 'issue' && <><Book className="text-teal-500" size={28}/> 자료실 발행</>}
                {type === 'article' && <><FileText className="text-sky-500" size={28}/> 자료 등록</>}
             </h2>
             <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X className="text-slate-500 dark:text-slate-400"/></button>
@@ -235,7 +226,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                   {type === 'article' && (
                      <div>
                         <label className={getLabelClass}>PDF 파일 첨부</label>
-                        {/* ✅ [수정] 파일 탐색기 오류: label 태그 영역을 버튼 전체로 감싸도록 수정 */}
                         <label className="mt-1 flex justify-center px-6 pt-8 pb-8 bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] hover:bg-sky-50 dark:hover:bg-slate-800 relative cursor-pointer group transition-colors">
                            <div className="space-y-3 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-500 group-hover:text-sky-500 transition-colors"/>
@@ -243,7 +233,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                                  <span className="relative text-sky-600 dark:text-sky-400 font-black hover:text-sky-700">파일 찾아보기</span>
                                  <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/>
                               </div>
-                              <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서를 선택해주세요'}</p>
+                              <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서 (15MB 이하 권장)'}</p>
                            </div>
                         </label>
                      </div>
@@ -261,9 +251,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
-// ------------------------------------------------------------------
-// 📄 PDF 뷰어
-// ------------------------------------------------------------------
 const CustomPDFViewer = ({ article, onBack }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -374,10 +361,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   );
 };
 
-// ------------------------------------------------------------------
-// 📑 컨텐츠 컴포넌트들 (소식, 뉴스, 월간지)
-// ------------------------------------------------------------------
-const NewsFeed = ({ limit, isAdmin, onBack }) => {
+const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   
@@ -409,10 +393,12 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
       {!limit && (
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 교육 뉴스룸</h2>
+              <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 뉴스</h2>
            </div>
-           {/* ✅ 홈 버튼 렌더링 조건을 onBack 프롭스에서 처리하므로 부모에서 주입하지 않으면 삭제됨 */}
-           {onBack && <button onClick={onBack} className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm"><Home size={18}/> 홈으로</button>}
+           {/* ✅ [개선 2] 새로고침 버튼 복원 */}
+           <button onClick={fetchNews} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm transition-colors disabled:opacity-50">
+             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> 새로고침
+           </button>
         </div>
       )}
       <div className="flex flex-col gap-4">
@@ -439,7 +425,6 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
 };
 
 const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
-  const [mode, setMode] = useState(initialMode || 'list');
   const [filter, setFilter] = useState('all'); 
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -474,7 +459,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!initialMode && (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800 dark:text-white"><span className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-2xl"><Megaphone className="text-amber-500 dark:text-amber-400" size={32}/></span> 기관 소식</h2>
+           <h2 className="text-3xl font-black flex items-center gap-3 text-slate-800 dark:text-white"><span className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-2xl"><Megaphone className="text-amber-500 dark:text-amber-400" size={32}/></span> 소식</h2>
            <div className="flex flex-wrap gap-3 w-full md:w-auto">
               <div className="bg-white dark:bg-slate-800 shadow-sm p-1.5 rounded-2xl flex border border-slate-100 dark:border-slate-700">
                   {['all', 'notice', 'event'].map(f => (
@@ -544,7 +529,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// ✅ 자료실 카드 컴포넌트
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
     <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
@@ -578,7 +562,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
   </div>
 );
 
-// 🧭 [Soft UI System] 
 const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleTheme, isDarkMode, role }) => (
   <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 shadow-sm h-20 flex items-center relative transition-colors">
     <div className="absolute top-2 left-10 text-emerald-200 dark:text-emerald-900/50 opacity-60"><Flower2 size={24}/></div>
@@ -591,7 +574,6 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
          {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
       </div>
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
-        {/* ✅ [수정] 네비게이션 메뉴에 '체험자원 지도' 추가 및 명칭 통일 */}
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
             {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
@@ -610,9 +592,7 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
   </header>
 );
 
-// 🚀 메인 애플리케이션
 const MainApp = () => {
-  // ✅ [수정] 관리자 권한을 sessionStorage에서 불러오도록 하여 새로고침 시 유지
   const [role, setRole] = useState(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest'); 
   const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState([]);
@@ -623,10 +603,14 @@ const MainApp = () => {
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  
+  // ✅ [개선 4] 검색 관련 콤보박스(자원형태) 상태 추가
   const [resources, setResources] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('전체');
+  const [selectedType, setSelectedType] = useState('전체');
   const [selectedResource, setSelectedResource] = useState(null);
+  
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
 
@@ -645,7 +629,6 @@ const MainApp = () => {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
-  // 초기 데이터 불러오기 
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
@@ -661,16 +644,18 @@ const MainApp = () => {
     fetchData();
   }, []);
 
+  // ✅ [개선 4] 형태 필터링 로직 추가
   const filteredResources = resources.filter(res => {
     const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
+    const matchType = selectedType === '전체' || res.category === selectedType;
     const matchKeyword = res.name.includes(searchKeyword) || res.address.includes(searchKeyword);
-    return matchRegion && matchKeyword;
+    return matchRegion && matchType && matchKeyword;
   });
 
   const renderMap = (ref) => {
     if (!mapLoading && !mapError && ref.current && window.kakao && window.kakao.maps) {
         ref.current.innerHTML = '';
-        let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532); // 기본 전북도청
+        let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532);
         let level = 10;
         if (selectedResource) { centerPos = new window.kakao.maps.LatLng(selectedResource.lat, selectedResource.lng); level = 4; }
         const map = new window.kakao.maps.Map(ref.current, { center: centerPos, level: level });
@@ -711,6 +696,15 @@ const MainApp = () => {
   };
 
   const handleUpload = async (data) => {
+    // ✅ [최적화 5] 15MB 업로드 용량 제한 방어 코드
+    if (data.type === 'article' && data.file) {
+      const maxSize = 15 * 1024 * 1024;
+      if (data.file.size > maxSize) {
+        alert("⚠️ 파일 크기가 너무 큽니다. 모바일 쾌적화를 위해 15MB 이하로 압축 후 업로드해주세요.");
+        return; 
+      }
+    }
+
     setIsUploading(true);
     try {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
@@ -725,7 +719,6 @@ const MainApp = () => {
 
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
   
-  // ✅ [수정] 1:1 통합 로직: 자료실 카드 클릭 시 상세 페이지를 생략하고 즉시 PDF 뷰어를 엽니다.
   const handleIssueClick = (issue) => { 
     incrementViewCount('issues', issue.id, issue.views); 
     const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
@@ -747,7 +740,6 @@ const MainApp = () => {
     <style>{globalStyles}</style>
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
        
-       {/* 우측 슬라이드 메뉴 */}
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSideMenuOpen(false)} />
@@ -759,7 +751,6 @@ const MainApp = () => {
              </div>
              <nav className="flex-1 overflow-y-auto p-6">
                <ul className="flex flex-col gap-3">
-                 {/* ✅ [수정] 사이드 메뉴 명칭 통일 */}
                  {[
                    { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈' },
                    { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500 dark:text-emerald-400" />, label: '체험자원 지도' },
@@ -783,7 +774,6 @@ const MainApp = () => {
        
        <main className="flex-1 w-full pb-24">
           
-          {/* ✅ 홈 화면 */}
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
                <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
@@ -811,21 +801,31 @@ const MainApp = () => {
                    <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
                    <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-white leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600 dark:text-emerald-400">지식 플랫폼</span></h2>
                    
-                   <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-full mb-8 relative z-20">
-                     <input 
-                       type="text" placeholder="어떤 체험을 찾으시나요? (예: 박물관)" 
-                       className="w-full h-20 md:h-24 pl-10 pr-24 rounded-full text-xl font-black text-slate-800 dark:text-white bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-400/30 border border-white/50 dark:border-slate-700 shadow-inner"
-                       value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearchSubmit(); }}
-                     />
-                     <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-20 bg-emerald-500 dark:bg-emerald-600 rounded-full flex items-center justify-center text-white hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors shadow-md">
-                       <Compass size={32} strokeWidth={2.5}/>
-                     </button>
-                   </div>
-
-                   <div className="flex gap-2.5 justify-center flex-wrap Relative z-20">
-                     {['전체', '전주시', '익산시', '군산시', '완주군'].map(tag => (
-                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-6 py-2.5 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-full shadow-sm text-sm transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
-                     ))}
+                   {/* ✅ [개선 4] 홈 화면 검색 UI: 콤보박스(Select) 2개로 개편 */}
+                   <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-[2.5rem] mb-8 z-20 bg-white dark:bg-slate-800 border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden">
+                     <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                        <select value={selectedRegion} onChange={(e)=>setSelectedRegion(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center border-r border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                           <option value="전체">= 지역 전체 =</option>
+                           <option value="전주시">전주시</option>
+                           <option value="익산시">익산시</option>
+                           <option value="군산시">군산시</option>
+                           <option value="완주군">완주군</option>
+                        </select>
+                        <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                           <option value="전체">= 자원형태 전체 =</option>
+                           {['형태 1', '형태 2', '형태 3', '형태 4', '형태 5', '형태 6', '형태 7'].map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                     </div>
+                     <div className="relative">
+                        <input 
+                          type="text" placeholder="검색어를 입력해주세요." 
+                          className="w-full h-20 pl-8 pr-24 text-lg font-black text-slate-800 dark:text-white bg-transparent focus:outline-none shadow-inner"
+                          value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearchSubmit(); }}
+                        />
+                        <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-16 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-md">
+                          <Compass size={28} strokeWidth={2.5}/>
+                        </button>
+                     </div>
                    </div>
                  </div>
                  
@@ -840,10 +840,10 @@ const MainApp = () => {
                <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-28">
                  <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] py-10 px-8 flex justify-around items-center gap-4 border border-slate-50/50 dark:border-slate-700">
                    {[
-                      { id: 'map', title: '체험지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 group-hover:bg-emerald-500 dark:group-hover:bg-emerald-500 group-hover:text-white', decorators: [<Flower2 key="f1" size={20} className="text-emerald-300 dark:text-emerald-500/50 absolute -top-1 -right-1"/>, <Heart key="h1" size={12} className="text-emerald-200 dark:text-emerald-500/50 absolute bottom-1 -left-1"/>] },
-                      { id: 'issue_list', title: '월간자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400 group-hover:bg-teal-500 dark:group-hover:bg-teal-500 group-hover:text-white' },
-                      { id: 'notice', title: '기관소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 group-hover:bg-amber-500 dark:group-hover:bg-amber-500 group-hover:text-white', decorators: [<Sprout key="s1" size={20} className="text-amber-300 dark:text-amber-500/50 absolute -top-1 -left-1"/>, <Flower2 key="f2" size={12} className="text-amber-200 dark:text-amber-500/50 absolute bottom-1 -right-1"/>] },
-                      { id: 'news', title: '교육뉴스룸', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 group-hover:bg-rose-500 dark:group-hover:bg-rose-500 group-hover:text-white' }
+                      { id: 'map', title: '체험자원 지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 group-hover:bg-emerald-500 dark:group-hover:bg-emerald-500 group-hover:text-white', decorators: [<Flower2 key="f1" size={20} className="text-emerald-300 dark:text-emerald-500/50 absolute -top-1 -right-1"/>, <Heart key="h1" size={12} className="text-emerald-200 dark:text-emerald-500/50 absolute bottom-1 -left-1"/>] },
+                      { id: 'issue_list', title: '자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400 group-hover:bg-teal-500 dark:group-hover:bg-teal-500 group-hover:text-white' },
+                      { id: 'notice', title: '소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 group-hover:bg-amber-500 dark:group-hover:bg-amber-500 group-hover:text-white', decorators: [<Sprout key="s1" size={20} className="text-amber-300 dark:text-amber-500/50 absolute -top-1 -left-1"/>, <Flower2 key="f2" size={12} className="text-amber-200 dark:text-amber-500/50 absolute bottom-1 -right-1"/>] },
+                      { id: 'news', title: '뉴스', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 group-hover:bg-rose-500 dark:group-hover:bg-rose-500 group-hover:text-white' }
                    ].map(menu => (
                       <div key={menu.id} onClick={() => setView(menu.id === 'map' ? 'resource_map' : menu.id)} className="flex flex-col items-center gap-4 cursor-pointer group relative">
                          <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all shadow-inner group-hover:shadow-[0_15px_30px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 relative border border-transparent dark:border-slate-700 group-hover:border-transparent ${menu.color}`}>{menu.icon}{menu.decorators}</div>
@@ -860,7 +860,7 @@ const MainApp = () => {
                       <div className="absolute -top-4 -left-4 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
                       <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
-                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 기관 소식 <Rabbit size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
+                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4">최근 소식 <Rabbit size={36} className="text-emerald-500 dark:text-emerald-400" strokeWidth={2}/></h3>
                          <button onClick={() => setView('notice')} className="text-base font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
                       <div className="flex flex-col relative z-10 pl-2">
@@ -881,7 +881,7 @@ const MainApp = () => {
                       <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
 
                       <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
-                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 tracking-tight">최신 월간 웹진 <Flower2 size={36} className="text-sky-500 dark:text-sky-400" strokeWidth={2}/></h3>
+                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 tracking-tight">최신 자료실 <Flower2 size={36} className="text-sky-500 dark:text-sky-400" strokeWidth={2}/></h3>
                          <button onClick={() => setView('issue_list')} className="text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
                       <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2">
@@ -899,7 +899,6 @@ const MainApp = () => {
           {/* ✅ 단독 탭 체험자원 지도 */}
           {view === 'resource_map' && (
              <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
-                {/* 좌측(PC)/하단(Mobile) 리스트 */}
                 <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
                    <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
 
@@ -908,14 +907,25 @@ const MainApp = () => {
                         <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
                         <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
                       </div>
-                      <div className="relative mb-5 z-10">
+
+                      {/* ✅ [개선 4] 체험자원 지도 검색 필터 UI 개편 */}
+                      <div className="relative mb-4 z-10 flex gap-2">
+                         <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
+                           <option value="전체">= 지역 전체 =</option>
+                           <option value="전주시">전주시</option>
+                           <option value="익산시">익산시</option>
+                           <option value="군산시">군산시</option>
+                           <option value="완주군">완주군</option>
+                         </select>
+                         <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
+                           <option value="전체">= 형태 전체 =</option>
+                           {['형태 1', '형태 2', '형태 3', '형태 4', '형태 5', '형태 6', '형태 7'].map(t => <option key={t} value={t}>{t}</option>)}
+                         </select>
+                      </div>
+
+                      <div className="relative mb-2 z-10">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20}/>
                         <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-[1.5rem] text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
-                      </div>
-                      <div className="flex flex-wrap gap-2 z-10 relative">
-                        {['전체', '전주시', '익산시', '군산시', '완주군'].map(region => (
-                          <button key={region} onClick={() => { setSelectedRegion(region); setSelectedResource(null); }} className={`px-5 py-2.5 text-sm font-black rounded-full transition-all border ${selectedRegion === region ? 'bg-emerald-500 dark:bg-emerald-600 text-white border-emerald-500 dark:border-emerald-600 shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400'}`}>{region}</button>
-                        ))}
                       </div>
                    </div>
                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
@@ -944,7 +954,6 @@ const MainApp = () => {
                    </div>
                 </div>
 
-                {/* 우측(PC)/상단(Mobile) 카카오맵 */}
                 <div className="w-full md:flex-1 relative h-[45%] md:h-full bg-slate-100 dark:bg-slate-950 relative">
                    <div className="absolute bottom-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float"><Compass size={150} strokeWidth={1}/></div>
 
@@ -969,16 +978,14 @@ const MainApp = () => {
              </div>
           )}
 
-          {/* ✅ [수정] 뉴스룸 홈 화면 버튼 삭제 (onBack 프롭스 미주입) */}
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           
-          {/* ✅ 자료실 목록 탭 */}
           {view === 'issue_list' && (
             <div className="pt-16 max-w-7xl mx-auto px-4 animate-in fade-in mb-28">
               <div className="flex items-center justify-between mb-12 pb-8 border-b border-slate-800 dark:border-slate-700 relative overflow-hidden px-10">
                 <div className="absolute top-4 left-4 text-teal-100 dark:text-teal-900/30 opacity-60 z-0"><Book size={48} className="text-teal-200 dark:text-teal-800"/></div>
-                <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">월간 자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
+                <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
                 {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -987,7 +994,6 @@ const MainApp = () => {
             </div>
           )}
           
-          {/* ✅ [수정] 자료실 클릭 시 곧바로 PDF 뷰어로 이동하므로 목록으로 되돌아오도록 수정 */}
           {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_list')}/>}
        </main>
        
