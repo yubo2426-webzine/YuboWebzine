@@ -61,7 +61,6 @@ const useCustomKakaoLoader = () => {
       script.removeEventListener('error', handleError);
     };
   }, []);
-
   return [loading, error];
 };
 
@@ -102,6 +101,7 @@ const SocialShare = () => {
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
   
   const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1";
+
   return (
     <div className="flex justify-center gap-4 py-4">
        <button onClick={shareKakao} className={btnClass} title="카카오톡"><img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full" /></button>
@@ -132,8 +132,10 @@ const useHistoryState = (initialState) => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
   const setHistoryState = (newState) => {
-    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`); setState(newState); }
+    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`);
+    setState(newState); }
   };
   return [state, setHistoryState];
 };
@@ -202,7 +204,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   const [file, setFile] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
   const getLabelClass = "block text-sm font-black text-slate-700 dark:text-slate-300 mb-2 ml-1";
-  
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.2)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-700 flex flex-col">
@@ -214,6 +216,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             </h2>
             <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X className="text-slate-500 dark:text-slate-400"/></button>
           </div>
+        
           <div className="p-8">
             {isUploading ? 
             <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
@@ -227,21 +230,25 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
+              
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
                   {type === 'article' && (
                      <div>
                         <label className={getLabelClass}>PDF 파일 첨부</label>
-                        <div className="mt-1 flex justify-center px-6 pt-8 pb-8 bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] hover:bg-sky-50 dark:hover:bg-slate-800 relative cursor-pointer group transition-colors">
+                        {/* ✅ [수정] 파일 탐색기 오류: label 태그 영역을 버튼 전체로 감싸도록 수정 */}
+                        <label className="mt-1 flex justify-center px-6 pt-8 pb-8 bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] hover:bg-sky-50 dark:hover:bg-slate-800 relative cursor-pointer group transition-colors">
                            <div className="space-y-3 text-center">
                               <Paperclip className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-500 group-hover:text-sky-500 transition-colors"/>
                               <div className="flex text-base justify-center">
-                                 <label className="relative cursor-pointer text-sky-600 dark:text-sky-400 font-black hover:text-sky-700"><span>파일 찾아보기</span><input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/></label>
+                                 <span className="relative text-sky-600 dark:text-sky-400 font-black hover:text-sky-700">파일 찾아보기</span>
+                                 <input type="file" className="sr-only" onChange={e => setFile(e.target.files[0])} required/>
                               </div>
                               <p className="text-sm font-medium text-slate-400">{file ? file.name : 'PDF 문서를 선택해주세요'}</p>
                            </div>
-                        </div>
+                        </label>
                      </div>
                   )}
+      
                   <div className="flex gap-4 pt-4 mt-8">
                     <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-lg font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">취소</button>
                     <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-black hover:bg-emerald-600 shadow-md transition-colors">등록 완료</button>
@@ -294,7 +301,8 @@ const CustomPDFViewer = ({ article, onBack }) => {
         const unscaledViewport = page.getViewport({ scale: 1.0 });
         const containerWidth = containerRef.current.clientWidth;
         const containerHeight = containerRef.current.clientHeight;
-        let autoScale = (window.innerWidth >= 768) ? Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95 : (containerWidth / unscaledViewport.width) * 0.98;
+        let autoScale = (window.innerWidth >= 768) 
+        ? Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95 : (containerWidth / unscaledViewport.width) * 0.98;
         const finalScale = scale * autoScale;
         const viewport = page.getViewport({ scale: finalScale });
         const outputScale = window.devicePixelRatio || 1;
@@ -312,13 +320,16 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [pdfDoc, pageNum, scale, size]);
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches); pinchStartScale.current = scale; } 
     else { isPinching.current = false; touchStartX.current = e.changedTouches[0].screenX; }
   };
+
   const handleTouchMove = (e) => {
     if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) { e.preventDefault(); const dist = getTouchDistance(e.touches); contentWrapperRef.current.style.transform = `scale(${dist / pinchStartDist.current})`; }
   };
+
   const handleTouchEnd = (e) => {
     if (isPinching.current) { if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none'; isPinching.current = false; } 
     else {
@@ -377,6 +388,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
     if(data) setNews(data);
     setLoading(false);
   };
+
   useEffect(() => { fetchNews(); }, [limit]);
 
   const handleNewsClick = (item) => {
@@ -399,6 +411,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
            <div className="flex items-center gap-3">
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 교육 뉴스룸</h2>
            </div>
+           {/* ✅ 홈 버튼 렌더링 조건을 onBack 프롭스에서 처리하므로 부모에서 주입하지 않으면 삭제됨 */}
            {onBack && <button onClick={onBack} className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm"><Home size={18}/> 홈으로</button>}
         </div>
       )}
@@ -415,6 +428,7 @@ const NewsFeed = ({ limit, isAdmin, onBack }) => {
                </div>
                <div className="flex items-center justify-end gap-2">
                    {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
+                  
                    {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
                </div>
             </div>
@@ -516,13 +530,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
               </div>
               <div className="px-8 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-sm">
                  <div className="flex items-center gap-4 font-bold text-slate-400 dark:text-slate-500">
-                     <span className="flex items-center gap-1.5"><User size={16}/> 관리자</span>
+                    <span className="flex items-center gap-1.5"><User size={16}/> 관리자</span>
                      <span className="flex items-center gap-1.5"><Eye size={16}/> 조회수 {selectedNotice.views || 0}</span>
                  </div>
                  {userRole === 'admin' && (
                     <button onClick={() => handleDelete(selectedNotice.id)} className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-black flex items-center gap-1 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm"><Trash2 size={16}/> 삭제</button>
                  )}
-              </div>
+               </div>
            </div>
         </div>
       )}
@@ -530,10 +544,9 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// ✅ [추가] 자료실 카드 내에서 PDF 추가가 가능하도록 onAddArticle 속성 연결
+// ✅ 자료실 카드 컴포넌트
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
   <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
-    
     <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
        <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/50 opacity-60 z-0"><Rabbit size={32} strokeWidth={1.5}/></div>
        <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/50 opacity-60 z-0"><Sprout size={32}/></div>
@@ -544,9 +557,8 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
           <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 tracking-tight">{issue.title}</h3>
        </div>
     </div>
-    
+  
     <div className="p-10 flex-1 flex flex-col relative z-10">
-      {/* ✅ [개선] 관리자 모드 시 삭제 버튼 옆에 자료(PDF) 추가 버튼 탑재 */}
       <div className="flex justify-between items-center mb-6">
         <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>
         {isAdmin && (
@@ -579,9 +591,10 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
          {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
       </div>
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
-        {['home', 'issue_list', 'notice', 'news'].map(key => (
+        {/* ✅ [수정] 네비게이션 메뉴에 '체험자원 지도' 추가 및 명칭 통일 */}
+        {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '기관소식' : '뉴스룸'}
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
           </button>
         ))}
       </nav>
@@ -599,23 +612,21 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
 
 // 🚀 메인 애플리케이션
 const MainApp = () => {
-  const [role, setRole] = useState('guest'); 
-  const [view, setView] = useHistoryState('home'); 
+  // ✅ [수정] 관리자 권한을 sessionStorage에서 불러오도록 하여 새로고침 시 유지
+  const [role, setRole] = useState(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest'); 
+  const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState([]);
   const [currentIssue, setCurrentIssue] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [recentNotices, setRecentNotices] = useState([]);
-  
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
-  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false); 
-
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [resources, setResources] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('전체');
   const [selectedResource, setSelectedResource] = useState(null);
-  
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
 
@@ -658,7 +669,7 @@ const MainApp = () => {
 
   const renderMap = (ref) => {
     if (!mapLoading && !mapError && ref.current && window.kakao && window.kakao.maps) {
-        ref.current.innerHTML = ''; 
+        ref.current.innerHTML = '';
         let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532); // 기본 전북도청
         let level = 10;
         if (selectedResource) { centerPos = new window.kakao.maps.LatLng(selectedResource.lat, selectedResource.lng); level = 4; }
@@ -667,7 +678,7 @@ const MainApp = () => {
         let hasMarkers = false;
 
         const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
-        const imageSize = new window.kakao.maps.Size(24, 35); 
+        const imageSize = new window.kakao.maps.Size(24, 35);
         const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize); 
 
         filteredResources.forEach(res => {
@@ -693,7 +704,6 @@ const MainApp = () => {
     setView('resource_map');
   };
 
-  // ✅ 업로드 헬퍼: 어느 호수에 PDF를 올릴지 상태 세팅 후 모달 오픈
   const openArticleUploadForIssue = (issue) => {
      setCurrentIssue(issue);
      setUploadType('article');
@@ -705,21 +715,36 @@ const MainApp = () => {
     try {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
-       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`; await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }]; await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
+       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`;
+       await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
+       await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
        alert("등록 완료되었습니다!"); setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
-  
+
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
-  const handleIssueClick = (issue) => { incrementViewCount('issues', issue.id, issue.views); const updatedIssue = { ...issue, views: (issue.views || 0) + 1 }; setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); setCurrentIssue(updatedIssue); setView('issue_detail'); };
+  
+  // ✅ [수정] 1:1 통합 로직: 자료실 카드 클릭 시 상세 페이지를 생략하고 즉시 PDF 뷰어를 엽니다.
+  const handleIssueClick = (issue) => { 
+    incrementViewCount('issues', issue.id, issue.views); 
+    const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
+    setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
+    setCurrentIssue(updatedIssue); 
+    
+    if (updatedIssue.articles && updatedIssue.articles.length > 0) {
+      setCurrentArticle(updatedIssue.articles[0]);
+      setView('article_view');
+    } else {
+      alert("등록된 PDF 자료가 없습니다. (관리자 모드에서 + 버튼을 눌러 PDF를 추가해주세요)");
+    }
+  };
 
   if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900"><AlertTriangle className="text-red-500 mb-4" size={40}/>DB 연결 오류</div>;
 
   return (
     <>
     <style>{globalStyles}</style>
-    {/* ✅ 전체 배경색에 다크모드 적용 (Soft Slate Tone) */}
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
        
        {/* 우측 슬라이드 메뉴 */}
@@ -734,12 +759,13 @@ const MainApp = () => {
              </div>
              <nav className="flex-1 overflow-y-auto p-6">
                <ul className="flex flex-col gap-3">
+                 {/* ✅ [수정] 사이드 메뉴 명칭 통일 */}
                  {[
-                   { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈으로' },
+                   { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈' },
                    { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500 dark:text-emerald-400" />, label: '체험자원 지도' },
-                   { id: 'issue_list', icon: <Book size={24} className="text-teal-500 dark:text-teal-400"/>, label: '월간 자료실' },
-                   { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500 dark:text-amber-400"/>, label: '기관 소식' },
-                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '교육 뉴스룸' }
+                   { id: 'issue_list', icon: <Book size={24} className="text-teal-500 dark:text-teal-400"/>, label: '자료실' },
+                   { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500 dark:text-amber-400"/>, label: '소식' },
+                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '뉴스' }
                  ].map((item) => (
                    <li key={item.id}>
                      <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-5 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all text-left font-black text-lg text-slate-700 dark:text-slate-200">
@@ -757,13 +783,11 @@ const MainApp = () => {
        
        <main className="flex-1 w-full pb-24">
           
-          {/* ✅ 홈 화면 (Kid-Friendly & Soft Dark Mode) */}
+          {/* ✅ 홈 화면 */}
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
-               
                <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
                  
-                 {/* 스마트 날씨 위젯 */}
                  <div className="absolute top-10 right-10 xl:right-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
                        <MapPin size={18} className="text-emerald-500 dark:text-emerald-400"/> 전북특별자치도 전주시
@@ -862,7 +886,7 @@ const MainApp = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2">
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={() => { setCurrentIssue(issue); setView('issue_detail'); }} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>
                         ))}
                       </div>
                    </div>
@@ -872,11 +896,10 @@ const MainApp = () => {
             </div>
           )}
 
-          {/* ✅ 단독 탭 체험자원 지도 (resource_map, 모바일 화면 역전(Map on top) 완벽 구현) */}
+          {/* ✅ 단독 탭 체험자원 지도 */}
           {view === 'resource_map' && (
              <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
-                
-                {/* 좌측(PC)/하단(Mobile) 리스트 (.map_list_wrap) */}
+                {/* 좌측(PC)/하단(Mobile) 리스트 */}
                 <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
                    <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
 
@@ -921,14 +944,13 @@ const MainApp = () => {
                    </div>
                 </div>
 
-                {/* 우측(PC)/상단(Mobile) 카카오맵 (.map_view) */}
+                {/* 우측(PC)/상단(Mobile) 카카오맵 */}
                 <div className="w-full md:flex-1 relative h-[45%] md:h-full bg-slate-100 dark:bg-slate-950 relative">
                    <div className="absolute bottom-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float"><Compass size={150} strokeWidth={1}/></div>
 
                    {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
                    : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
                    
-                   {/* 모바일 화면에서는 바텀 시트가 화면 맨 아래에서 올라오도록 fixed로 고정 */}
                    <div className={`fixed md:absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
                       {selectedResource && (
                         <div className="p-8 md:p-10 pb-12 relative border-t border-slate-100 dark:border-slate-700">
@@ -947,7 +969,8 @@ const MainApp = () => {
              </div>
           )}
 
-          {view === 'news' && <NewsFeed isAdmin={role === 'admin'} onBack={() => setView('home')} />}
+          {/* ✅ [수정] 뉴스룸 홈 화면 버튼 삭제 (onBack 프롭스 미주입) */}
+          {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           
           {/* ✅ 자료실 목록 탭 */}
@@ -963,52 +986,17 @@ const MainApp = () => {
               </div>
             </div>
           )}
-
-          {view === 'issue_detail' && currentIssue && (
-            <div className="max-w-6xl mx-auto px-4 py-16 animate-in fade-in mb-28">
-              <button onClick={() => setView('issue_list')} className="mb-10 flex items-center gap-2.5 font-black text-slate-400 dark:text-slate-500 hover:text-teal-500 dark:hover:text-teal-400 bg-slate-50 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-6 py-3 rounded-full transition-colors w-max"><ArrowLeft size={20}/> 자료실 목록</button>
-              
-              <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[3rem] p-10 md:p-16 mb-16 shadow-[0_20px_60px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-12 items-start relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-teal-50 dark:bg-teal-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-70 pointer-events-none z-0"></div>
-                <div className="w-36 h-36 bg-teal-50 dark:bg-teal-900/40 rounded-[2.5rem] flex items-center justify-center text-7xl shadow-inner z-10 shrink-0 border border-teal-100 dark:border-teal-800 relative">
-                   <div className="absolute top-2 right-2 text-teal-200 dark:text-teal-700 opacity-60"><Rabbit size={28}/></div>
-                   {currentIssue.icon}
-                </div>
-                <div className="z-10 relative flex-1 pt-2">
-                  <span className="inline-block px-5 py-2 bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 text-sm font-black rounded-full mb-6 border border-teal-100/50 dark:border-teal-800 shadow-sm">Vol.{currentIssue.vol}</span>
-                  <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-8 tracking-tighter leading-tight">{currentIssue.title}</h1>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed max-w-3xl pb-2">{currentIssue.description}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-800 dark:border-slate-700 px-8 relative overflow-hidden">
-                <div className="absolute top-4 left-4 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><FileText size={40} className="text-sky-200 dark:text-sky-800"/></div>
-                <h3 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3 relative z-10">수록 자료 목록 <FileText size={28} className="text-sky-500 dark:text-sky-400"/></h3>
-                {role === 'admin' && <button onClick={() => { setUploadType('article'); setIsUploadOpen(true);}} className="flex items-center gap-2 shadow-md bg-sky-500 dark:bg-sky-600 text-white px-6 py-3 rounded-2xl font-black hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors relative z-10"><Plus size={20} /> 자료 추가</button>}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4">
-                {currentIssue.articles?.map(art => (
-                  <div key={art.id} onClick={() => { setCurrentArticle(art); setView('article_view'); }} className="group p-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] hover:border-sky-300 dark:hover:border-sky-500/50 hover:shadow-[0_15px_40px_rgba(14,165,233,0.1)] cursor-pointer transition-all flex items-center gap-6 relative overflow-hidden">
-                    <div className="absolute -bottom-4 -right-4 text-sky-50 dark:text-sky-900/20 opacity-60 z-0 group-hover:scale-110 transition-transform"><FileText size={80} className="text-sky-100 dark:text-sky-800/50"/></div>
-
-                    <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:bg-sky-50 dark:group-hover:bg-sky-900/40 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors shadow-inner shrink-0 relative z-10"><FileText size={36}/></div>
-                    <div className="flex-1 relative z-10">
-                      <div className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors mb-2 tracking-tight line-clamp-1">{art.title}</div>
-                      <div className="flex items-center gap-3.5 text-sm font-bold text-slate-400 dark:text-slate-500"><span>PDF 문서</span>{art.views > 0 && <span className="flex items-center gap-1.5 text-sky-500 dark:text-sky-400"><Eye size={16}/> {art.views}</span>}</div>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-sky-50 dark:group-hover:bg-sky-900/40 shrink-0 relative z-10 transition-colors"><ArrowRight className="text-slate-300 dark:text-slate-600 group-hover:text-sky-500 dark:group-hover:text-sky-400" size={24}/></div>
-                  </div>
-                ))}
-                {(!currentIssue.articles || currentIssue.articles.length === 0) && <div className="col-span-full py-28 text-center font-black text-xl text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[2.5rem] flex flex-col items-center gap-4"><Rabbit size={64} className="text-emerald-200 dark:text-emerald-800/50" strokeWidth={1}/>등록된 자료가 없습니다.</div>}
-              </div>
-            </div>
-          )}
           
-          {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_detail')}/>}
+          {/* ✅ [수정] 자료실 클릭 시 곧바로 PDF 뷰어로 이동하므로 목록으로 되돌아오도록 수정 */}
+          {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_list')}/>}
        </main>
        
-       {view !== 'resource_map' && view !== 'article_view' && <Footer onSecretAdminUnlock={() => setRole('admin')} />}
+       {view !== 'resource_map' && view !== 'article_view' && (
+         <Footer onSecretAdminUnlock={() => {
+           setRole('admin');
+           if (typeof window !== 'undefined') sessionStorage.setItem('userRole', 'admin');
+         }} />
+       )}
        
        <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
     </div>
