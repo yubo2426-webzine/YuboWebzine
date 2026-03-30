@@ -76,7 +76,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
 
 const SocialShare = () => {
   const currentUrlEncoded = encodeURIComponent(window.location.href);
-  const titleEncoded = encodeURIComponent("아이들의 미래를 잇는 지식 플랫폼");
+  const titleEncoded = encodeURIComponent("함께누리웹진");
   const rawUrl = window.location.href;
   const icons = { kakao: imgKakao, band: imgBand, facebook: imgFacebook, x: imgX };
 
@@ -85,7 +85,7 @@ const SocialShare = () => {
     if (!window.Kakao.isInitialized()) window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3');
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
-      content: { title: '아이들의 미래를 잇는 지식 플랫폼', description: '우리 동네 유보통합 자원과 자료를 확인하세요.', imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } },
+      content: { title: '함께누리웹진', description: '우리 동네 유보통합 자원과 자료를 확인하세요.', imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
   };
@@ -109,17 +109,14 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// ✅ [추가] 뉴스 원본 제목에서 '순수 기사 제목'과 '언론사명'을 분리하는 헬퍼 함수
 const parseNewsData = (rawTitle) => {
   if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
   
-  // 구글 뉴스 RSS의 경우 주로 "기사제목 - 언론사명" 형태를 띕니다.
   const parts = rawTitle.split(' - ');
   if (parts.length > 1) {
-    const publisher = parts.pop().trim(); // 마지막 요소가 언론사 (예: 웹이코노미)
-    let title = parts.join(' - ').trim(); // 나머지는 제목으로 재결합
+    const publisher = parts.pop().trim();
+    let title = parts.join(' - ').trim();
     
-    // 제목 끝에 남은 불필요한 태그 제거 (예: ' > 뉴스', ' |' 등)
     title = title.replace(/\s*>\s*뉴스$/, '').replace(/\s*\|$/, '').trim();
     
     return { title, publisher };
@@ -130,18 +127,12 @@ const parseNewsData = (rawTitle) => {
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
-  if (sessionStorage.getItem(sessionKey)) return;
-  
+  if (sessionStorage.getItem(sessionKey)) return; 
+
   try { 
-    // 🚀 [수정] 동시 다발적인 조회 시 데이터 유실(Race Condition)을 막기 위해 RPC 호출로 변경
-    await supabase.rpc('increment_view_count', { 
-      target_table: table, 
-      target_id: id 
-    }); 
+    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
     sessionStorage.setItem(sessionKey, 'true');
-  } catch (e) { 
-    console.error('조회수 업데이트 중 오류 발생:', e); 
-  }
+  } catch (e) { console.error(e); }
 };
 
 const useHistoryState = (initialState) => {
@@ -206,7 +197,7 @@ const Footer = ({ onSecretAdminUnlock }) => {
            <SocialShare />
          </div>
          <p onClick={handleSecretClick} className="text-sm text-gray-400 dark:text-slate-500 font-medium cursor-default select-none">
-           © 2026 아이들의 미래를 잇는 지식 플랫폼. All rights reserved.<br/>Contact: help@korea-kids-platform.kr
+           © 2026 함께누리웹진. All rights reserved.<br/>Contact: help@korea-kids-platform.kr
          </p>
       </div>
     </footer>
@@ -425,18 +416,15 @@ const NewsFeed = ({ limit, isAdmin }) => {
       )}
       <div className="flex flex-col gap-4">
          {news.map((item, idx) => {
-            // ✅ [수정] 뉴스 원문 제목에서 언론사명 추출
             const { title: cleanTitle, publisher } = parseNewsData(item.title);
             
             return (
               <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
                  <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                       {/* ✅ [수정] Google News 대신 추출된 언론사 뱃지 사용 */}
                        <KRDSBadge variant="primary">{publisher}</KRDSBadge>
                        <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
                     </div>
-                    {/* ✅ [수정] 불필요한 꼬리표가 제거된 깔끔한 기사 제목 노출 */}
                     <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{cleanTitle}</h3>
                     <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
                  </div>
@@ -599,13 +587,13 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
     <div className="container mx-auto px-4 w-full flex items-center justify-between relative z-10">
       <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
          <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-teal-400 dark:from-emerald-500 dark:to-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:rotate-12 transition-transform"><Sparkles size={24}/></div>
-         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">지식 플랫폼</h1>
+         <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">함께누리웹진</h1>
          {role === 'admin' && <span className="hidden sm:inline-block bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-black px-3 py-1 rounded-full">관리자 모드</span>}
       </div>
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '체험자원 지도'}
           </button>
         ))}
       </nav>
@@ -834,7 +822,7 @@ const MainApp = () => {
                    <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Rabbit size={72} strokeWidth={1}/></div>
 
                    <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
-                   <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-white leading-[1.3] mb-10 tracking-tight">아이들의 미래를 잇는<br/><span className="text-emerald-600 dark:text-emerald-400">지식 플랫폼</span></h2>
+                   <h2 className="text-5xl md:text-6xl font-black text-emerald-600 dark:text-emerald-400 leading-[1.3] mb-10 tracking-tight">함께누리웹진</h2>
                    
                    <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-[2.5rem] mb-8 z-20 bg-white dark:bg-slate-800 border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden">
                      <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
