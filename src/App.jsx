@@ -631,6 +631,16 @@ const MainApp = () => {
   const [selectedType, setSelectedType] = useState('전체');
   const [selectedResource, setSelectedResource] = useState(null);
   
+  // ✅ 2. 해시태그 (최근 검색지 1줄) 기능
+  const [recentTags, setRecentTags] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('recentTags');
+      if (saved) return JSON.parse(saved);
+    }
+    // 전주시 등 주요 시군을 초기 1줄(5개) 기본값으로 설정
+    return ['전주시', '익산시', '군산시', '정읍시', '남원시'];
+  });
+  
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
 
@@ -644,6 +654,11 @@ const MainApp = () => {
     return false;
   });
 
+  // ✅ 1. 문서 타이틀 변경 로직 추가
+  useEffect(() => {
+    document.title = '함께누리웹진';
+  }, []);
+
   useEffect(() => {
     if (isDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
     else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
@@ -654,7 +669,8 @@ const MainApp = () => {
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
-      const resIssues = await supabase.from('issues').select('*').order('created_at', { ascending: false });
+      // ✅ 3. 자료실 데이터를 id 기준으로 내림차순(최신순) 정렬 보장
+      const resIssues = await supabase.from('issues').select('*').order('id', { ascending: false });
       if (resIssues.data) setIssues(resIssues.data);
       
       const resResources = await supabase.from('resources').select('*');
@@ -710,6 +726,14 @@ const MainApp = () => {
   }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
   const handleSearchSubmit = () => {
+    // ✅ 2. 검색을 누르면 선택된 지역을 최상단 캐시로 업데이트
+    if (selectedRegion !== '전체') {
+      setRecentTags(prev => {
+        const newTags = [selectedRegion, ...prev.filter(t => t !== selectedRegion)].slice(0, 5);
+        localStorage.setItem('recentTags', JSON.stringify(newTags));
+        return newTags;
+      });
+    }
     setView('resource_map');
   };
 
@@ -847,8 +871,9 @@ const MainApp = () => {
                      </div>
                    </div>
 
+                   {/* ✅ 2. 렌더링 부분: 사용자의 캐시 기반 최근 검색지 1줄만 노출 */}
                    <div className="flex gap-2.5 justify-center flex-wrap Relative z-20 max-w-2xl">
-                     {jeonbukRegions.map(tag => (
+                     {recentTags.map(tag => (
                         <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-5 py-2 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-full shadow-sm text-[13px] transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
                      ))}
                    </div>
