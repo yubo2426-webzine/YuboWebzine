@@ -664,7 +664,8 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '체험자원 지도'}
+            {/* 에러가 발생했던 삼항 연산자 부분 완벽 복구 */}
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
           </button>
         ))}
       </nav>
