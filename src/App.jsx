@@ -8,7 +8,8 @@ import {
   Sun, Moon, Eye, Megaphone,
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
-  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit 
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit,
+  Link, Check // 추가된 아이콘
 } from 'lucide-react';
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -40,7 +41,6 @@ const useCustomKakaoLoader = () => {
 
     if (!script) {
       script = document.createElement('script');
-      script.id = scriptId;
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
@@ -74,33 +74,104 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
+// 개선된 SocialShare 컴포넌트 (공유 일관성 + 링크 복사 기능 + 토스트 알림)
 const SocialShare = () => {
-  const currentUrlEncoded = encodeURIComponent(window.location.href);
-  const titleEncoded = encodeURIComponent("함께누리웹진");
+  const [isKakaoReady, setIsKakaoReady] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  
   const rawUrl = window.location.href;
+  const currentUrlEncoded = encodeURIComponent(rawUrl);
+  
+  const shareTitle = "함께누리웹진";
+  const shareDesc = "우리 동네 유보통합 자원과 자료를 확인하세요.";
+  const combinedTextEncoded = encodeURIComponent(`${shareTitle}\n${shareDesc}\n🔗 ${rawUrl}`);
+
   const icons = { kakao: imgKakao, band: imgBand, facebook: imgFacebook, x: imgX };
 
+  useEffect(() => {
+    if (window.Kakao && window.Kakao.isInitialized()) {
+      setIsKakaoReady(true);
+      return;
+    }
+    
+    const scriptId = 'kakao-share-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js'; 
+      script.async = true;
+      script.onload = () => {
+        if (window.Kakao && !window.Kakao.isInitialized()) {
+          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
+          window.Kakao.init(appKey);
+          setIsKakaoReady(true);
+        }
+      };
+      document.head.appendChild(script);
+    } else if (window.Kakao) {
+       setIsKakaoReady(true);
+    }
+  }, []);
+
   const shareKakao = () => {
-    if (!window.Kakao) { alert("⚠️ 카카오 연결 중입니다."); return; }
-    if (!window.Kakao.isInitialized()) window.Kakao.init('ee00ac93b075fc1e56de1a0dc90ccaf3');
+    if (!isKakaoReady || !window.Kakao) {
+      alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
-      content: { title: '함께누리웹진', description: '우리 동네 유보통합 자원과 자료를 확인하세요.', imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } },
+      content: { 
+        title: shareTitle, 
+        description: `${shareDesc}\n🔗 ${rawUrl}`, 
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
+        link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
+      },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
   };
-  const shareBand = () => window.open(`https://band.us/plugin/share?body=${titleEncoded}%0A${currentUrlEncoded}&route=${currentUrlEncoded}`, '_blank');
-  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${titleEncoded}&url=${currentUrlEncoded}`, '_blank');
+
+  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
+  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${combinedTextEncoded}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
   
-  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1";
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(rawUrl);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    } catch (err) {
+      console.error('URL 복사 실패:', err);
+      alert('링크 복사를 지원하지 않는 브라우저입니다.');
+    }
+  };
+  
+  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
 
   return (
-    <div className="flex justify-center gap-4 py-4">
-       <button onClick={shareKakao} className={btnClass} title="카카오톡"><img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full" /></button>
-       <button onClick={shareBand} className={btnClass} title="밴드"><img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full" /></button>
-       <button onClick={shareFacebook} className={btnClass} title="페이스북"><img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full" /></button>
-       <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X"><img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0" /></button>
+    <div className="flex flex-col items-center relative">
+       <div className="flex justify-center gap-4 py-4 relative z-10">
+         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
+           <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
+           <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareFacebook} className={btnClass} title="페이스북 공유하기">
+           <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X(트위터) 공유하기">
+           <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0 group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
+           <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
+         </button>
+       </div>
+
+       {/* 토스트 알림 (Soft UI 적용) */}
+       <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+         <Check size={16} className="text-emerald-400 dark:text-white" />
+         링크가 복사되었습니다
+       </div>
     </div>
   );
 };
@@ -593,7 +664,7 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '체험자원 지도'}
           </button>
         ))}
       </nav>
@@ -631,13 +702,11 @@ const MainApp = () => {
   const [selectedType, setSelectedType] = useState('전체');
   const [selectedResource, setSelectedResource] = useState(null);
   
-  // ✅ 2. 해시태그 (최근 검색지 1줄) 기능
   const [recentTags, setRecentTags] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('recentTags');
       if (saved) return JSON.parse(saved);
     }
-    // 전주시 등 주요 시군을 초기 1줄(5개) 기본값으로 설정
     return ['전주시', '익산시', '군산시', '정읍시', '남원시'];
   });
   
@@ -654,7 +723,6 @@ const MainApp = () => {
     return false;
   });
 
-  // ✅ 1. 문서 타이틀 변경 로직 추가
   useEffect(() => {
     document.title = '함께누리웹진';
   }, []);
@@ -669,7 +737,6 @@ const MainApp = () => {
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
-      // ✅ 3. 자료실 데이터를 id 기준으로 내림차순(최신순) 정렬 보장
       const resIssues = await supabase.from('issues').select('*').order('id', { ascending: false });
       if (resIssues.data) setIssues(resIssues.data);
       
@@ -726,7 +793,6 @@ const MainApp = () => {
   }, [view, mapLoading, mapError, filteredResources, selectedResource]);
 
   const handleSearchSubmit = () => {
-    // ✅ 2. 검색을 누르면 선택된 지역을 최상단 캐시로 업데이트
     if (selectedRegion !== '전체') {
       setRecentTags(prev => {
         const newTags = [selectedRegion, ...prev.filter(t => t !== selectedRegion)].slice(0, 5);
@@ -871,8 +937,7 @@ const MainApp = () => {
                      </div>
                    </div>
 
-                   {/* ✅ 2. 렌더링 부분: 사용자의 캐시 기반 최근 검색지 1줄만 노출 */}
-                   <div className="flex gap-2.5 justify-center flex-wrap Relative z-20 max-w-2xl">
+                   <div className="flex gap-2.5 justify-center flex-wrap relative z-20 max-w-2xl">
                      {recentTags.map(tag => (
                         <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-5 py-2 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-full shadow-sm text-[13px] transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
                      ))}
