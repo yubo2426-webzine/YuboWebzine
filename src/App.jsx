@@ -16,8 +16,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 import imgKakao from './assets/kakao_icon.svg';
 import imgBand from './assets/band_icon.svg';
-import imgFacebook from './assets/facebook_icon.png';
-import imgX from './assets/x_icon.svg';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -74,7 +72,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-const SocialShare = () => {
+consconst SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
   
@@ -85,7 +83,8 @@ const SocialShare = () => {
   const shareDesc = "우리 동네 유보통합 자원과 자료를 확인하세요.";
   const combinedTextEncoded = encodeURIComponent(`${shareTitle}\n${shareDesc}\n🔗 ${rawUrl}`);
 
-  const icons = { kakao: imgKakao, band: imgBand, facebook: imgFacebook, x: imgX };
+  // 페이스북, X 아이콘 제거
+  const icons = { kakao: imgKakao, band: imgBand };
 
   useEffect(() => {
     if (window.Kakao && window.Kakao.isInitialized()) {
@@ -125,7 +124,6 @@ const SocialShare = () => {
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
         link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
       },
-      // ✅ 추가된 부분: 카카오톡 메시지 카드 내부에 명시적인 아이템(Key-Value) 영역 생성
       itemContent: {
         profileText: shareTitle,
         items: [
@@ -140,8 +138,6 @@ const SocialShare = () => {
   };
 
   const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
-  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${combinedTextEncoded}`, '_blank');
-  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
   
   const handleCopyLink = async () => {
     try {
@@ -165,11 +161,43 @@ const SocialShare = () => {
          <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
            <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
-         <button onClick={shareFacebook} className={btnClass} title="페이스북 공유하기">
-           <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
+           <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
          </button>
-         <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X(트위터) 공유하기">
-           <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0 group-hover:scale-110 transition-transform" />
+       </div>
+
+       {/* 토스트 알림 (Soft UI 적용) */}
+       <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+         <Check size={16} className="text-emerald-400 dark:text-white" />
+         링크가 복사되었습니다
+       </div>
+    </div>
+  );
+};
+
+  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
+  
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(rawUrl);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    } catch (err) {
+      console.error('URL 복사 실패:', err);
+      alert('링크 복사를 지원하지 않는 브라우저입니다.');
+    }
+  };
+  
+  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
+
+  return (
+    <div className="flex flex-col items-center relative">
+       <div className="flex justify-center gap-4 py-4 relative z-10">
+         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
+           <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
+           <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
          <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
            <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
@@ -203,9 +231,7 @@ const SocialShare = () => {
   };
 
   const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
-  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${combinedTextEncoded}`, '_blank');
-  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
-  
+    
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(rawUrl);
@@ -227,12 +253,6 @@ const SocialShare = () => {
          </button>
          <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
            <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={shareFacebook} className={btnClass} title="페이스북 공유하기">
-           <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X(트위터) 공유하기">
-           <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0 group-hover:scale-110 transition-transform" />
          </button>
          <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
            <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
