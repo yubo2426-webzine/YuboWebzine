@@ -16,7 +16,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 import imgKakao from './assets/kakao_icon.svg';
 import imgBand from './assets/band_icon.svg';
-// 페이스북, X 이미지 import 제거 완료
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -40,6 +39,7 @@ const useCustomKakaoLoader = () => {
 
     if (!script) {
       script = document.createElement('script');
+      script.id = scriptId;
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
@@ -73,7 +73,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 사용하지 않는 페이스북, X 기능이 완전히 제거된 깔끔한 버전
+// 캡처본(OG 태그 렌더링)과 동일한 UI를 지원하는 네이티브 공유 로직 적용 완료
 const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -112,11 +112,29 @@ const SocialShare = () => {
     }
   }, []);
 
+  // 네이티브 Web Share API 호출 (모바일 기기에서 카카오톡을 선택하면 OG 태그 기반으로 예쁘게 렌더링됨)
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareDesc,
+          url: rawUrl,
+        });
+      } catch (error) {
+        console.error('공유 취소 또는 실패:', error);
+      }
+    } else {
+      handleCopyLink(); // PC 등 미지원 환경에서는 클립보드 복사로 대체
+    }
+  };
+
   const shareKakao = () => {
     if (!isKakaoReady || !window.Kakao) {
       alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
+    // 카카오 SDK 기본 템플릿 유지
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: { 
@@ -124,10 +142,6 @@ const SocialShare = () => {
         description: shareDesc, 
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
         link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
-      },
-      itemContent: {
-        profileText: shareTitle,
-        items: [{ item: '웹진 주소', itemOp: rawUrl }]
       },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
@@ -151,17 +165,24 @@ const SocialShare = () => {
   return (
     <div className="flex flex-col items-center relative">
        <div className="flex justify-center gap-4 py-4 relative z-10">
-         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
+         <button onClick={shareKakao} className={btnClass} title="카카오톡 앱 공유">
            <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
-         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
+         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유">
            <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
+         
+         {/* 네이티브 공유 버튼 (ArrowUpRight 아이콘 사용) */}
+         <button onClick={handleNativeShare} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="기본 공유하기">
+           <ArrowUpRight className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
+         </button>
+         
          <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
            <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
          </button>
        </div>
 
+       {/* 토스트 알림 */}
        <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
          <Check size={16} className="text-emerald-400 dark:text-white" />
          링크가 복사되었습니다
