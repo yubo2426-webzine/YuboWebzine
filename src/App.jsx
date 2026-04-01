@@ -74,7 +74,6 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 개선된 SocialShare 컴포넌트 (공유 일관성 + 링크 복사 기능 + 토스트 알림)
 const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -112,6 +111,79 @@ const SocialShare = () => {
        setIsKakaoReady(true);
     }
   }, []);
+
+  const shareKakao = () => {
+    if (!isKakaoReady || !window.Kakao) {
+      alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: { 
+        title: shareTitle, 
+        description: shareDesc, 
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
+        link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
+      },
+      // ✅ 추가된 부분: 카카오톡 메시지 카드 내부에 명시적인 아이템(Key-Value) 영역 생성
+      itemContent: {
+        profileText: shareTitle,
+        items: [
+          {
+            item: '웹진 주소',
+            itemOp: rawUrl
+          }
+        ]
+      },
+      buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
+    });
+  };
+
+  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
+  const shareX = () => window.open(`https://twitter.com/intent/tweet?text=${combinedTextEncoded}`, '_blank');
+  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrlEncoded}`, '_blank');
+  
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(rawUrl);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    } catch (err) {
+      console.error('URL 복사 실패:', err);
+      alert('링크 복사를 지원하지 않는 브라우저입니다.');
+    }
+  };
+  
+  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
+
+  return (
+    <div className="flex flex-col items-center relative">
+       <div className="flex justify-center gap-4 py-4 relative z-10">
+         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
+           <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
+           <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareFacebook} className={btnClass} title="페이스북 공유하기">
+           <img src={icons.facebook} alt="Facebook" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={shareX} className={`${btnClass} bg-black dark:bg-white p-3`} title="X(트위터) 공유하기">
+           <img src={icons.x} alt="X" className="w-full h-full object-contain filter invert dark:invert-0 group-hover:scale-110 transition-transform" />
+         </button>
+         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
+           <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
+         </button>
+       </div>
+
+       {/* 토스트 알림 (Soft UI 적용) */}
+       <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+         <Check size={16} className="text-emerald-400 dark:text-white" />
+         링크가 복사되었습니다
+       </div>
+    </div>
+  );
+};
 
   const shareKakao = () => {
     if (!isKakaoReady || !window.Kakao) {
