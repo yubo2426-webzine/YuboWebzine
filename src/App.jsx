@@ -73,7 +73,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 캡처본(OG 태그 렌더링)과 동일한 UI를 지원하는 네이티브 공유 로직 적용 완료
+// 사용자가 원하시는 형태(텍스트 링크 말풍선 + 자동 OG 썸네일 말풍선 동시 노출) 반영 완료!
 const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -83,7 +83,7 @@ const SocialShare = () => {
   
   const shareTitle = "함께누리웹진";
   const shareDesc = "우리 동네 유보통합 자원과 자료를 확인하세요.";
-  const combinedTextEncoded = encodeURIComponent(`${shareTitle}\n${shareDesc}\n🔗 ${rawUrl}`);
+  const combinedTextEncoded = encodeURIComponent(`[${shareTitle}]\n${shareDesc}\n\n🔗 ${rawUrl}`);
 
   const icons = { kakao: imgKakao, band: imgBand };
 
@@ -112,42 +112,33 @@ const SocialShare = () => {
     }
   }, []);
 
-  // 네이티브 Web Share API 호출 (모바일 기기에서 카카오톡을 선택하면 OG 태그 기반으로 예쁘게 렌더링됨)
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareDesc,
-          url: rawUrl,
-        });
-      } catch (error) {
-        console.error('공유 취소 또는 실패:', error);
-      }
-    } else {
-      handleCopyLink(); // PC 등 미지원 환경에서는 클립보드 복사로 대체
-    }
-  };
-
   const shareKakao = () => {
     if (!isKakaoReady || !window.Kakao) {
       alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
-    // 카카오 SDK 기본 템플릿 유지
+    // ✅ 동료님이 원하시는 '두 개의 말풍선' 효과를 내기 위해 text 타입에 rawUrl을 직접 꽂아넣습니다.
     window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: { 
-        title: shareTitle, 
-        description: shareDesc, 
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
-        link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
-      },
+      objectType: 'text',
+      text: `[${shareTitle}]\n${shareDesc}\n\n🔗 ${rawUrl}`,
+      link: { mobileWebUrl: rawUrl, webUrl: rawUrl },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
   };
 
-  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
+  const shareBand = () => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      if (/Android/i.test(navigator.userAgent)) {
+        window.location.href = `intent:bandapp://create/post?text=${combinedTextEncoded}#Intent;package=com.nhn.android.band;end`;
+      } else {
+        window.location.href = `bandapp://create/post?text=${combinedTextEncoded}`;
+      }
+    } else {
+       window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
+    }
+  };
   
   const handleCopyLink = async () => {
     try {
@@ -171,18 +162,11 @@ const SocialShare = () => {
          <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유">
            <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
-         
-         {/* 네이티브 공유 버튼 (ArrowUpRight 아이콘 사용) */}
-         <button onClick={handleNativeShare} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="기본 공유하기">
-           <ArrowUpRight className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
-         </button>
-         
          <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
            <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
          </button>
        </div>
 
-       {/* 토스트 알림 */}
        <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
          <Check size={16} className="text-emerald-400 dark:text-white" />
          링크가 복사되었습니다
