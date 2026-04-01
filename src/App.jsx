@@ -72,7 +72,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-consconst SocialShare = () => {
+const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
   
