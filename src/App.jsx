@@ -9,13 +9,14 @@ import {
   ZoomIn, ZoomOut, Download, AlertTriangle,
   Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
   Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit,
-  Link, Check // 추가된 아이콘
+  Link, Check
 } from 'lucide-react';
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 import imgKakao from './assets/kakao_icon.svg';
 import imgBand from './assets/band_icon.svg';
+// 페이스북, X 이미지 import 제거 완료
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -72,6 +73,7 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
+// 사용하지 않는 페이스북, X 기능이 완전히 제거된 깔끔한 버전
 const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -83,7 +85,6 @@ const SocialShare = () => {
   const shareDesc = "우리 동네 유보통합 자원과 자료를 확인하세요.";
   const combinedTextEncoded = encodeURIComponent(`${shareTitle}\n${shareDesc}\n🔗 ${rawUrl}`);
 
-  // 페이스북, X 아이콘 제거
   const icons = { kakao: imgKakao, band: imgBand };
 
   useEffect(() => {
@@ -126,12 +127,7 @@ const SocialShare = () => {
       },
       itemContent: {
         profileText: shareTitle,
-        items: [
-          {
-            item: '웹진 주소',
-            itemOp: rawUrl
-          }
-        ]
+        items: [{ item: '웹진 주소', itemOp: rawUrl }]
       },
       buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
     });
@@ -166,100 +162,6 @@ const SocialShare = () => {
          </button>
        </div>
 
-       {/* 토스트 알림 (Soft UI 적용) */}
-       <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-         <Check size={16} className="text-emerald-400 dark:text-white" />
-         링크가 복사되었습니다
-       </div>
-    </div>
-  );
-};
-
-  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
-  
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(rawUrl);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-    } catch (err) {
-      console.error('URL 복사 실패:', err);
-      alert('링크 복사를 지원하지 않는 브라우저입니다.');
-    }
-  };
-  
-  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
-
-  return (
-    <div className="flex flex-col items-center relative">
-       <div className="flex justify-center gap-4 py-4 relative z-10">
-         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
-           <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
-           <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
-           <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
-         </button>
-       </div>
-
-       {/* 토스트 알림 (Soft UI 적용) */}
-       <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-         <Check size={16} className="text-emerald-400 dark:text-white" />
-         링크가 복사되었습니다
-       </div>
-    </div>
-  );
-};
-
-  const shareKakao = () => {
-    if (!isKakaoReady || !window.Kakao) {
-      alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: { 
-        title: shareTitle, 
-        description: `${shareDesc}\n🔗 ${rawUrl}`, 
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/3408/3408599.png', 
-        link: { mobileWebUrl: rawUrl, webUrl: rawUrl } 
-      },
-      buttons: [{ title: '웹진 바로가기', link: { mobileWebUrl: rawUrl, webUrl: rawUrl } }],
-    });
-  };
-
-  const shareBand = () => window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
-    
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(rawUrl);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-    } catch (err) {
-      console.error('URL 복사 실패:', err);
-      alert('링크 복사를 지원하지 않는 브라우저입니다.');
-    }
-  };
-  
-  const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
-
-  return (
-    <div className="flex flex-col items-center relative">
-       <div className="flex justify-center gap-4 py-4 relative z-10">
-         <button onClick={shareKakao} className={btnClass} title="카카오톡 공유하기">
-           <img src={icons.kakao} alt="Kakao" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유하기">
-           <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
-         </button>
-         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
-           <Link className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
-         </button>
-       </div>
-
-       {/* 토스트 알림 (Soft UI 적용) */}
        <div className={`absolute -top-10 bg-slate-800 dark:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 z-20 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
          <Check size={16} className="text-emerald-400 dark:text-white" />
          링크가 복사되었습니다
@@ -756,7 +658,6 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {/* 에러가 발생했던 삼항 연산자 부분 완벽 복구 */}
             {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
           </button>
         ))}
