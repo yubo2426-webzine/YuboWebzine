@@ -7,9 +7,9 @@
 ## 🚀 기술 스택 (Tech Stack)
 * **Frontend:** React 19, Vite, Tailwind CSS, Lucide React Icons
 * **Backend/DB:** Supabase (Database, Storage)
-* **API:** Kakao Maps API (Geolocation, Custom Markers)
+* **API:** Kakao Maps API (Geolocation, Custom Markers), Kakao Share JS SDK
 * **Deployment:** Vercel (CI/CD)
-* **Features:** 하이브리드 PDF 뷰어(pdf.js), 실시간 조회수 트래킹, 4대 소셜 공유 연동
+* **Features:** 하이브리드 PDF 뷰어(pdf.js), 실시간 조회수 트래킹, 네이티브 앱 딥링크(App Intent) 공유
 
 ---
 
@@ -23,7 +23,14 @@
 
 ## 📜 프로젝트 진행 로그 (Change Log)
 
-### 🎉 [ v1.1.0 ] Naming & UI Refinements (Current)
+### 🎉 [ v1.2.0 ] SNS Share Optimization & App Deep Linking (Current)
+**SNS 공유 기능 렌더링 최적화 및 네이티브 앱 연동**
+* **카카오톡 공유 최적화 (이중 말풍선 OG 렌더링):** 카카오 JS SDK 템플릿을 `text` 타입으로 변경하고 본문에 URL을 명시하여, 카카오톡 앱 자체 크롤러가 사이트의 썸네일(Open Graph 태그)을 별도의 카드로 자동 생성하도록 유도 (네이티브 앱 공유와 100% 동일한 사용자 경험 제공).
+* **네이버 밴드 딥링크(App Intent) 연동:** 모바일(Android/iOS) 기기에서 밴드 공유 시, 웹 브라우저 창(로그인 요구)을 거치지 않고 네이버 밴드 앱이 직접 실행(`bandapp://`)되도록 모바일 분기 로직 적용.
+* **공유 UI/UX 심플화 및 토스트 알림:** 사용 빈도가 낮은 플랫폼(페이스북, X)을 제거하여 인터페이스를 최적화하고, Clipboard API를 활용한 링크 복사 기능과 Soft UI 감성의 토스트(Toast) 알림 추가.
+* **Vercel 배포 안정성 확보:** 카카오 SDK 스크립트 동적 로딩 최적화 및 빌드 과정의 함수 스코프/문법 에러 완벽 해결.
+
+### 🎉 [ v1.1.0 ] Naming & UI Refinements
 **공식 브랜딩 적용 및 마이너 UX 개선**
 * **공식 명칭 확정:** 가칭이었던 '아이들의 미래를 잇는 지식 플랫폼'을 수식어를 모두 제외한 **'함께누리웹진'**으로 최종 확정. 로고 텍스트, 소셜 공유 메타데이터, 브라우저 탭 타이틀(`document.title`) 등에 전면 적용.
 * **검색 해시태그 최적화 (UX):** 체험자원 검색 하단에 노출되던 지역 해시태그를 전체 나열 방식에서, 사용자의 **최근 검색 기록(localStorage)을 기반으로 최대 5개(1줄)만 노출**되도록 UI 깔끔함 개선.
