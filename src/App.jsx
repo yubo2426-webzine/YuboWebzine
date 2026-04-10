@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Book, FileText, User, ChevronRight, ArrowLeft, 
-  Plus, Trash2, ChevronLeft,  
+  Plus, Trash2, ChevronLeft, Pencil,
   X, Newspaper, Calendar as CalendarIcon, 
   List as ListIcon, MapPin, Navigation,
   RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, 
@@ -317,10 +317,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
-// =========================================================================
-// [최종 완성형] 하이브리드 PDF 뷰어 
-// (물리적 캔버스 캐시 분할 + 제스처 양보 로직 적용)
-// =========================================================================
 const CustomPDFViewer = ({ article, onBack }) => {
   const containerRef = useRef(null);
   const contentWrapperRef = useRef(null);
@@ -351,7 +347,15 @@ const CustomPDFViewer = ({ article, onBack }) => {
         await loadPdfScript(); 
         if (!window.pdfjsLib) return;
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const doc = await window.pdfjsLib.getDocument(article.fileUrl || article.file_url).promise;
+        
+        // 🚀 PDF 로딩 속도 최적화: cMapPacked 및 AutoFetch 방지
+        const doc = await window.pdfjsLib.getDocument({
+           url: article.fileUrl || article.file_url,
+           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+           cMapPacked: true,
+           disableAutoFetch: true
+        }).promise;
+
         setPdfDoc(doc);
         incrementViewCount('articles', article.id, article.views);
       } catch (err) { console.error("PDF Error:", err); alert("문서 로드 실패"); }
@@ -373,7 +377,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     };
 
     const renderCurrentPage = async () => {
-      // 캐시 히트 (오프스크린 분할 캔버스까지 모두 저장된 상태)
       if (pageCache.current.has(physicalPage)) {
         const cached = pageCache.current.get(physicalPage);
         setPageImages(cached);
@@ -405,7 +408,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
            const fullDataUrl = canvas.toDataURL('image/jpeg', 0.85); 
            const cacheObj = { full: fullDataUrl };
 
-           // ✅ 핵심 로직: 모바일 환경 대응 가상 캔버스 물리적 분할 (Offscreen Canvas Crop)
+           // 🚀 가상 캔버스 물리적 분할
            if (isSpread) {
               const halfWidth = canvas.width / 2;
               const fullHeight = canvas.height;
@@ -425,7 +428,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
            pageCache.current.set(physicalPage, cacheObj);
            setPageImages(cacheObj);
 
-           // 백그라운드 프리페치 (다음 페이지도 분할해서 저장해둠)
            if (physicalPage < pdfDoc.numPages && !pageCache.current.has(physicalPage + 1)) {
               setTimeout(async () => {
                  try {
@@ -502,7 +504,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         if (touchX < edgeThreshold || touchX > window.innerWidth - edgeThreshold) {
             isPinching.current = false;
             isSwiping.current = false;
-            return; // 브라우저 제스처에 권한 양보
+            return; 
         }
 
         isPinching.current = false; 
@@ -551,7 +553,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     }
   };
 
-  // ✅ 캔버스 자체가 잘렸으므로, 복잡한 Transform 없이 순수 이미지처럼 취급
   const imageStyles = {
      transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
      width: '100%',
@@ -561,7 +562,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
      transform: `scale(${scale})`,
   };
 
-  // 현재 노출할 이미지 추출 (안전 장치 포함)
   const currentImageSrc = pageImages ? (subPage !== 'full' && pageImages[subPage] ? pageImages[subPage] : pageImages.full) : null;
 
   return (
@@ -796,10 +796,8 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// =========================================================================
-// [최종 완성형] 이슈 카드 (2:3 비율 + 7.5 : 2.5 비중 + 자동 표지 추출)
-// =========================================================================
-const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => {
+// 🚀 스마트 크롭 + 제목 수정 로직 적용 IssueCard
+const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
   const [coverSrc, setCoverSrc] = useState(null);
   const [isLoadingCover, setIsLoadingCover] = useState(false);
 
@@ -817,19 +815,38 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => {
         
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        const loadingTask = window.pdfjsLib.getDocument(fileUrl);
+        const loadingTask = window.pdfjsLib.getDocument({
+           url: fileUrl,
+           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+           cMapPacked: true,
+           disableAutoFetch: true
+        });
+        
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1);
-        
         const viewport = page.getViewport({ scale: 0.6 }); 
+        
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
         
         if (isMounted) {
-           setCoverSrc(canvas.toDataURL('image/jpeg', 0.85));
+           const isSpread = viewport.width > viewport.height * 1.2;
+           if (isSpread) {
+              const halfWidth = canvas.width / 2;
+              const fullHeight = canvas.height;
+              const rightCanvas = document.createElement('canvas');
+              rightCanvas.width = halfWidth;
+              rightCanvas.height = fullHeight;
+              rightCanvas.getContext('2d').drawImage(
+                 canvas, halfWidth, 0, halfWidth, fullHeight, 
+                 0, 0, halfWidth, fullHeight
+              );
+              setCoverSrc(rightCanvas.toDataURL('image/jpeg', 0.85));
+           } else {
+              setCoverSrc(canvas.toDataURL('image/jpeg', 0.85));
+           }
         }
       } catch (err) {
         console.error("PDF 표지 추출 실패:", err);
@@ -856,18 +873,19 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => {
              </>
          )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
-         <div className="p-6 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-8 md:pb-10">
-            <div className="bg-teal-500 text-white text-base md:text-lg font-black px-5 py-2 rounded-full mb-4 md:mb-5 shadow-lg border border-teal-400">Vol.{issue.vol}</div>
-            <h3 className="text-3xl md:text-4xl font-black text-white leading-tight line-clamp-3 tracking-tight drop-shadow-md">{issue.title}</h3>
+         <div className="p-6 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-8 md:pb-10 overflow-hidden">
+            <div className="bg-teal-500 text-white text-base md:text-lg font-black px-5 py-2 rounded-full mb-4 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
+            <h3 className="text-2xl md:text-3xl font-black text-white leading-snug line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-2">{issue.title}</h3>
          </div>
       </div>
       <div className="h-[25%] px-6 py-5 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
          <div className="flex justify-between items-center mb-2">
-          <span className="text-sm md:text-base font-black text-slate-400 dark:text-slate-500">{issue.date}</span>
+          <span className="text-sm md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
           {isAdmin && (
-             <div className="flex gap-2">
-                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 추가"><Plus size={18}/></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={18}/></button>
+             <div className="flex gap-1.5 shrink-0">
+                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={16}/></button>
+                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={16}/></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={16}/></button>
              </div>
           )}
         </div>
@@ -919,7 +937,9 @@ const MainApp = () => {
   const [currentArticle, setCurrentArticle] = useState(null);
   const [recentNotices, setRecentNotices] = useState([]);
   const [recentNews, setRecentNews] = useState([]);
-  const [activeHomeTab, setActiveHomeTab] = useState('notice'); 
+  
+  // 🚀 요청사항 반영: 홈 탭 디폴트 '최근 뉴스'로 변경
+  const [activeHomeTab, setActiveHomeTab] = useState('news'); 
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
@@ -1068,6 +1088,18 @@ const MainApp = () => {
 
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
   
+  const handleEditIssue = async (issue) => {
+    const newTitle = prompt(`'${issue.vol}호'의 새로운 제목을 입력하세요:`, issue.title);
+    if (newTitle && newTitle.trim() !== "" && newTitle !== issue.title) {
+        try {
+            await supabase.from('issues').update({ title: newTitle.trim() }).eq('id', issue.id);
+            setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, title: newTitle.trim() } : i));
+        } catch(e) {
+            alert("제목 수정 중 오류가 발생했습니다: " + e.message);
+        }
+    }
+  };
+
   const handleIssueClick = (issue) => { 
     incrementViewCount('issues', issue.id, issue.views);
     const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
@@ -1206,10 +1238,11 @@ const MainApp = () => {
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[480px]">
+                   {/* 🚀 높이 축소 (min-h-[380px]) 및 내부 패딩 조절 */}
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
-                      <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
+                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
                          <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-700 shadow-inner">
                             <button onClick={() => setActiveHomeTab('notice')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
                             <button onClick={() => setActiveHomeTab('news')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
@@ -1219,7 +1252,7 @@ const MainApp = () => {
 
                       <div className="flex flex-col relative z-10 pl-2">
                         {activeHomeTab === 'notice' && recentNotices.map(n => (
-                           <div key={n.id} onClick={() => {setView('notice');}} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                           <div key={n.id} onClick={() => {setView('notice');}} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                               <div className="flex items-center gap-5 w-full">
                                  <span className={`text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
                                  <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
@@ -1230,7 +1263,7 @@ const MainApp = () => {
                         {activeHomeTab === 'news' && recentNews.map(n => {
                            const { title: cleanTitle } = parseNewsData(n.title);
                            return (
-                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-5 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                                 <div className="flex items-center gap-5 w-full">
                                    <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight pl-2">{cleanTitle}</span>
                                    <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
@@ -1241,17 +1274,18 @@ const MainApp = () => {
                       </div>
                    </div>
 
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                   {/* 🚀 우측 영역도 높이 대칭 (min-h-[380px]) 및 내부 패딩 맞춤 조절 */}
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
                       <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
                       <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
 
-                      <div className="flex justify-between items-center mb-10 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
+                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10 shrink-0">
                          <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 tracking-tight">최신 자료실 <Flower2 size={36} className="text-sky-500 dark:text-sky-400" strokeWidth={2}/></h3>
                          <button onClick={() => setView('issue_list')} className="text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
-                      <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2">
+                      <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2 flex-1">
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue}/>
                         ))}
                       </div>
                    </div>
@@ -1350,7 +1384,7 @@ const MainApp = () => {
                 {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>)}
+                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue}/>)}
               </div>
             </div>
           )}
