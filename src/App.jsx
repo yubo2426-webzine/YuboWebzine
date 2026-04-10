@@ -318,7 +318,8 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
 };
 
 // =========================================================================
-// [최적화 완료] 하이브리드 PDF 뷰어 (캐싱 + 스와이프 + 브라우저 제스처 양보)
+// [최종 완성형] 하이브리드 PDF 뷰어 
+// (물리적 캔버스 캐시 분할 + 제스처 양보 로직 적용)
 // =========================================================================
 const CustomPDFViewer = ({ article, onBack }) => {
   const containerRef = useRef(null);
@@ -330,7 +331,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const [subPage, setSubPage] = useState('full'); 
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [pageImageSrc, setPageImageSrc] = useState(null);
+  const [pageImages, setPageImages] = useState(null);
 
   const pageCache = useRef(new Map());
   const pageInfoCache = useRef(new Map()); 
@@ -372,8 +373,10 @@ const CustomPDFViewer = ({ article, onBack }) => {
     };
 
     const renderCurrentPage = async () => {
+      // 캐시 히트 (오프스크린 분할 캔버스까지 모두 저장된 상태)
       if (pageCache.current.has(physicalPage)) {
-        setPageImageSrc(pageCache.current.get(physicalPage));
+        const cached = pageCache.current.get(physicalPage);
+        setPageImages(cached);
         adjustSubPage(physicalPage, pageInfoCache.current.get(physicalPage)?.isSpread);
         return;
       }
@@ -399,10 +402,30 @@ const CustomPDFViewer = ({ article, onBack }) => {
         await renderTaskRef.current.promise;
 
         if (isMounted) {
-           const dataUrl = canvas.toDataURL('image/jpeg', 0.85); 
-           pageCache.current.set(physicalPage, dataUrl);
-           setPageImageSrc(dataUrl);
+           const fullDataUrl = canvas.toDataURL('image/jpeg', 0.85); 
+           const cacheObj = { full: fullDataUrl };
 
+           // ✅ 핵심 로직: 모바일 환경 대응 가상 캔버스 물리적 분할 (Offscreen Canvas Crop)
+           if (isSpread) {
+              const halfWidth = canvas.width / 2;
+              const fullHeight = canvas.height;
+              
+              const leftCanvas = document.createElement('canvas');
+              leftCanvas.width = halfWidth; leftCanvas.height = fullHeight;
+              leftCanvas.getContext('2d').drawImage(canvas, 0, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
+              
+              const rightCanvas = document.createElement('canvas');
+              rightCanvas.width = halfWidth; rightCanvas.height = fullHeight;
+              rightCanvas.getContext('2d').drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
+              
+              cacheObj.left = leftCanvas.toDataURL('image/jpeg', 0.85);
+              cacheObj.right = rightCanvas.toDataURL('image/jpeg', 0.85);
+           }
+
+           pageCache.current.set(physicalPage, cacheObj);
+           setPageImages(cacheObj);
+
+           // 백그라운드 프리페치 (다음 페이지도 분할해서 저장해둠)
            if (physicalPage < pdfDoc.numPages && !pageCache.current.has(physicalPage + 1)) {
               setTimeout(async () => {
                  try {
@@ -412,7 +435,20 @@ const CustomPDFViewer = ({ article, onBack }) => {
                    nc.width = Math.floor(nvp.width * outputScale);
                    nc.height = Math.floor(nvp.height * outputScale);
                    await np.render({ canvasContext: nc.getContext('2d'), viewport: nvp, transform }).promise;
-                   pageCache.current.set(physicalPage + 1, nc.toDataURL('image/jpeg', 0.85));
+                   
+                   const nIsSpread = nvp.width > nvp.height * 1.2;
+                   const nCacheObj = { full: nc.toDataURL('image/jpeg', 0.85) };
+                   if(nIsSpread) {
+                       const hw = nc.width / 2; const fh = nc.height;
+                       const lC = document.createElement('canvas'); lC.width = hw; lC.height = fh;
+                       lC.getContext('2d').drawImage(nc, 0, 0, hw, fh, 0, 0, hw, fh);
+                       const rC = document.createElement('canvas'); rC.width = hw; rC.height = fh;
+                       rC.getContext('2d').drawImage(nc, hw, 0, hw, fh, 0, 0, hw, fh);
+                       nCacheObj.left = lC.toDataURL('image/jpeg', 0.85);
+                       nCacheObj.right = rC.toDataURL('image/jpeg', 0.85);
+                   }
+                   pageCache.current.set(physicalPage + 1, nCacheObj);
+                   pageInfoCache.current.set(physicalPage + 1, { isSpread: nIsSpread });
                  } catch(e){}
               }, 500);
            }
@@ -422,7 +458,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
       }
     };
 
-    setPageImageSrc(null); 
+    setPageImages(null); 
     renderCurrentPage();
 
     return () => { isMounted = false; };
@@ -466,7 +502,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         if (touchX < edgeThreshold || touchX > window.innerWidth - edgeThreshold) {
             isPinching.current = false;
             isSwiping.current = false;
-            return;
+            return; // 브라우저 제스처에 권한 양보
         }
 
         isPinching.current = false; 
@@ -487,7 +523,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
         const currentX = e.touches[0].screenX;
         const diffX = currentX - touchStartX.current;
         
-        // 수평 스와이프 중 수직 스크롤로 인한 방해 차단
         if (Math.abs(diffX) > 10 && e.cancelable) {
             e.preventDefault();
         }
@@ -516,15 +551,18 @@ const CustomPDFViewer = ({ article, onBack }) => {
     }
   };
 
+  // ✅ 캔버스 자체가 잘렸으므로, 복잡한 Transform 없이 순수 이미지처럼 취급
   const imageStyles = {
      transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-     transformOrigin: subPage === 'full' ? 'center center' : 'top left',
-     width: subPage !== 'full' ? '200%' : 'auto',
-     maxWidth: subPage !== 'full' ? '200%' : '100%',
-     maxHeight: subPage !== 'full' ? 'none' : '100%',
+     width: '100%',
+     height: 'auto',
+     maxHeight: '100%',
      objectFit: 'contain',
-     transform: `scale(${scale}) ${subPage === 'right' ? 'translateX(-50%)' : 'translateX(0)'}`,
+     transform: `scale(${scale})`,
   };
+
+  // 현재 노출할 이미지 추출 (안전 장치 포함)
+  const currentImageSrc = pageImages ? (subPage !== 'full' && pageImages[subPage] ? pageImages[subPage] : pageImages.full) : null;
 
   return (
     <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none">
@@ -564,11 +602,11 @@ const CustomPDFViewer = ({ article, onBack }) => {
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
              {/* Render Wrapper */}
-             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-hidden flex" style={{ width: subPage !== 'full' ? '100%' : 'auto', height: subPage !== 'full' ? 'auto' : '100%', alignItems: 'flex-start' }}>
-                {pageImageSrc ? (
-                    <img src={pageImageSrc} style={imageStyles} alt={`Page ${physicalPage}`} draggable={false} className="pointer-events-none" />
+             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-hidden flex w-full h-full items-center justify-center">
+                {currentImageSrc ? (
+                    <img src={currentImageSrc} style={imageStyles} alt={`Page ${physicalPage}`} draggable={false} className="pointer-events-none" />
                 ) : (
-                    <div className="w-full h-full min-h-[50vh] min-w-[300px] flex items-center justify-center bg-white dark:bg-slate-900">
+                    <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900">
                         <Loader2 className="animate-spin text-emerald-500" size={40} />
                     </div>
                 )}
@@ -758,38 +796,90 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
-  <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition-all h-full relative shadow-sm">
-    <div className={`aspect-[4/3] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border-b border-gray-100 dark:border-slate-700 relative`}>
-       <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/50 opacity-60 z-0"><Rabbit size={32} strokeWidth={1.5}/></div>
-       <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/50 opacity-60 z-0"><Sprout size={32}/></div>
-       <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-5"><Book size={150} className="text-teal-200 dark:text-teal-400" strokeWidth={0.5}/></div>
-       
-       <div className="p-8 text-center w-full h-full flex flex-col justify-center items-center group-hover:scale-105 transition-transform duration-500 z-10 relative">
-          <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm text-teal-600 dark:text-teal-400 text-sm font-black px-5 py-2 rounded-full mb-6 shadow-sm border border-white dark:border-slate-700">Vol.{issue.vol}</div>
-          <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 tracking-tight">{issue.title}</h3>
-       </div>
-    </div>
-  
-    <div className="p-10 flex-1 flex flex-col relative z-10">
-       <div className="flex justify-between items-center mb-6">
-        <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>
-        {isAdmin && (
-           <div className="flex gap-2">
-              <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-sky-600 bg-sky-50 dark:bg-sky-900/30 p-2 rounded-full transition-colors" title="이 호수에 자료 추가"><Plus size={16}/></button>
-              <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-900 p-2 rounded-full transition-colors" title="호수 삭제"><Trash2 size={16}/></button>
-           </div>
-        )}
+// =========================================================================
+// [최종 완성형] 이슈 카드 (2:3 비율 + 7.5 : 2.5 비중 + 자동 표지 추출)
+// =========================================================================
+const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => {
+  const [coverSrc, setCoverSrc] = useState(null);
+  const [isLoadingCover, setIsLoadingCover] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCover = async () => {
+      if (!issue.articles || issue.articles.length === 0) return;
+      const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
+      if (!fileUrl) return;
+
+      try {
+        setIsLoadingCover(true);
+        await loadPdfScript();
+        if (!window.pdfjsLib) return;
+        
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        const loadingTask = window.pdfjsLib.getDocument(fileUrl);
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        
+        const viewport = page.getViewport({ scale: 0.6 }); 
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        
+        if (isMounted) {
+           setCoverSrc(canvas.toDataURL('image/jpeg', 0.85));
+        }
+      } catch (err) {
+        console.error("PDF 표지 추출 실패:", err);
+      } finally {
+        if (isMounted) setIsLoadingCover(false);
+      }
+    };
+    
+    fetchCover();
+    return () => { isMounted = false; };
+  }, [issue]);
+
+  return (
+    <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
+      <div className="h-[75%] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700 shrink-0">
+         {coverSrc ? (
+             <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+         ) : (
+             <>
+               <div className="absolute top-6 right-6 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={56} strokeWidth={1.5}/></div>
+               <div className="absolute bottom-6 left-6 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={56}/></div>
+               <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={150} className="text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
+               {isLoadingCover && <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm z-10"><Loader2 className="animate-spin text-teal-500 mb-2" size={36}/><span className="text-sm font-bold text-teal-700 dark:text-teal-300">표지 로딩중...</span></div>}
+             </>
+         )}
+         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+         <div className="p-6 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-8 md:pb-10">
+            <div className="bg-teal-500 text-white text-base md:text-lg font-black px-5 py-2 rounded-full mb-4 md:mb-5 shadow-lg border border-teal-400">Vol.{issue.vol}</div>
+            <h3 className="text-3xl md:text-4xl font-black text-white leading-tight line-clamp-3 tracking-tight drop-shadow-md">{issue.title}</h3>
+         </div>
       </div>
-      <p className="text-base font-medium text-slate-500 dark:text-slate-400 line-clamp-2 mt-auto leading-relaxed max-w-[90%]">{issue.description || "내용 없음"}</p>
-      
-      <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs font-bold text-slate-400 dark:text-slate-500">
-         <span className="flex items-center gap-1.5"><Eye size={18}/> {issue.views || 0}</span>
-         <span className="flex items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg"><Paperclip size={18} className="text-slate-300 dark:text-slate-600"/> {(issue.articles || []).length}개</span>
+      <div className="h-[25%] px-6 py-5 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
+         <div className="flex justify-between items-center mb-2">
+          <span className="text-sm md:text-base font-black text-slate-400 dark:text-slate-500">{issue.date}</span>
+          {isAdmin && (
+             <div className="flex gap-2">
+                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 추가"><Plus size={18}/></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={18}/></button>
+             </div>
+          )}
+        </div>
+        <p className="text-base md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
+        <div className="mt-auto pt-3 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm md:text-base font-black text-slate-400 dark:text-slate-500">
+           <span className="flex items-center gap-1.5"><Eye size={20}/> {issue.views || 0}</span>
+           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-xl"><Paperclip size={18} className="text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleTheme, isDarkMode, role }) => (
   <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 shadow-sm h-20 flex items-center relative transition-colors">
@@ -1209,76 +1299,4 @@ const MainApp = () => {
                             <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-100/50 dark:border-emerald-800 px-2.5 py-1 rounded-full">#{res.category}</span>
                             <span className="text-[11px] font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/40 border border-sky-100/50 dark:border-sky-800 px-2.5 py-1 rounded-full">#누리과정</span>
                          </div>
-                         <h4 className="font-black text-xl md:text-2xl text-slate-800 dark:text-white mb-5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">{res.name}</h4>
-                         <ul className="flex flex-col gap-3">
-                            <li className="flex items-start gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0 mt-0.5"><MapPin size={16} className="text-slate-400 dark:text-slate-500"/></div>
-                               <span className="leading-snug pt-1">{res.address}</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0"><Phone size={16} className="text-slate-400 dark:text-slate-500"/></div>
-                               <span className="pt-0.5">{res.phone || '연락처 정보 없음'}</span>
-                            </li>
-                         </ul>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-
-                <div className="w-full md:flex-1 relative h-[45%] md:h-full bg-slate-100 dark:bg-slate-950 relative">
-                   <div className="absolute bottom-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float"><Compass size={150} strokeWidth={1}/></div>
-
-                   {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
-                   : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
-                   
-                   <div className={`fixed md:absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                      {selectedResource && (
-                        <div className="p-8 md:p-10 pb-12 relative border-t border-slate-100 dark:border-slate-700">
-                           <button className="absolute top-6 right-6 p-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
-                           <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                           <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight leading-tight pr-12">{selectedResource.name}</h3>
-                           <p className="text-slate-500 dark:text-slate-400 font-bold text-base md:text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500 dark:text-emerald-400"/> {selectedResource.address}</p>
-                           <div className="grid grid-cols-2 gap-4">
-                              <button className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
-                              <button className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl flex justify-center items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><Phone size={24}/> 전화 연결</button>
-                           </div>
-                        </div>
-                      )}
-                   </div>
-                </div>
-             </div>
-          )}
-
-          {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
-          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
-          
-          {view === 'issue_list' && (
-            <div className="pt-16 max-w-7xl mx-auto px-4 animate-in fade-in mb-28">
-              <div className="flex items-center justify-between mb-12 pb-8 border-b border-slate-800 dark:border-slate-700 relative overflow-hidden px-10">
-                <div className="absolute top-4 left-4 text-teal-100 dark:text-teal-900/30 opacity-60 z-0"><Book size={48} className="text-teal-200 dark:text-teal-800"/></div>
-                <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
-                {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue}/>)}
-              </div>
-            </div>
-          )}
-          
-          {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_list')}/>}
-       </main>
-       
-       {view !== 'resource_map' && view !== 'article_view' && (
-         <Footer onSecretAdminUnlock={() => {
-           setRole('admin');
-           if (typeof window !== 'undefined') sessionStorage.setItem('userRole', 'admin');
-         }} />
-       )}
-       
-       <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
-    </div>
-    </>
-  );
-};
-
-export default function App() { return <MainApp />; }
+                         <h
