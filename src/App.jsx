@@ -56,6 +56,7 @@ const useCustomKakaoLoader = () => {
       script.removeEventListener('error', handleError);
     };
   }, []);
+
   return [loading, error];
 };
 
@@ -73,11 +74,10 @@ const KRDSBadge = ({ variant = 'neutral', children, className }) => {
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 사용자가 원하시는 형태(텍스트 링크 말풍선 + 자동 OG 썸네일 말풍선 동시 노출) 반영 완료!
 const SocialShare = () => {
   const [isKakaoReady, setIsKakaoReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  
+
   const rawUrl = window.location.href;
   const currentUrlEncoded = encodeURIComponent(rawUrl);
   
@@ -117,7 +117,6 @@ const SocialShare = () => {
       alert("⚠️ 카카오톡 공유 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
-    // ✅ 동료님이 원하시는 '두 개의 말풍선' 효과를 내기 위해 text 타입에 rawUrl을 직접 꽂아넣습니다.
     window.Kakao.Share.sendDefault({
       objectType: 'text',
       text: `[${shareTitle}]\n${shareDesc}\n\n🔗 ${rawUrl}`,
@@ -128,7 +127,6 @@ const SocialShare = () => {
 
   const shareBand = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
     if (isMobile) {
       if (/Android/i.test(navigator.userAgent)) {
         window.location.href = `intent:bandapp://create/post?text=${combinedTextEncoded}#Intent;package=com.nhn.android.band;end`;
@@ -139,7 +137,7 @@ const SocialShare = () => {
        window.open(`https://band.us/plugin/share?body=${combinedTextEncoded}&route=${currentUrlEncoded}`, '_blank');
     }
   };
-  
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(rawUrl);
@@ -152,7 +150,6 @@ const SocialShare = () => {
   };
   
   const btnClass = "w-14 h-14 rounded-full overflow-hidden shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-700 hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-slate-800 flex items-center justify-center p-1 group relative z-10 shrink-0";
-
   return (
     <div className="flex flex-col items-center relative">
        <div className="flex justify-center gap-4 py-4 relative z-10">
@@ -181,14 +178,11 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 
 const parseNewsData = (rawTitle) => {
   if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
-  
   const parts = rawTitle.split(' - ');
   if (parts.length > 1) {
     const publisher = parts.pop().trim();
     let title = parts.join(' - ').trim();
-    
     title = title.replace(/\s*>\s*뉴스$/, '').replace(/\s*\|$/, '').trim();
-    
     return { title, publisher };
   }
   return { title: rawTitle, publisher: '뉴스' };
@@ -197,8 +191,7 @@ const parseNewsData = (rawTitle) => {
 const incrementViewCount = async (table, id, currentViews) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
-  if (sessionStorage.getItem(sessionKey)) return; 
-
+  if (sessionStorage.getItem(sessionKey)) return;
   try { 
     await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
     sessionStorage.setItem(sessionKey, 'true');
@@ -215,20 +208,12 @@ const useHistoryState = (initialState) => {
   }, []);
 
   const setHistoryState = (newState) => {
-    if (newState !== state) { window.history.pushState({ view: newState }, '', `?view=${newState}`);
-    setState(newState); }
+    if (newState !== state) { 
+      window.history.pushState({ view: newState }, '', `?view=${newState}`);
+      setState(newState); 
+    }
   };
   return [state, setHistoryState];
-};
-
-const useContainerSize = (ref) => {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const updateSize = () => { if (ref.current) setSize({ width: ref.current.clientWidth, height: ref.current.clientHeight }); };
-    window.addEventListener('resize', updateSize); updateSize();
-    return () => window.removeEventListener('resize', updateSize);
-  }, [ref]);
-  return size;
 };
 
 const loadPdfScript = () => {
@@ -291,10 +276,9 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             </h2>
             <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X className="text-slate-500 dark:text-slate-400"/></button>
           </div>
-        
           <div className="p-8">
-            {isUploading ? 
-            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
+            {isUploading ?
+             <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-6">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
@@ -305,7 +289,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
-              
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
                   {type === 'article' && (
                      <div>
@@ -322,7 +305,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         </label>
                      </div>
                   )}
-      
                   <div className="flex gap-4 pt-4 mt-8">
                     <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-lg font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">취소</button>
                     <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-black hover:bg-emerald-600 shadow-md transition-colors">등록 완료</button>
@@ -335,20 +317,32 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   );
 };
 
+// =========================================================================
+// [최적화 완료] 하이브리드 PDF 뷰어 (캐싱 + 스와이프 + 브라우저 제스처 양보)
+// =========================================================================
 const CustomPDFViewer = ({ article, onBack }) => {
-  const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const contentWrapperRef = useRef(null);
-  const size = useContainerSize(containerRef);
+  const renderTaskRef = useRef(null);
+
   const [pdfDoc, setPdfDoc] = useState(null);
-  const [pageNum, setPageNumber] = useState(1);
+  const [physicalPage, setPhysicalPage] = useState(1);
+  const [subPage, setSubPage] = useState('full'); 
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pageImageSrc, setPageImageSrc] = useState(null);
+
+  const pageCache = useRef(new Map());
+  const pageInfoCache = useRef(new Map()); 
+
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const pinchStartDist = useRef(0);
   const pinchStartScale = useRef(1);
   const isPinching = useRef(false);
+  
+  const isSwiping = useRef(false);
+  const swipeOffsetRef = useRef(0); 
 
   useEffect(() => {
     const loadPdf = async () => {
@@ -365,81 +359,231 @@ const CustomPDFViewer = ({ article, onBack }) => {
   }, [article]);
 
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
-    const renderPage = async () => {
+    if (!pdfDoc || !containerRef.current) return;
+    let isMounted = true;
+
+    const adjustSubPage = (pageNum, spreadInfo) => {
+       const isMobile = window.innerWidth < 768;
+       if (spreadInfo && isMobile) {
+          setSubPage(prev => (prev === 'full' ? 'left' : prev));
+       } else {
+          setSubPage('full');
+       }
+    };
+
+    const renderCurrentPage = async () => {
+      if (pageCache.current.has(physicalPage)) {
+        setPageImageSrc(pageCache.current.get(physicalPage));
+        adjustSubPage(physicalPage, pageInfoCache.current.get(physicalPage)?.isSpread);
+        return;
+      }
+
       try {
-        const page = await pdfDoc.getPage(pageNum);
-        const unscaledViewport = page.getViewport({ scale: 1.0 });
-        const containerWidth = containerRef.current.clientWidth;
-        const containerHeight = containerRef.current.clientHeight;
-        let autoScale = (window.innerWidth >= 768) 
-        ? Math.min((containerWidth / unscaledViewport.width), (containerHeight / unscaledViewport.height)) * 0.95 : (containerWidth / unscaledViewport.width) * 0.98;
-        const finalScale = scale * autoScale;
-        const viewport = page.getViewport({ scale: finalScale });
-        const outputScale = window.devicePixelRatio || 1;
-        const canvas = canvasRef.current;
+        const page = await pdfDoc.getPage(physicalPage);
+        const vp = page.getViewport({ scale: 1.0 });
+        const isSpread = vp.width > vp.height * 1.2; 
+        pageInfoCache.current.set(physicalPage, { isSpread });
+
+        if (isMounted) adjustSubPage(physicalPage, isSpread);
+
+        const outputScale = window.devicePixelRatio || 2;
+        const viewport = page.getViewport({ scale: 2.0 }); 
+        const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = Math.floor(viewport.width * outputScale);
         canvas.height = Math.floor(viewport.height * outputScale);
-        canvas.style.width = Math.floor(viewport.width) + "px";
-        canvas.style.height = Math.floor(viewport.height) + "px";
         const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-        await page.render({ canvasContext: ctx, viewport, transform }).promise;
-      } catch (err) { console.error(err); }
+
+        if (renderTaskRef.current) renderTaskRef.current.cancel();
+        renderTaskRef.current = page.render({ canvasContext: ctx, viewport, transform });
+        await renderTaskRef.current.promise;
+
+        if (isMounted) {
+           const dataUrl = canvas.toDataURL('image/jpeg', 0.85); 
+           pageCache.current.set(physicalPage, dataUrl);
+           setPageImageSrc(dataUrl);
+
+           if (physicalPage < pdfDoc.numPages && !pageCache.current.has(physicalPage + 1)) {
+              setTimeout(async () => {
+                 try {
+                   const np = await pdfDoc.getPage(physicalPage + 1);
+                   const nvp = np.getViewport({ scale: 2.0 });
+                   const nc = document.createElement('canvas');
+                   nc.width = Math.floor(nvp.width * outputScale);
+                   nc.height = Math.floor(nvp.height * outputScale);
+                   await np.render({ canvasContext: nc.getContext('2d'), viewport: nvp, transform }).promise;
+                   pageCache.current.set(physicalPage + 1, nc.toDataURL('image/jpeg', 0.85));
+                 } catch(e){}
+              }, 500);
+           }
+        }
+      } catch (err) {
+        if (err.name !== 'RenderingCancelledException') console.error(err);
+      }
     };
-    renderPage();
-  }, [pdfDoc, pageNum, scale, size]);
+
+    setPageImageSrc(null); 
+    renderCurrentPage();
+
+    return () => { isMounted = false; };
+  }, [pdfDoc, physicalPage]);
+
+  const handleNext = () => {
+     const info = pageInfoCache.current.get(physicalPage);
+     const isMobile = window.innerWidth < 768;
+     if (info?.isSpread && isMobile && subPage === 'left') {
+         setSubPage('right');
+     } else if (physicalPage < pdfDoc?.numPages) {
+         setPhysicalPage(p => p + 1);
+         setSubPage('full');
+     }
+  };
+
+  const handlePrev = () => {
+     const info = pageInfoCache.current.get(physicalPage);
+     const isMobile = window.innerWidth < 768;
+     if (info?.isSpread && isMobile && subPage === 'right') {
+         setSubPage('left');
+     } else if (physicalPage > 1) {
+         const prevInfo = pageInfoCache.current.get(physicalPage - 1);
+         if (prevInfo?.isSpread && isMobile) setSubPage('right'); 
+         else setSubPage('full');
+         setPhysicalPage(p => p - 1);
+     }
+  };
 
   const getTouchDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-
+  
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) { isPinching.current = true; pinchStartDist.current = getTouchDistance(e.touches); pinchStartScale.current = scale; } 
-    else { isPinching.current = false; touchStartX.current = e.changedTouches[0].screenX; }
-  };
+    if (e.touches.length === 2) { 
+        isPinching.current = true; 
+        isSwiping.current = false;
+        pinchStartDist.current = getTouchDistance(e.touches); 
+        pinchStartScale.current = scale; 
+    } else { 
+        const touchX = e.touches[0].clientX;
+        const edgeThreshold = 40; 
+        if (touchX < edgeThreshold || touchX > window.innerWidth - edgeThreshold) {
+            isPinching.current = false;
+            isSwiping.current = false;
+            return;
+        }
 
-  const handleTouchMove = (e) => {
-    if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) { e.preventDefault(); const dist = getTouchDistance(e.touches); contentWrapperRef.current.style.transform = `scale(${dist / pinchStartDist.current})`; }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (isPinching.current) { if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none'; isPinching.current = false; } 
-    else {
-        touchEndX.current = e.changedTouches[0].screenX;
-        const diff = touchStartX.current - touchEndX.current;
-        if (Math.abs(diff) > 50) { if (diff > 0) setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p + 1)); else setPageNumber(p => Math.max(1, p - 1)); }
+        isPinching.current = false; 
+        isSwiping.current = true;
+        touchStartX.current = e.touches[0].screenX; 
+        if (contentWrapperRef.current) {
+           contentWrapperRef.current.style.transition = 'none'; 
+        }
     }
+  };
+  
+  const handleTouchMove = (e) => {
+    if (isPinching.current && e.touches.length === 2 && contentWrapperRef.current) { 
+        e.preventDefault();
+        const dist = getTouchDistance(e.touches); 
+        contentWrapperRef.current.style.transform = `scale(${dist / pinchStartDist.current})`; 
+    } else if (isSwiping.current && scale === 1.0 && contentWrapperRef.current) { 
+        const currentX = e.touches[0].screenX;
+        const diffX = currentX - touchStartX.current;
+        
+        // 수평 스와이프 중 수직 스크롤로 인한 방해 차단
+        if (Math.abs(diffX) > 10 && e.cancelable) {
+            e.preventDefault();
+        }
+
+        swipeOffsetRef.current = diffX * 0.8; 
+        contentWrapperRef.current.style.transform = `translateX(${swipeOffsetRef.current}px)`;
+    }
+  };
+  
+  const handleTouchEnd = (e) => {
+    if (isPinching.current) { 
+        if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none'; 
+        isPinching.current = false;
+    } else if (isSwiping.current) {
+        isSwiping.current = false;
+        const diff = swipeOffsetRef.current;
+        swipeOffsetRef.current = 0; 
+        
+        if (contentWrapperRef.current) {
+           contentWrapperRef.current.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+           contentWrapperRef.current.style.transform = 'translateX(0px)';
+        }
+
+        if (diff < -80) { handleNext(); } 
+        else if (diff > 80) { handlePrev(); }
+    }
+  };
+
+  const imageStyles = {
+     transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+     transformOrigin: subPage === 'full' ? 'center center' : 'top left',
+     width: subPage !== 'full' ? '200%' : 'auto',
+     maxWidth: subPage !== 'full' ? '200%' : '100%',
+     maxHeight: subPage !== 'full' ? 'none' : '100%',
+     objectFit: 'contain',
+     transform: `scale(${scale}) ${subPage === 'right' ? 'translateX(-50%)' : 'translateX(0)'}`,
   };
 
   return (
     <div className="fixed inset-0 bg-slate-100 dark:bg-slate-950 z-[150] flex flex-col h-screen w-screen text-left animate-in slide-in-from-right outline-none">
-       <div className="h-16 bg-white dark:bg-slate-900 flex items-center justify-between px-4 shadow-sm z-50 border-b border-gray-100 dark:border-slate-800">
-          <div className="flex items-center gap-2"><button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><ArrowLeft className="text-slate-700 dark:text-slate-300"/></button><h2 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2></div>
+       {/* Header */}
+       <div className="h-16 bg-white dark:bg-slate-900 flex items-center justify-between px-4 shadow-sm z-50 border-b border-gray-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><ArrowLeft className="text-slate-700 dark:text-slate-300"/></button>
+            <h2 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
+          </div>
           <div className="flex items-center gap-1">
-             <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-full mr-2 px-2"><button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomOut size={18}/></button><span className="text-sm w-12 text-center font-bold text-slate-800 dark:text-white">{Math.round(scale * 100)}%</span><button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomIn size={18}/></button></div>
+             <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-full mr-2 px-2">
+                 <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomOut size={18}/></button>
+                 <span className="text-sm w-12 text-center font-bold text-slate-800 dark:text-white">{Math.round(scale * 100)}%</span>
+                 <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomIn size={18}/></button>
+             </div>
              <button onClick={() => window.open(article.fileUrl || article.file_url, '_blank')} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}><ListIcon size={24}/></button>
           </div>
        </div>
+
+       {/* Main Area */}
        <div className="flex-1 overflow-hidden flex relative">
+          {/* Sidebar */}
           <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-900 shadow-lg border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
              <div className="p-5 font-black border-b border-slate-100 dark:border-slate-800 text-lg dark:text-white">목차 ({pdfDoc?.numPages}p)</div>
              <div className="overflow-y-auto h-full p-3 space-y-1 pb-20">
                 {pdfDoc && Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1).map((num) => (
-                   <button key={num} onClick={() => { setPageNumber(num); if(window.innerWidth<768) setIsSidebarOpen(false); }} className={`w-full text-left p-3 rounded-xl text-base font-bold transition-colors ${pageNum === num ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>Page {num}</button>
+                   <button key={num} onClick={() => { setPhysicalPage(num); setSubPage('full'); if(window.innerWidth<768) setIsSidebarOpen(false); }} className={`w-full text-left p-3 rounded-xl text-base font-bold transition-colors ${physicalPage === num ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                       Page {num}
+                   </button>
                 ))}
              </div>
           </div>
-          <div className="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950 flex justify-center items-center p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+
+          {/* Viewer Area */}
+          <div className="flex-1 overflow-hidden bg-slate-200 dark:bg-slate-950 flex justify-center items-center p-0 md:p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
-             <div className="absolute left-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.max(1, p-1));}} />
-             <div className="absolute right-0 top-0 bottom-0 w-[15%] z-20 md:hidden cursor-pointer" onClick={(e) => {e.stopPropagation(); setPageNumber(p => Math.min(pdfDoc?.numPages||1, p+1));}} />
-             <div ref={contentWrapperRef} className="shadow-2xl transition-transform duration-75 origin-center"><canvas ref={canvasRef} className="bg-white block rounded-md mx-auto"/></div>
+             
+             {/* Render Wrapper */}
+             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-hidden flex" style={{ width: subPage !== 'full' ? '100%' : 'auto', height: subPage !== 'full' ? 'auto' : '100%', alignItems: 'flex-start' }}>
+                {pageImageSrc ? (
+                    <img src={pageImageSrc} style={imageStyles} alt={`Page ${physicalPage}`} draggable={false} className="pointer-events-none" />
+                ) : (
+                    <div className="w-full h-full min-h-[50vh] min-w-[300px] flex items-center justify-center bg-white dark:bg-slate-900">
+                        <Loader2 className="animate-spin text-emerald-500" size={40} />
+                    </div>
+                )}
+             </div>
           </div>
        </div>
+
+       {/* Floating Navigation Footer */}
        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-800/90 backdrop-blur px-6 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] flex items-center gap-8 z-50 border border-white/50 dark:border-slate-700">
-          <button onClick={() => setPageNumber(p => Math.max(1, p-1))} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronLeft size={24}/></button>
-          <span className="font-mono font-black text-lg text-slate-800 dark:text-white">{pageNum} <span className="text-slate-400 dark:text-slate-500">/ {pdfDoc?.numPages || '-'}</span></span>
-          <button onClick={() => setPageNumber(p => Math.min(pdfDoc?.numPages || 1, p+1))} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronRight size={24}/></button>
+          <button onClick={handlePrev} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronLeft size={24}/></button>
+          <span className="font-mono font-black text-lg text-slate-800 dark:text-white">
+             {physicalPage} <span className="text-sm text-slate-400 font-medium">{subPage === 'left' ? '(좌)' : subPage === 'right' ? '(우)' : ''}</span>
+             <span className="text-slate-400 dark:text-slate-500 ml-1">/ {pdfDoc?.numPages || '-'}</span>
+          </span>
+          <button onClick={handleNext} className="text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"><ChevronRight size={24}/></button>
        </div>
     </div>
   );
@@ -487,7 +631,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
       <div className="flex flex-col gap-4">
          {news.map((item, idx) => {
             const { title: cleanTitle, publisher } = parseNewsData(item.title);
-            
             return (
               <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
                  <div className="flex-1">
@@ -500,7 +643,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
                  </div>
                  <div className="flex items-center justify-end gap-2">
                      {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
-                    
                      {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
                  </div>
               </div>
@@ -512,7 +654,7 @@ const NewsFeed = ({ limit, isAdmin }) => {
 };
 
 const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
-  const [filter, setFilter] = useState('all'); 
+  const [filter, setFilter] = useState('all');
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
 
@@ -602,13 +744,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
               </div>
               <div className="px-8 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-sm">
                  <div className="flex items-center gap-4 font-bold text-slate-400 dark:text-slate-500">
-                    <span className="flex items-center gap-1.5"><User size={16}/> 관리자</span>
+                     <span className="flex items-center gap-1.5"><User size={16}/> 관리자</span>
                      <span className="flex items-center gap-1.5"><Eye size={16}/> 조회수 {selectedNotice.views || 0}</span>
                  </div>
                  {userRole === 'admin' && (
                     <button onClick={() => handleDelete(selectedNotice.id)} className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-black flex items-center gap-1 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm"><Trash2 size={16}/> 삭제</button>
                  )}
-               </div>
+              </div>
            </div>
         </div>
       )}
@@ -630,7 +772,7 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle }) => (
     </div>
   
     <div className="p-10 flex-1 flex flex-col relative z-10">
-      <div className="flex justify-between items-center mb-6">
+       <div className="flex justify-between items-center mb-6">
         <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{issue.date}</span>
         {isAdmin && (
            <div className="flex gap-2">
@@ -680,15 +822,14 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
 );
 
 const MainApp = () => {
-  const [role, setRole] = useState(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest'); 
+  const [role, setRole] = useState(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
   const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState([]);
   const [currentIssue, setCurrentIssue] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
-  
   const [recentNotices, setRecentNotices] = useState([]);
   const [recentNews, setRecentNews] = useState([]);
-  const [activeHomeTab, setActiveHomeTab] = useState('notice'); // 'notice' | 'news'
+  const [activeHomeTab, setActiveHomeTab] = useState('notice'); 
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
@@ -700,7 +841,6 @@ const MainApp = () => {
   const [selectedRegion, setSelectedRegion] = useState('전체');
   const [selectedType, setSelectedType] = useState('전체');
   const [selectedResource, setSelectedResource] = useState(null);
-  
   const [recentTags, setRecentTags] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('recentTags');
@@ -708,12 +848,11 @@ const MainApp = () => {
     }
     return ['전주시', '익산시', '군산시', '정읍시', '남원시'];
   });
-  
+
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef(null);
 
   const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
-
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
@@ -821,9 +960,17 @@ const MainApp = () => {
     try {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
-       else if (data.type === 'article' && currentIssue) { let fileUrl = ''; if (data.file) { const fn = `${Date.now()}.pdf`;
-       await supabase.storage.from('files').upload(fn, data.file); fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; } const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
-       await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); setCurrentIssue({...currentIssue, articles: updated}); }
+       else if (data.type === 'article' && currentIssue) { 
+           let fileUrl = ''; 
+           if (data.file) { 
+               const fn = `${Date.now()}.pdf`;
+               await supabase.storage.from('files').upload(fn, data.file); 
+               fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; 
+           } 
+           const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
+           await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); 
+           setCurrentIssue({...currentIssue, articles: updated}); 
+       }
        alert("등록 완료되었습니다!"); setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
@@ -832,11 +979,10 @@ const MainApp = () => {
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
   
   const handleIssueClick = (issue) => { 
-    incrementViewCount('issues', issue.id, issue.views); 
+    incrementViewCount('issues', issue.id, issue.views);
     const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
     setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
-    setCurrentIssue(updatedIssue); 
-    
+    setCurrentIssue(updatedIssue);
     if (updatedIssue.articles && updatedIssue.articles.length > 0) {
       setCurrentArticle(updatedIssue.articles[0]);
       setView('article_view');
@@ -969,7 +1115,7 @@ const MainApp = () => {
 
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                   
+                    
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-10 px-12 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[480px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
@@ -988,7 +1134,7 @@ const MainApp = () => {
                                  <span className={`text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
                                  <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
                                  <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
-                              </div>
+                               </div>
                            </div>
                         ))}
                         {activeHomeTab === 'news' && recentNews.map(n => {
@@ -1052,6 +1198,7 @@ const MainApp = () => {
                         <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-[1.5rem] text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
                       </div>
                    </div>
+            
                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
                       <div className="font-black text-slate-700 dark:text-slate-300 px-4">총 <span className="text-emerald-600 dark:text-emerald-400 text-xl">{filteredResources.length}</span>건</div>
                    </div>
