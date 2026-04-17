@@ -348,7 +348,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         if (!window.pdfjsLib) return;
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        // 🚀 PDF 로딩 속도 최적화: cMapPacked 및 AutoFetch 방지
+        // PDF 로딩 속도 최적화: cMapPacked 및 AutoFetch 방지
         const doc = await window.pdfjsLib.getDocument({
            url: article.fileUrl || article.file_url,
            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
@@ -408,7 +408,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
            const fullDataUrl = canvas.toDataURL('image/jpeg', 0.85); 
            const cacheObj = { full: fullDataUrl };
 
-           // 🚀 가상 캔버스 물리적 분할
+           // 가상 캔버스 물리적 분할
            if (isSpread) {
               const halfWidth = canvas.width / 2;
               const fullHeight = canvas.height;
@@ -796,7 +796,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// 🚀 스마트 크롭 + 제목 수정 로직 적용 IssueCard
+// ✅ Flexbox 구조로 완벽히 수정된 이슈 카드
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
   const [coverSrc, setCoverSrc] = useState(null);
   const [isLoadingCover, setIsLoadingCover] = useState(false);
@@ -861,7 +861,9 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
 
   return (
     <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
-      <div className="h-[75%] w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700 shrink-0">
+      
+      {/* 🚀 상단 썸네일 영역: flex-1 적용하여 남는 공간 자동 채움 */}
+      <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700">
          {coverSrc ? (
              <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
          ) : (
@@ -873,26 +875,29 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
              </>
          )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
-         <div className="p-6 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-8 md:pb-10 overflow-hidden">
-            <div className="bg-teal-500 text-white text-base md:text-lg font-black px-5 py-2 rounded-full mb-4 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
-            <h3 className="text-2xl md:text-3xl font-black text-white leading-snug line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-2">{issue.title}</h3>
+         
+         <div className="p-4 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-6 md:pb-10 overflow-hidden">
+            <div className="bg-teal-500 text-white text-sm md:text-lg font-black px-4 py-1.5 md:px-5 md:py-2 rounded-full mb-3 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
+            <h3 className="text-xl md:text-3xl font-black text-white leading-snug line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-2">{issue.title}</h3>
          </div>
       </div>
-      <div className="h-[25%] px-6 py-5 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
-         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
+
+      {/* 🚀 하단 텍스트 영역: shrink-0을 적용하여 내부 콘텐츠 높이만큼만 정확히 차지하게 설정 */}
+      <div className="shrink-0 px-5 py-4 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
+         <div className="flex justify-between items-center mb-1.5 md:mb-2">
+          <span className="text-xs md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
           {isAdmin && (
              <div className="flex gap-1.5 shrink-0">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={16}/></button>
-                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={16}/></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-2 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={16}/></button>
+                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={14} className="md:w-4 md:h-4"/></button>
+                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={14} className="md:w-4 md:h-4"/></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
              </div>
           )}
         </div>
-        <p className="text-base md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
-        <div className="mt-auto pt-3 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm md:text-base font-black text-slate-400 dark:text-slate-500">
-           <span className="flex items-center gap-1.5"><Eye size={20}/> {issue.views || 0}</span>
-           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-xl"><Paperclip size={18} className="text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
+        <p className="text-xs md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
+        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs md:text-base font-black text-slate-400 dark:text-slate-500">
+           <span className="flex items-center gap-1 md:gap-1.5"><Eye size={16} className="md:w-5 md:h-5"/> {issue.views || 0}</span>
+           <span className="flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg md:rounded-xl"><Paperclip size={14} className="md:w-[18px] md:h-[18px] text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
         </div>
       </div>
     </div>
@@ -938,7 +943,6 @@ const MainApp = () => {
   const [recentNotices, setRecentNotices] = useState([]);
   const [recentNews, setRecentNews] = useState([]);
   
-  // 🚀 요청사항 반영: 홈 탭 디폴트 '최근 뉴스'로 변경
   const [activeHomeTab, setActiveHomeTab] = useState('news'); 
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -1238,7 +1242,6 @@ const MainApp = () => {
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     
-                   {/* 🚀 높이 축소 (min-h-[380px]) 및 내부 패딩 조절 */}
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
@@ -1274,7 +1277,6 @@ const MainApp = () => {
                       </div>
                    </div>
 
-                   {/* 🚀 우측 영역도 높이 대칭 (min-h-[380px]) 및 내부 패딩 맞춤 조절 */}
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
                       <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
                       <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
