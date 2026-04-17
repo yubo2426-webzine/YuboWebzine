@@ -40,7 +40,7 @@ const useCustomKakaoLoader = () => {
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
     }
@@ -101,7 +101,7 @@ const SocialShare = () => {
       script.async = true;
       script.onload = () => {
         if (window.Kakao && !window.Kakao.isInitialized()) {
-          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
+          const appKey = 'ee00ac93b075fc1e56de1a0dc90ccaf3';
           window.Kakao.init(appKey);
           setIsKakaoReady(true);
         }
@@ -172,8 +172,8 @@ const SocialShare = () => {
   );
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = '';
+const supabaseKey = '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const parseNewsData = (rawTitle) => {
@@ -634,17 +634,55 @@ const CustomPDFViewer = ({ article, onBack }) => {
 const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState(''); // 검색어 상태 추가
-  
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const itemsPerPage = limit || 20;
+
+  // 검색어 입력 시 API 과호출을 막기 위한 디바운스(Debounce) 처리
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (debouncedKeyword !== searchKeyword) {
+        setDebouncedKeyword(searchKeyword);
+        setCurrentPage(1); // 검색어가 변경되면 무조건 1페이지로 리셋
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchKeyword, debouncedKeyword]);
+
   const fetchNews = async () => {
     if(!supabase) return;
     setLoading(true);
-    const { data } = await supabase.from('news').select('*').order('pub_date', { ascending: false }).limit(limit || 50);
-    if(data) setNews(data);
-    setLoading(false);
+    try {
+      // count: 'exact' 옵션으로 전체 뉴스 개수 파악 (페이지네이션 용도)
+      let query = supabase.from('news').select('*', { count: 'exact' });
+      
+      // 검색어가 있을 경우 서버 사이드 ilike 필터링 적용
+      if (debouncedKeyword.trim()) {
+        query = query.ilike('title', `%${debouncedKeyword}%`);
+      }
+      
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
+      const { data, count, error } = await query
+        .order('pub_date', { ascending: false })
+        .range(from, to);
+        
+      if (data) {
+        setNews(data);
+        setTotalCount(count || 0);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchNews(); }, [limit]);
+  useEffect(() => { fetchNews(); }, [currentPage, debouncedKeyword, limit]);
 
   const handleNewsClick = (item) => {
       incrementViewCount('news', item.id, item.views);
@@ -655,17 +693,18 @@ const NewsFeed = ({ limit, isAdmin }) => {
   const handleDelete = async (id) => {
     if(confirm('이 뉴스를 삭제하시겠습니까?')) {
         await supabase.from('news').delete().eq('id', id);
-        setNews(prev => prev.filter(n => n.id !== id));
+        fetchNews(); // 삭제 후 현재 페이지 목록 갱신을 위해 재호출
     }
   };
 
-  // 실시간 검색어 기반 필터링 (제목 및 파싱된 언론사 모두 검색 지원)
-  const filteredNews = news.filter(item => {
-    if (!searchKeyword.trim()) return true;
-    const { title, publisher } = parseNewsData(item.title);
-    const keyword = searchKeyword.toLowerCase();
-    return title.toLowerCase().includes(keyword) || publisher.toLowerCase().includes(keyword);
-  });
+  // 동적 페이지네이션 블록 계산 (현재 페이지 주변 5개 버튼 노출)
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  if (endPage - startPage < 4) {
+     startPage = Math.max(1, endPage - 4);
+  }
+  const pageNumbers = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i);
 
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
@@ -687,18 +726,25 @@ const NewsFeed = ({ limit, isAdmin }) => {
                   className="w-full pl-9 pr-4 h-10 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-full text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-inner"
                 />
              </div>
-             <button onClick={fetchNews} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 h-10 px-4 rounded-full shadow-sm transition-colors disabled:opacity-50 shrink-0">
+             <button onClick={() => { setCurrentPage(1); fetchNews(); }} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 h-10 px-4 rounded-full shadow-sm transition-colors disabled:opacity-50 shrink-0">
                <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> <span className="hidden sm:inline">새로고침</span>
              </button>
            </div>
         </div>
       )}
-      <div className="flex flex-col gap-4">
-         {filteredNews.length > 0 ? (
-           filteredNews.map((item, idx) => {
+
+      <div className="flex flex-col gap-4 relative min-h-[400px]">
+         {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] rounded-[2rem]">
+               <Loader2 className="animate-spin text-rose-500" size={40} />
+            </div>
+         )}
+
+         {news.length > 0 ? (
+           news.map((item, idx) => {
               const { title: cleanTitle, publisher } = parseNewsData(item.title);
               return (
-                <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
+                <div key={item.id || idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
                    <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                          <KRDSBadge variant="primary">{publisher}</KRDSBadge>
@@ -715,11 +761,30 @@ const NewsFeed = ({ limit, isAdmin }) => {
               );
            })
          ) : (
-           <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">
-             검색어 '{searchKeyword}'에 대한 뉴스가 없습니다.
-           </div>
+           !loading && (
+             <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+               검색어 '{searchKeyword}'에 대한 뉴스가 없습니다.
+             </div>
+           )
          )}
       </div>
+
+      {/* Pagination UI */}
+      {!limit && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-10 mb-4">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-800 disabled:opacity-40 transition-all shadow-sm">
+                <ChevronLeft size={20}/>
+            </button>
+            {pageNumbers.map(p => (
+                <button key={p} onClick={() => setCurrentPage(p)} className={`w-11 h-11 rounded-2xl font-black text-base transition-all shadow-sm ${currentPage === p ? 'bg-rose-500 text-white border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500'}`}>
+                    {p}
+                </button>
+            ))}
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-800 disabled:opacity-40 transition-all shadow-sm">
+                <ChevronRight size={20}/>
+            </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -728,15 +793,51 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   const [filter, setFilter] = useState('all');
   const [notices, setNotices] = useState([]);
   const [selectedNotice, setSelectedNotice] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const itemsPerPage = 10;
+
+  const fetchNotices = async () => {
+    if (!supabase) return;
+    setLoading(true);
+    try {
+      let query = supabase.from('notices').select('*', { count: 'exact' });
+      
+      if (filter === 'notice') query = query.neq('category', 'event');
+      if (filter === 'event') query = query.eq('category', 'event');
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      const { data, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (data) {
+        setNotices(data);
+        setTotalCount(count || 0);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const f = async () => { if(supabase) { const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false }); if(data) setNotices(data); }}; f();
-  }, []);
+    setCurrentPage(1);
+  }, [filter]);
+
+  useEffect(() => {
+    fetchNotices();
+  }, [currentPage, filter]);
 
   const handleDelete = async (id) => {
     if(confirm('삭제하시겠습니까?')) {
         await supabase.from('notices').delete().eq('id', id);
-        setNotices(prev => prev.filter(n => n.id !== id));
+        fetchNotices();
         setSelectedNotice(null);
     }
   };
@@ -748,12 +849,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
       setSelectedNotice(updated);
   };
 
-  const filteredNotices = notices.filter(n => {
-      if(filter === 'all') return true;
-      if(filter === 'notice') return n.category !== 'event';
-      if(filter === 'event') return n.category === 'event';
-      return true;
-  });
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  if (endPage - startPage < 4) {
+     startPage = Math.max(1, endPage - 4);
+  }
+  const pageNumbers = Array.from({ length: Math.max(0, endPage - startPage + 1) }, (_, i) => startPage + i);
 
   return (
     <div className={`w-full ${initialMode ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
@@ -771,8 +873,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
         </div>
       )}
       
-      <div className="grid gap-4">
-         {filteredNotices.map(n => (
+      <div className="flex flex-col gap-4 relative min-h-[300px]">
+         {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] rounded-[2rem]">
+               <Loader2 className="animate-spin text-amber-500" size={40} />
+            </div>
+         )}
+         {notices.map(n => (
             <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-500/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
                <div className="flex-1">
                  <div className="flex items-center gap-3 mb-3">
@@ -788,8 +895,24 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
                </div>
             </div>
          ))}
-         {filteredNotices.length === 0 && <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">등록된 소식이 없습니다.</div>}
+         {!loading && notices.length === 0 && <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">등록된 소식이 없습니다.</div>}
       </div>
+
+      {!initialMode && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-10 mb-4">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-amber-500 hover:border-amber-200 dark:hover:border-amber-800 disabled:opacity-40 transition-all shadow-sm">
+                <ChevronLeft size={20}/>
+            </button>
+            {pageNumbers.map(p => (
+                <button key={p} onClick={() => setCurrentPage(p)} className={`w-11 h-11 rounded-2xl font-black text-base transition-all shadow-sm ${currentPage === p ? 'bg-amber-500 text-white border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-500'}`}>
+                    {p}
+                </button>
+            ))}
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-amber-500 hover:border-amber-200 dark:hover:border-amber-800 disabled:opacity-40 transition-all shadow-sm">
+                <ChevronRight size={20}/>
+            </button>
+        </div>
+      )}
 
       {selectedNotice && (
         <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedNotice(null)}>
