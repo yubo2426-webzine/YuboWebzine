@@ -1,100 +1,70 @@
-🌟 함께누리웹진 (유보통합 웹진)
+# 🌟 함께누리웹진 (유보통합 웹진)
 
-본 프로젝트는 유보통합 정책에 발맞춰, 지역 내 유보통합 자원(체험처) 지도와 최신 교육 뉴스, 월간 웹진 자료를 제공하는 모바일 우선(Mobile-First) 반응형 웹 플랫폼입니다.
+본 프로젝트는 유보통합 정책에 발맞춰, 지역 내 유보통합 자원(체험처) 지도와 최신 교육 뉴스, 월간 웹진 자료를 제공하는 **모바일 우선(Mobile-First) 반응형 웹 플랫폼**입니다.
 
 사용자의 탐색 피로도를 낮추고, 유아 친화적인 디자인과 부드러운 다크모드를 통해 쾌적한 정보 탐색 환경을 제공합니다.
 
-🚀 기술 스택 (Tech Stack)
+## 🚀 기술 스택 (Tech Stack)
+* **Frontend:** React 19, Vite, Tailwind CSS, Lucide React Icons
+* **Backend/DB:** Supabase (Database, Storage)
+* **API:** Kakao Maps API (Geolocation, Custom Markers), Kakao Share JS SDK
+* **Deployment:** Vercel (CI/CD)
+* **Features:** 하이브리드 PDF 뷰어(pdf.js), 실시간 조회수 트래킹, 네이티브 앱 딥링크(App Intent) 공유, 실시간 뉴스 검색
 
-Frontend: React 19, Vite, Tailwind CSS, Lucide React Icons
+---
 
-Backend/DB: Supabase (Database, Storage)
+## 🔐 관리자 모드 접속 안내 (Hidden Admin Mode)
+개인정보 보호(로그인/회원가입 정보 수집 원천 차단)를 위해 **히든 패스코드** 방식을 사용합니다.
+1. 화면 맨 하단(Footer)의 카피라이트 텍스트(`© 2026 함께누리웹진. All rights reserved.`)를 **빠르게 5번 클릭**합니다.
+2. 프롬프트 창에 관리자 암호(`admin1234` 또는 설정된 환경변수)를 입력합니다.
+3. 상단 메뉴에 `[관리자 모드]` 뱃지가 활성화되며 편집/삭제/자료 추가 버튼이 나타납니다.
 
-API: Kakao Maps API (Geolocation, Custom Markers), Kakao Share JS SDK
+---
 
-Deployment: Vercel (CI/CD)
+## 📜 프로젝트 진행 로그 (Change Log)
 
-Features: 하이브리드 PDF 뷰어(pdf.js), 실시간 조회수 트래킹, 네이티브 앱 딥링크(App Intent) 공유, 실시간 뉴스 검색
+### 🎉 [ v1.4.0 ] News Search & Build Stabilization (Current)
+**뉴스 실시간 검색 기능 도입 및 빌드/배포 안정화**
+* **뉴스 실시간 필터링(Real-time Search):** 뉴스 피드 상단에 검색 포털 형태의 UI를 추가하여, 기사 제목 및 파싱된 언론사 이름을 기준으로 즉각적인 인메모리 필터링이 가능하도록 구현.
+* **모바일 우선 검색 UI/UX:** 모바일 뷰포트에서 공간 제약을 극대화하기 위해 `flex-col md:flex-row` 구조를 도입하고, '새로고침' 버튼의 텍스트 축소 및 Soft UI(내부 그림자, Rose 컬러 링)를 완벽하게 동기화.
+* **컴파일 오류 원천 차단 (Asset Inlining):** 특정 빌드 환경(`es2015` 타겟 등)에서 발생하는 `import.meta.env` 참조 에러를 해결하고, 누락된 로컬 SVG 에셋(카카오톡, 네이버 밴드 아이콘)을 Data URI 포맷으로 코드 내부에 직접 임베딩하여 빌드 안정성 100% 확보.
 
-🔐 관리자 모드 접속 안내 (Hidden Admin Mode)
+### 🎉 [ v1.3.0 ] PDF Viewer Engine Overhaul & UI/UX Refinement
+**PDF 렌더링 엔진 전면 교체 및 자료실 UI/UX 고도화**
+* **초고속 오프스크린 PDF 렌더링:** `pdf.js` 렌더링 방식을 가상 캔버스(Offscreen Canvas) 캐싱 방식으로 변경. 한 번 읽은 페이지는 Data URI 형태로 메모리에 저장되어 뒤로 가기 시 즉시 로드.
+* **네이티브 스와이프(Swipe) 물리 엔진 적용:** React State가 아닌 `useRef`와 직접 DOM 조작을 통한 60fps 스와이프 애니메이션 및 모바일 제스처 제어 최적화.
+* **스마트 표지 추출 및 자동 크롭(Smart Crop):** 첨부된 PDF의 1페이지를 백그라운드에서 렌더링하여 자료실 썸네일로 사용. 스프레드(두쪽보기) 문서일 경우 우측 표지만 지능적으로 잘라내는 기능 탑재.
+* **자료실 카드(IssueCard) Flexbox 리팩토링:** 책 표지에 최적화된 2:3 비율 도입 및 하단 텍스트 잘림을 방지하는 Flexbox 아키텍처 재설계.
+* **관리자 편의 기능 추가:** 자료실 카드에서 즉시 제목을 수정(DB 연동)할 수 있는 편집 퀵 버튼 신설.
 
-개인정보 보호(로그인/회원가입 정보 수집 원천 차단)를 위해 히든 패스코드 방식을 사용합니다.
+### 🎉 [ v1.2.0 ] SNS Share Optimization & App Deep Linking
+**SNS 공유 기능 렌더링 최적화 및 네이티브 앱 연동**
+* **카카오톡 공유 최적화:** 카카오 JS SDK 템플릿 튜닝을 통해 자체 OG 크롤러가 사이트 썸네일을 카드로 생성하도록 유도.
+* **네이버 밴드 딥링크(App Intent) 연동:** 모바일 기기에서 웹 브라우저를 거치지 않고 네이버 밴드 앱(`bandapp://`)이 직접 실행되도록 분기 처리.
+* **토스트(Toast) 알림 UI:** Clipboard API 링크 복사 시 Soft UI 기반의 플로팅 토스트 메시지 애니메이션 적용.
 
-화면 맨 하단(Footer)의 카피라이트 텍스트(© 2026 함께누리웹진. All rights reserved.)를 빠르게 5번 클릭합니다.
+### 🎉 [ v1.1.0 ] Naming & UI Refinements
+**공식 브랜딩 적용 및 마이너 UX 개선**
+* **공식 명칭 확정:** 서비스명을 **'함께누리웹진'**으로 최종 확정 및 메타데이터 일괄 적용.
+* **최근 검색어 해시태그 (UX):** 로컬스토리지(`localStorage`)를 활용하여 사용자의 최근 지역 검색 기록 5개를 홈 화면에 태그 형태로 노출.
 
-프롬프트 창에 관리자 암호(admin1234 또는 설정된 환경변수)를 입력합니다.
+### 🎉 [ v1.0.0 ] Official Release
+**지식 플랫폼 정식 출시 및 아키텍처 안정화**
+* **뉴스 데이터 파싱 (Parser):** 구글 뉴스 RSS의 제목 구조(`기사 제목 - 언론사`)를 정규식으로 파싱하여 언론사명을 전용 뱃지로 노출.
+* **API 크레딧 최적화:** SessionStorage를 활용해 단일 세션 내 중복 조회수 업데이트(DB Write)를 차단.
 
-상단 메뉴에 [관리자 모드] 뱃지가 활성화되며 편집/삭제/자료 추가 버튼이 나타납니다.
+### [ Beta v0.9.x ] Soft Dark Mode & Mobile Layout Optimization
+* **소프트 다크모드:** 네이비(Slate-900) 배경과 파스텔 톤 배지 조합으로 세련된 다크 테마 완성.
+* **모바일 지도 우선 배치(Mobile-First Map):** 모바일에서 지도가 리스트 상단에 오도록 Flex 역전 기법 적용.
 
-📜 프로젝트 진행 로그 (Change Log)
+### [ Beta v0.5.x ~ v0.8.x ] Initial Architectures
+* **Soft UI 도입:** 곡률(`rounded-[3rem]`)과 파스텔톤을 극대화한 '울산 아이꿈터' 디자인 시스템 벤치마킹.
+* **하이브리드 PDF 뷰어:** 모바일 제스처를 통합한 자체 PDF 렌더링 초기 엔진 구축.
 
-🎉 [ v1.4.0 ] News Search & Build Stabilization (Current)
+---
 
-뉴스 실시간 검색 기능 도입 및 빌드/배포 안정화
-
-뉴스 실시간 필터링(Real-time Search): 뉴스 피드 상단에 검색 포털 형태의 UI를 추가하여, 기사 제목 및 파싱된 언론사 이름을 기준으로 즉각적인 인메모리 필터링이 가능하도록 구현.
-
-모바일 우선 검색 UI/UX: 모바일 뷰포트에서 공간 제약을 극대화하기 위해 flex-col md:flex-row 구조를 도입하고, '새로고침' 버튼의 텍스트 축소 및 Soft UI(내부 그림자, Rose 컬러 링)를 완벽하게 동기화.
-
-컴파일 오류 원천 차단 (Asset Inlining): 특정 빌드 환경(es2015 타겟 등)에서 발생하는 import.meta.env 참조 에러를 해결하고, 누락된 로컬 SVG 에셋(카카오톡, 네이버 밴드 아이콘)을 Data URI 포맷으로 코드 내부에 직접 임베딩하여 빌드 안정성 100% 확보.
-
-🎉 [ v1.3.0 ] PDF Viewer Engine Overhaul & UI/UX Refinement
-
-PDF 렌더링 엔진 전면 교체 및 자료실 UI/UX 고도화
-
-초고속 오프스크린 PDF 렌더링: pdf.js 렌더링 방식을 가상 캔버스(Offscreen Canvas) 캐싱 방식으로 변경. 한 번 읽은 페이지는 Data URI 형태로 메모리에 저장되어 뒤로 가기 시 즉시 로드.
-
-네이티브 스와이프(Swipe) 물리 엔진 적용: React State가 아닌 useRef와 직접 DOM 조작을 통한 60fps 스와이프 애니메이션 및 모바일 제스처 제어 최적화.
-
-스마트 표지 추출 및 자동 크롭(Smart Crop): 첨부된 PDF의 1페이지를 백그라운드에서 렌더링하여 자료실 썸네일로 사용. 스프레드(두쪽보기) 문서일 경우 우측 표지만 지능적으로 잘라내는 기능 탑재.
-
-자료실 카드(IssueCard) Flexbox 리팩토링: 책 표지에 최적화된 2:3 비율 도입 및 하단 텍스트 잘림을 방지하는 Flexbox 아키텍처 재설계.
-
-관리자 편의 기능 추가: 자료실 카드에서 즉시 제목을 수정(DB 연동)할 수 있는 편집 퀵 버튼 신설.
-
-🎉 [ v1.2.0 ] SNS Share Optimization & App Deep Linking
-
-SNS 공유 기능 렌더링 최적화 및 네이티브 앱 연동
-
-카카오톡 공유 최적화: 카카오 JS SDK 템플릿 튜닝을 통해 자체 OG 크롤러가 사이트 썸네일을 카드로 생성하도록 유도.
-
-네이버 밴드 딥링크(App Intent) 연동: 모바일 기기에서 웹 브라우저를 거치지 않고 네이버 밴드 앱(bandapp://)이 직접 실행되도록 분기 처리.
-
-토스트(Toast) 알림 UI: Clipboard API 링크 복사 시 Soft UI 기반의 플로팅 토스트 메시지 애니메이션 적용.
-
-🎉 [ v1.1.0 ] Naming & UI Refinements
-
-공식 브랜딩 적용 및 마이너 UX 개선
-
-공식 명칭 확정: 서비스명을 **'함께누리웹진'**으로 최종 확정 및 메타데이터 일괄 적용.
-
-최근 검색어 해시태그 (UX): 로컬스토리지(localStorage)를 활용하여 사용자의 최근 지역 검색 기록 5개를 홈 화면에 태그 형태로 노출.
-
-🎉 [ v1.0.0 ] Official Release
-
-지식 플랫폼 정식 출시 및 아키텍처 안정화
-
-뉴스 데이터 파싱 (Parser): 구글 뉴스 RSS의 제목 구조(기사 제목 - 언론사)를 정규식으로 파싱하여 언론사명을 전용 뱃지로 노출.
-
-API 크레딧 최적화: SessionStorage를 활용해 단일 세션 내 중복 조회수 업데이트(DB Write)를 차단.
-
-[ Beta v0.9.x ] Soft Dark Mode & Mobile Layout Optimization
-
-소프트 다크모드: 네이비(Slate-900) 배경과 파스텔 톤 배지 조합으로 세련된 다크 테마 완성.
-
-모바일 지도 우선 배치(Mobile-First Map): 모바일에서 지도가 리스트 상단에 오도록 Flex 역전 기법 적용.
-
-[ Beta v0.5.x ~ v0.8.x ] Initial Architectures
-
-Soft UI 도입: 곡률(rounded-[3rem])과 파스텔톤을 극대화한 '울산 아이꿈터' 디자인 시스템 벤치마킹.
-
-하이브리드 PDF 뷰어: 모바일 제스처를 통합한 자체 PDF 렌더링 초기 엔진 구축.
-
-React + Vite (Base Template Info)
-
+## React + Vite (Base Template Info)
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 Currently, two official plugins are available:
-
-@vitejs/plugin-react uses Babel for Fast Refresh
-
-@vitejs/plugin-react-swc uses SWC for Fast Refresh
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
