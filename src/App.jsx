@@ -40,7 +40,9 @@ const useCustomKakaoLoader = () => {
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services,clusterer&autoload=false`;
+      // Vercel 환경에서 환경 변수가 정상 치환되도록 import.meta.env 유지
+      const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY || '';
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
     }
@@ -101,7 +103,7 @@ const SocialShare = () => {
       script.async = true;
       script.onload = () => {
         if (window.Kakao && !window.Kakao.isInitialized()) {
-          const appKey = 'ee00ac93b075fc1e56de1a0dc90ccaf3';
+          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
           window.Kakao.init(appKey);
           setIsKakaoReady(true);
         }
@@ -172,8 +174,9 @@ const SocialShare = () => {
   );
 };
 
-const supabaseUrl = '';
-const supabaseKey = '';
+// Vercel 빌드 타임에 정상 치환되도록 Vite 전용 import.meta.env 유지
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const parseNewsData = (rawTitle) => {
@@ -233,10 +236,7 @@ const Footer = ({ onSecretAdminUnlock }) => {
     setClicks(prev => prev + 1);
     if (clicks + 1 >= 5) {
       const passcode = prompt("관리자 암호를 입력하세요.");
-      
-      // 로컬 실행 시 아래 주석을 해제하고 사용하세요:
-      // const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin1234';
-      const adminCode = 'admin1234';
+      const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin1234';
       
       if (passcode === adminCode) {
         onSecretAdminUnlock();
@@ -641,12 +641,11 @@ const NewsFeed = ({ limit, isAdmin }) => {
 
   const itemsPerPage = limit || 20;
 
-  // 검색어 입력 시 API 과호출을 막기 위한 디바운스(Debounce) 처리
   useEffect(() => {
     const timer = setTimeout(() => {
       if (debouncedKeyword !== searchKeyword) {
         setDebouncedKeyword(searchKeyword);
-        setCurrentPage(1); // 검색어가 변경되면 무조건 1페이지로 리셋
+        setCurrentPage(1); 
       }
     }, 400);
     return () => clearTimeout(timer);
@@ -656,10 +655,8 @@ const NewsFeed = ({ limit, isAdmin }) => {
     if(!supabase) return;
     setLoading(true);
     try {
-      // count: 'exact' 옵션으로 전체 뉴스 개수 파악 (페이지네이션 용도)
       let query = supabase.from('news').select('*', { count: 'exact' });
       
-      // 검색어가 있을 경우 서버 사이드 ilike 필터링 적용
       if (debouncedKeyword.trim()) {
         query = query.ilike('title', `%${debouncedKeyword}%`);
       }
@@ -693,11 +690,10 @@ const NewsFeed = ({ limit, isAdmin }) => {
   const handleDelete = async (id) => {
     if(confirm('이 뉴스를 삭제하시겠습니까?')) {
         await supabase.from('news').delete().eq('id', id);
-        fetchNews(); // 삭제 후 현재 페이지 목록 갱신을 위해 재호출
+        fetchNews(); 
     }
   };
 
-  // 동적 페이지네이션 블록 계산 (현재 페이지 주변 5개 버튼 노출)
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   let startPage = Math.max(1, currentPage - 2);
   let endPage = Math.min(totalPages, startPage + 4);
@@ -714,7 +710,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 뉴스</h2>
            </div>
            
-           {/* 모바일 대응 검색창 및 새로고침 UI 영역 */}
            <div className="flex items-center gap-2 w-full md:w-auto">
              <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16}/>
@@ -769,7 +764,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
          )}
       </div>
 
-      {/* Pagination UI */}
       {!limit && totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-10 mb-4">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-800 disabled:opacity-40 transition-all shadow-sm">
@@ -1269,17 +1263,6 @@ const MainApp = () => {
       alert("등록된 PDF 자료가 없습니다. (관리자 모드에서 + 버튼을 눌러 PDF 추가)");
     }
   };
-
-  if (!supabase) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-       <AlertTriangle className="text-amber-500 mb-4" size={48}/>
-       <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">데이터베이스 연결 대기 중</h2>
-       <p className="text-slate-500 dark:text-slate-400 font-medium text-center leading-relaxed">
-         로컬 환경(Vite)에서 코드 주석을 해제하면 정상적으로 연결됩니다.<br/>
-         <span className="text-sm font-bold text-slate-400">(환경변수 설정 필요)</span>
-       </p>
-    </div>
-  );
 
   return (
     <>
