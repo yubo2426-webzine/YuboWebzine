@@ -14,8 +14,8 @@ import {
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-import imgKakao from './assets/kakao_icon.svg';
-import imgBand from './assets/band_icon.svg';
+const imgKakao = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23FEE500"/><path d="M50 25c-17.9 0-32.5 11.4-32.5 25.4 0 9.2 6.1 17.3 15.3 21.8l-3.9 14.3c-.3 1 1.1 1.7 1.9 1.1l16.7-11.4c.8.1 1.7.1 2.5.1 17.9 0 32.5-11.4 32.5-25.4S67.9 25 50 25z" fill="%23000000"/></svg>';
+const imgBand = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2300C300"/><path d="M28 30h12v40H28zM60 30h12v40H60zM40 30l20 25v15L40 45z" fill="%23FFFFFF"/></svg>';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -40,7 +40,7 @@ const useCustomKakaoLoader = () => {
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
     }
@@ -101,7 +101,7 @@ const SocialShare = () => {
       script.async = true;
       script.onload = () => {
         if (window.Kakao && !window.Kakao.isInitialized()) {
-          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
+          const appKey = 'ee00ac93b075fc1e56de1a0dc90ccaf3';
           window.Kakao.init(appKey);
           setIsKakaoReady(true);
         }
@@ -172,8 +172,8 @@ const SocialShare = () => {
   );
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = '';
+const supabaseKey = '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const parseNewsData = (rawTitle) => {
@@ -233,7 +233,7 @@ const Footer = ({ onSecretAdminUnlock }) => {
     setClicks(prev => prev + 1);
     if (clicks + 1 >= 5) {
       const passcode = prompt("관리자 암호를 입력하세요.");
-      const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin1234';
+      const adminCode = 'admin1234';
       if (passcode === adminCode) {
         onSecretAdminUnlock();
         alert("관리자 권한이 활성화되었습니다.");
@@ -630,6 +630,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
 const NewsFeed = ({ limit, isAdmin }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState(''); // 검색어 상태 추가
   
   const fetchNews = async () => {
     if(!supabase) return;
@@ -654,38 +655,66 @@ const NewsFeed = ({ limit, isAdmin }) => {
     }
   };
 
+  // 실시간 검색어 기반 필터링 (제목 및 파싱된 언론사 모두 검색 지원)
+  const filteredNews = news.filter(item => {
+    if (!searchKeyword.trim()) return true;
+    const { title, publisher } = parseNewsData(item.title);
+    const keyword = searchKeyword.toLowerCase();
+    return title.toLowerCase().includes(keyword) || publisher.toLowerCase().includes(keyword);
+  });
+
   return (
     <div className={`w-full ${limit ? '' : 'max-w-7xl mx-auto px-4 py-12 md:py-16'}`}>
       {!limit && (
-        <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
-           <div className="flex items-center gap-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+           <div className="flex items-center gap-3 shrink-0">
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 뉴스</h2>
            </div>
-           <button onClick={fetchNews} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center gap-2 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-full shadow-sm transition-colors disabled:opacity-50">
-             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> 새로고침
-           </button>
+           
+           {/* 모바일 대응 검색창 및 새로고침 UI 영역 */}
+           <div className="flex items-center gap-2 w-full md:w-auto">
+             <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16}/>
+                <input
+                  type="text"
+                  placeholder="뉴스 검색..."
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  className="w-full pl-9 pr-4 h-10 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-full text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-inner"
+                />
+             </div>
+             <button onClick={fetchNews} disabled={loading} className="text-sm font-bold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 h-10 px-4 rounded-full shadow-sm transition-colors disabled:opacity-50 shrink-0">
+               <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> <span className="hidden sm:inline">새로고침</span>
+             </button>
+           </div>
         </div>
       )}
       <div className="flex flex-col gap-4">
-         {news.map((item, idx) => {
-            const { title: cleanTitle, publisher } = parseNewsData(item.title);
-            return (
-              <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
-                 <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                       <KRDSBadge variant="primary">{publisher}</KRDSBadge>
-                       <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
-                    </div>
-                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{cleanTitle}</h3>
-                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
-                 </div>
-                 <div className="flex items-center justify-end gap-2">
-                     {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
-                     {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
-                 </div>
-              </div>
-            );
-         })}
+         {filteredNews.length > 0 ? (
+           filteredNews.map((item, idx) => {
+              const { title: cleanTitle, publisher } = parseNewsData(item.title);
+              return (
+                <div key={idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
+                   <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                         <KRDSBadge variant="primary">{publisher}</KRDSBadge>
+                         <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
+                      </div>
+                      <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{cleanTitle}</h3>
+                      <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
+                   </div>
+                   <div className="flex items-center justify-end gap-2">
+                       {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
+                       {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
+                   </div>
+                </div>
+              );
+           })
+         ) : (
+           <div className="py-16 text-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+             검색어 '{searchKeyword}'에 대한 뉴스가 없습니다.
+           </div>
+         )}
       </div>
     </div>
   );
@@ -796,7 +825,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// ✅ Flexbox 구조로 완벽히 수정된 이슈 카드
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
   const [coverSrc, setCoverSrc] = useState(null);
   const [isLoadingCover, setIsLoadingCover] = useState(false);
@@ -862,7 +890,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
   return (
     <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
       
-      {/* 🚀 상단 썸네일 영역: flex-1 적용하여 남는 공간 자동 채움 */}
       <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700">
          {coverSrc ? (
              <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -882,7 +909,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
          </div>
       </div>
 
-      {/* 🚀 하단 텍스트 영역: shrink-0을 적용하여 내부 콘텐츠 높이만큼만 정확히 차지하게 설정 */}
       <div className="shrink-0 px-5 py-4 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
          <div className="flex justify-between items-center mb-1.5 md:mb-2">
           <span className="text-xs md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
