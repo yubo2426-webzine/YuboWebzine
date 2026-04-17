@@ -40,7 +40,7 @@ const useCustomKakaoLoader = () => {
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services,clusterer&autoload=false`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
     }
@@ -101,7 +101,7 @@ const SocialShare = () => {
       script.async = true;
       script.onload = () => {
         if (window.Kakao && !window.Kakao.isInitialized()) {
-          const appKey = 'ee00ac93b075fc1e56de1a0dc90ccaf3';
+          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
           window.Kakao.init(appKey);
           setIsKakaoReady(true);
         }
@@ -172,8 +172,8 @@ const SocialShare = () => {
   );
 };
 
-const supabaseUrl = '';
-const supabaseKey = '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const parseNewsData = (rawTitle) => {
@@ -233,7 +233,11 @@ const Footer = ({ onSecretAdminUnlock }) => {
     setClicks(prev => prev + 1);
     if (clicks + 1 >= 5) {
       const passcode = prompt("관리자 암호를 입력하세요.");
+      
+      // 로컬 실행 시 아래 주석을 해제하고 사용하세요:
+      // const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin1234';
       const adminCode = 'admin1234';
+      
       if (passcode === adminCode) {
         onSecretAdminUnlock();
         alert("관리자 권한이 활성화되었습니다.");
@@ -1143,7 +1147,16 @@ const MainApp = () => {
     }
   };
 
-  if (!supabase) return <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900"><AlertTriangle className="text-red-500 mb-4" size={40}/>DB 연결 오류</div>;
+  if (!supabase) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+       <AlertTriangle className="text-amber-500 mb-4" size={48}/>
+       <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">데이터베이스 연결 대기 중</h2>
+       <p className="text-slate-500 dark:text-slate-400 font-medium text-center leading-relaxed">
+         로컬 환경(Vite)에서 코드 주석을 해제하면 정상적으로 연결됩니다.<br/>
+         <span className="text-sm font-bold text-slate-400">(환경변수 설정 필요)</span>
+       </p>
+    </div>
+  );
 
   return (
     <>
