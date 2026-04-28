@@ -40,7 +40,6 @@ const useCustomKakaoLoader = () => {
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      // Vercel 환경에서 환경 변수가 정상 치환되도록 import.meta.env 유지
       const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY || '';
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
       script.async = true;
@@ -174,7 +173,6 @@ const SocialShare = () => {
   );
 };
 
-// Vercel 빌드 타임에 정상 치환되도록 Vite 전용 import.meta.env 유지
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
@@ -209,7 +207,6 @@ const useHistoryState = (initialState) => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-
   const setHistoryState = (newState) => {
     if (newState !== state) { 
       window.history.pushState({ view: newState }, '', `?view=${newState}`);
@@ -229,9 +226,57 @@ const loadPdfScript = () => {
   });
 };
 
+// 🚨 PDF 표지 추출 헬퍼 함수 (캐시 최적화의 핵심)
+const extractPdfCover = async (fileOrBlob) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await loadPdfScript();
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      const fileReader = new FileReader();
+      fileReader.onload = async function() {
+        try {
+          const typedarray = new Uint8Array(this.result);
+          const loadingTask = window.pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 0.6 });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+          const isSpread = viewport.width > viewport.height * 1.2;
+          let finalCanvas = canvas;
+
+          if (isSpread) {
+            const halfWidth = canvas.width / 2;
+            const fullHeight = canvas.height;
+            finalCanvas = document.createElement('canvas');
+            finalCanvas.width = halfWidth;
+            finalCanvas.height = fullHeight;
+            finalCanvas.getContext('2d').drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
+          }
+
+          finalCanvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', 0.85);
+        } catch(e) {
+            console.error(e);
+            resolve(null);
+        }
+      };
+      fileReader.readAsArrayBuffer(fileOrBlob);
+    } catch (error) {
+      console.error("표지 추출 에러:", error);
+      resolve(null);
+    }
+  });
+};
+
 const Footer = ({ onSecretAdminUnlock }) => {
   const [clicks, setClicks] = useState(0);
-
   const handleSecretClick = () => {
     setClicks(prev => prev + 1);
     if (clicks + 1 >= 5) {
@@ -247,7 +292,6 @@ const Footer = ({ onSecretAdminUnlock }) => {
       setClicks(0);
     }
   };
-
   return (
     <footer className="w-full bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 py-12 mt-auto z-10 relative transition-colors">
       <div className="max-w-7xl mx-auto px-4 text-center">
@@ -268,7 +312,6 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
   const [file, setFile] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '', description: '', vol: '' });
   const getLabelClass = "block text-sm font-black text-slate-700 dark:text-slate-300 mb-2 ml-1";
-
   return (
     <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95">
        <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.2)] max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-slate-700 flex flex-col">
@@ -280,9 +323,10 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
             </h2>
             <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><X className="text-slate-500 dark:text-slate-400"/></button>
           </div>
+         
           <div className="p-8">
             {isUploading ?
-             <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
+            <div className="text-center py-12"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-4" size={48}/> <p className="text-lg font-bold text-slate-600 dark:text-slate-300">서버에 안전하게 저장 중입니다...</p></div> : (
                <form onSubmit={(e) => { e.preventDefault(); onSubmit({...formData, file, type}); }} className="space-y-6">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
                   <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
@@ -293,6 +337,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         <div><label className={getLabelClass}>행사 일정 (선택)</label><KRDSInput type="date" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})}/></div>
                      </>
                   )}
+              
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
                   {type === 'article' && (
                      <div>
@@ -309,6 +354,7 @@ const UniversalUploadModal = ({ isOpen, onClose, onSubmit, type, isUploading }) 
                         </label>
                      </div>
                   )}
+    
                   <div className="flex gap-4 pt-4 mt-8">
                     <button type="button" onClick={onClose} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-lg font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">취소</button>
                     <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-lg font-black hover:bg-emerald-600 shadow-md transition-colors">등록 완료</button>
@@ -328,7 +374,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
 
   const [pdfDoc, setPdfDoc] = useState(null);
   const [physicalPage, setPhysicalPage] = useState(1);
-  const [subPage, setSubPage] = useState('full'); 
+  const [subPage, setSubPage] = useState('full');
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pageImages, setPageImages] = useState(null);
@@ -343,7 +389,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   const isPinching = useRef(false);
   
   const isSwiping = useRef(false);
-  const swipeOffsetRef = useRef(0); 
+  const swipeOffsetRef = useRef(0);
 
   useEffect(() => {
     const loadPdf = async () => {
@@ -352,7 +398,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
         if (!window.pdfjsLib) return;
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        // PDF 로딩 속도 최적화: cMapPacked 및 AutoFetch 방지
         const doc = await window.pdfjsLib.getDocument({
            url: article.fileUrl || article.file_url,
            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
@@ -409,10 +454,9 @@ const CustomPDFViewer = ({ article, onBack }) => {
         await renderTaskRef.current.promise;
 
         if (isMounted) {
-           const fullDataUrl = canvas.toDataURL('image/jpeg', 0.85); 
+           const fullDataUrl = canvas.toDataURL('image/jpeg', 0.85);
            const cacheObj = { full: fullDataUrl };
 
-           // 가상 캔버스 물리적 분할
            if (isSpread) {
               const halfWidth = canvas.width / 2;
               const fullHeight = canvas.height;
@@ -441,7 +485,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
                    nc.width = Math.floor(nvp.width * outputScale);
                    nc.height = Math.floor(nvp.height * outputScale);
                    await np.render({ canvasContext: nc.getContext('2d'), viewport: nvp, transform }).promise;
-                   
+             
                    const nIsSpread = nvp.width > nvp.height * 1.2;
                    const nCacheObj = { full: nc.toDataURL('image/jpeg', 0.85) };
                    if(nIsSpread) {
@@ -498,7 +542,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
   
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) { 
-        isPinching.current = true; 
+        isPinching.current = true;
         isSwiping.current = false;
         pinchStartDist.current = getTouchDistance(e.touches); 
         pinchStartScale.current = scale; 
@@ -515,7 +559,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
         isSwiping.current = true;
         touchStartX.current = e.touches[0].screenX; 
         if (contentWrapperRef.current) {
-           contentWrapperRef.current.style.transition = 'none'; 
+           contentWrapperRef.current.style.transition = 'none';
         }
     }
   };
@@ -537,10 +581,10 @@ const CustomPDFViewer = ({ article, onBack }) => {
         contentWrapperRef.current.style.transform = `translateX(${swipeOffsetRef.current}px)`;
     }
   };
-  
+
   const handleTouchEnd = (e) => {
     if (isPinching.current) { 
-        if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none'; 
+        if(contentWrapperRef.current) contentWrapperRef.current.style.transform = 'none';
         isPinching.current = false;
     } else if (isSwiping.current) {
         isSwiping.current = false;
@@ -656,7 +700,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
     setLoading(true);
     try {
       let query = supabase.from('news').select('*', { count: 'exact' });
-      
       if (debouncedKeyword.trim()) {
         query = query.ilike('title', `%${debouncedKeyword}%`);
       }
@@ -667,7 +710,7 @@ const NewsFeed = ({ limit, isAdmin }) => {
       const { data, count, error } = await query
         .order('pub_date', { ascending: false })
         .range(from, to);
-        
+
       if (data) {
         setNews(data);
         setTotalCount(count || 0);
@@ -709,7 +752,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
            <div className="flex items-center gap-3 shrink-0">
               <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3"><span className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-2xl"><Newspaper size={32} className="text-rose-500 dark:text-rose-400"/></span> 뉴스</h2>
            </div>
-           
            <div className="flex items-center gap-2 w-full md:w-auto">
              <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16}/>
@@ -744,7 +786,7 @@ const NewsFeed = ({ limit, isAdmin }) => {
                       <div className="flex items-center gap-3 mb-3">
                          <KRDSBadge variant="primary">{publisher}</KRDSBadge>
                          <span className="text-sm text-slate-400 dark:text-slate-500 font-bold">{new Date(item.pub_date).toLocaleDateString()}</span>
-                      </div>
+                       </div>
                       <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">{cleanTitle}</h3>
                       <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 font-bold"><span className="flex items-center gap-1"><Eye size={14}/> 조회 {item.views || 0}</span></div>
                    </div>
@@ -798,17 +840,13 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
     setLoading(true);
     try {
       let query = supabase.from('notices').select('*', { count: 'exact' });
-      
       if (filter === 'notice') query = query.neq('category', 'event');
       if (filter === 'event') query = query.eq('category', 'event');
-
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
-
       const { data, count } = await query
         .order('created_at', { ascending: false })
         .range(from, to);
-
       if (data) {
         setNotices(data);
         setTotalCount(count || 0);
@@ -873,6 +911,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
                <Loader2 className="animate-spin text-amber-500" size={40} />
             </div>
          )}
+      
          {notices.map(n => (
             <div key={n.id} onClick={() => handleNoticeClick(n)} className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-500/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all relative group cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between">
                <div className="flex-1">
@@ -938,7 +977,7 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
                  {userRole === 'admin' && (
                     <button onClick={() => handleDelete(selectedNotice.id)} className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-black flex items-center gap-1 bg-white dark:bg-slate-800 border dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm"><Trash2 size={16}/> 삭제</button>
                  )}
-              </div>
+               </div>
            </div>
         </div>
       )}
@@ -946,71 +985,12 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
+// 🚨 [캐시 최적화 적용] DB에 등록된 cover_url을 즉각 사용하도록 IssueCard 전면 개편
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
-  const [coverSrc, setCoverSrc] = useState(null);
-  const [isLoadingCover, setIsLoadingCover] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchCover = async () => {
-      if (!issue.articles || issue.articles.length === 0) return;
-      const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
-      if (!fileUrl) return;
-
-      try {
-        setIsLoadingCover(true);
-        await loadPdfScript();
-        if (!window.pdfjsLib) return;
-        
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        const loadingTask = window.pdfjsLib.getDocument({
-           url: fileUrl,
-           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-           cMapPacked: true,
-           disableAutoFetch: true
-        });
-        
-        const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 0.6 }); 
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        
-        if (isMounted) {
-           const isSpread = viewport.width > viewport.height * 1.2;
-           if (isSpread) {
-              const halfWidth = canvas.width / 2;
-              const fullHeight = canvas.height;
-              const rightCanvas = document.createElement('canvas');
-              rightCanvas.width = halfWidth;
-              rightCanvas.height = fullHeight;
-              rightCanvas.getContext('2d').drawImage(
-                 canvas, halfWidth, 0, halfWidth, fullHeight, 
-                 0, 0, halfWidth, fullHeight
-              );
-              setCoverSrc(rightCanvas.toDataURL('image/jpeg', 0.85));
-           } else {
-              setCoverSrc(canvas.toDataURL('image/jpeg', 0.85));
-           }
-        }
-      } catch (err) {
-        console.error("PDF 표지 추출 실패:", err);
-      } finally {
-        if (isMounted) setIsLoadingCover(false);
-      }
-    };
-    
-    fetchCover();
-    return () => { isMounted = false; };
-  }, [issue]);
-
+  const coverSrc = issue.cover_url || issue.coverUrl || null;
+  
   return (
     <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
-      
       <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700">
          {coverSrc ? (
              <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -1019,7 +999,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
                <div className="absolute top-6 right-6 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={56} strokeWidth={1.5}/></div>
                <div className="absolute bottom-6 left-6 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={56}/></div>
                <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={150} className="text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
-               {isLoadingCover && <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm z-10"><Loader2 className="animate-spin text-teal-500 mb-2" size={36}/><span className="text-sm font-bold text-teal-700 dark:text-teal-300">표지 로딩중...</span></div>}
              </>
          )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
@@ -1095,6 +1074,7 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false); // 🚨 마이그레이션 로딩 상태
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   
   const [resources, setResources] = useState([]);
@@ -1180,7 +1160,6 @@ const MainApp = () => {
           hasMarkers = true;
           window.kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
         });
-
         setTimeout(() => {
           if (map) { map.relayout(); if (!selectedResource && hasMarkers) map.setBounds(bounds); else if (selectedResource) map.setCenter(centerPos); }
         }, 150);
@@ -1208,6 +1187,7 @@ const MainApp = () => {
      setIsUploadOpen(true);
   };
 
+  // 🚨 [업로드 로직 개편] PDF 등록 시점에 브라우저에서 썸네일을 생성하여 저장합니다.
   const handleUpload = async (data) => {
     if (data.type === 'article' && data.file) {
       const maxSize = 50 * 1024 * 1024;
@@ -1222,19 +1202,80 @@ const MainApp = () => {
        if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
        else if (data.type === 'article' && currentIssue) { 
-           let fileUrl = ''; 
+           let fileUrl = '';
+           let coverUrl = currentIssue.cover_url || null; // 기존 커버 유지
+
            if (data.file) { 
-               const fn = `${Date.now()}.pdf`;
+               const timestamp = Date.now();
+               const fn = `${timestamp}.pdf`;
+               
+               // 1. PDF 업로드
                await supabase.storage.from('files').upload(fn, data.file); 
                fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; 
+
+               // 2. 썸네일 즉석 생성 및 JPG 업로드
+               const coverBlob = await extractPdfCover(data.file);
+               if (coverBlob) {
+                   const coverFn = `cover_${timestamp}.jpg`;
+                   await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                   coverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
+               }
            } 
+
            const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
-           await supabase.from('issues').update({ articles: updated }).eq('id', currentIssue.id); 
-           setCurrentIssue({...currentIssue, articles: updated}); 
+           
+           // 3. 이슈 테이블에 업데이트
+           await supabase.from('issues').update({ articles: updated, cover_url: coverUrl }).eq('id', currentIssue.id); 
+           setCurrentIssue({...currentIssue, articles: updated, cover_url: coverUrl}); 
        }
        alert("등록 완료되었습니다!"); setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
+  };
+
+  // 🚨 [과거 데이터 마이그레이션 로직]
+  const handleMigrateCovers = async () => {
+    if (!confirm("기존 호수들의 표지를 일괄 생성하시겠습니까?\n(데이터 크기에 따라 다소 시간이 걸릴 수 있습니다.)")) return;
+    setIsMigrating(true);
+    let migratedCount = 0;
+
+    try {
+      for (const issue of issues) {
+        if (!issue.cover_url && issue.articles && issue.articles.length > 0) {
+          const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
+          if (fileUrl) {
+            try {
+              const response = await fetch(fileUrl);
+              const blob = await response.blob();
+              const coverBlob = await extractPdfCover(blob);
+
+              if (coverBlob) {
+                 const timestamp = Date.now();
+                 const coverFn = `cover_migrated_${issue.id}_${timestamp}.jpg`;
+                 await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                 const newCoverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
+
+                 await supabase.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
+                 migratedCount++;
+              }
+            } catch (err) {
+              console.error(`호수(Vol.${issue.vol}) 마이그레이션 실패:`, err);
+            }
+          }
+        }
+      }
+      
+      if (migratedCount > 0) {
+        alert(`총 ${migratedCount}개의 구버전 표지 복구가 완료되었습니다!`);
+        window.location.reload();
+      } else {
+        alert("복구할 표지가 없거나 처리에 실패했습니다.");
+      }
+    } catch (e) {
+      alert("마이그레이션 중 오류가 발생했습니다.");
+    } finally {
+      setIsMigrating(false);
+    }
   };
 
   const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
@@ -1386,7 +1427,6 @@ const MainApp = () => {
 
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
@@ -1405,7 +1445,7 @@ const MainApp = () => {
                                  <span className={`text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
                                  <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
                                  <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
-                               </div>
+                              </div>
                            </div>
                         ))}
                         {activeHomeTab === 'news' && recentNews.map(n => {
@@ -1502,54 +1542,4 @@ const MainApp = () => {
                    {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
                    : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
                    
-                   <div className={`fixed md:absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                      {selectedResource && (
-                        <div className="p-8 md:p-10 pb-12 relative border-t border-slate-100 dark:border-slate-700">
-                           <button className="absolute top-6 right-6 p-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
-                           <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                           <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight leading-tight pr-12">{selectedResource.name}</h3>
-                           <p className="text-slate-500 dark:text-slate-400 font-bold text-base md:text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500 dark:text-emerald-400"/> {selectedResource.address}</p>
-                           <div className="grid grid-cols-2 gap-4">
-                              <button className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
-                              <button className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl flex justify-center items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><Phone size={24}/> 전화 연결</button>
-                           </div>
-                        </div>
-                      )}
-                   </div>
-                </div>
-             </div>
-          )}
-
-          {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
-          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
-          
-          {view === 'issue_list' && (
-            <div className="pt-16 max-w-7xl mx-auto px-4 animate-in fade-in mb-28">
-              <div className="flex items-center justify-between mb-12 pb-8 border-b border-slate-800 dark:border-slate-700 relative overflow-hidden px-10">
-                <div className="absolute top-4 left-4 text-teal-100 dark:text-teal-900/30 opacity-60 z-0"><Book size={48} className="text-teal-200 dark:text-teal-800"/></div>
-                <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
-                {role === 'admin' && <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors relative z-10"><Plus size={20}/> 호수 발행</button>}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue}/>)}
-              </div>
-            </div>
-          )}
-          
-          {view === 'article_view' && currentArticle && <CustomPDFViewer article={currentArticle} onBack={() => setView('issue_list')}/>}
-       </main>
-       
-       {view !== 'resource_map' && view !== 'article_view' && (
-         <Footer onSecretAdminUnlock={() => {
-           setRole('admin');
-           if (typeof window !== 'undefined') sessionStorage.setItem('userRole', 'admin');
-         }} />
-       )}
-       
-       <UniversalUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} type={uploadType} isUploading={isUploading} onSubmit={handleUpload}/>
-    </div>
-    </>
-  );
-};
-
-export default function App() { return <MainApp />; }
+                   <div className={`fixed md:absolute bottom-0 left-0 right
