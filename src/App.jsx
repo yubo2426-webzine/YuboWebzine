@@ -1016,7 +1016,8 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
              <div className="flex gap-1.5 shrink-0">
                 <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={14} className="md:w-4 md:h-4"/></button>
                 <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={14} className="md:w-4 md:h-4"/></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(issue.id); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
+                {/* 🚨 onDelete로 id 대신 issue 전체 객체를 넘기도록 수정 */}
+                <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
              </div>
           )}
         </div>
@@ -1074,7 +1075,7 @@ const MainApp = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadType, setUploadType] = useState('notice');
   const [isUploading, setIsUploading] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false); // 🚨 마이그레이션 로딩 상태
+  const [isMigrating, setIsMigrating] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   
   const [resources, setResources] = useState([]);
@@ -1187,7 +1188,6 @@ const MainApp = () => {
      setIsUploadOpen(true);
   };
 
-  // 🚨 [업로드 로직 개편] PDF 등록 시점에 브라우저에서 썸네일을 생성하여 저장합니다.
   const handleUpload = async (data) => {
     if (data.type === 'article' && data.file) {
       const maxSize = 50 * 1024 * 1024;
@@ -1203,17 +1203,15 @@ const MainApp = () => {
        else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
        else if (data.type === 'article' && currentIssue) { 
            let fileUrl = '';
-           let coverUrl = currentIssue.cover_url || null; // 기존 커버 유지
+           let coverUrl = currentIssue.cover_url || null; 
 
            if (data.file) { 
                const timestamp = Date.now();
                const fn = `${timestamp}.pdf`;
                
-               // 1. PDF 업로드
                await supabase.storage.from('files').upload(fn, data.file); 
                fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; 
 
-               // 2. 썸네일 즉석 생성 및 JPG 업로드
                const coverBlob = await extractPdfCover(data.file);
                if (coverBlob) {
                    const coverFn = `cover_${timestamp}.jpg`;
@@ -1224,7 +1222,6 @@ const MainApp = () => {
 
            const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
            
-           // 3. 이슈 테이블에 업데이트
            await supabase.from('issues').update({ articles: updated, cover_url: coverUrl }).eq('id', currentIssue.id); 
            setCurrentIssue({...currentIssue, articles: updated, cover_url: coverUrl}); 
        }
@@ -1233,7 +1230,6 @@ const MainApp = () => {
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
 
-  // 🚨 [과거 데이터 마이그레이션 로직]
   const handleMigrateCovers = async () => {
     if (!confirm("기존 호수들의 표지를 일괄 생성하시겠습니까?\n(데이터 크기에 따라 다소 시간이 걸릴 수 있습니다.)")) return;
     setIsMigrating(true);
@@ -1278,7 +1274,38 @@ const MainApp = () => {
     }
   };
 
-  const handleDeleteIssue = async (id) => { if(confirm('삭제하시겠습니까?')) { await supabase.from('issues').delete().eq('id', id); window.location.reload(); }};
+  // 🚨 [수정된 삭제 로직] Storage 파일과 DB 레코드를 함께 완전 삭제
+  const handleDeleteIssue = async (issue) => {
+    if (confirm(`'Vol.${issue.vol}'호를 삭제하시겠습니까? 관련 PDF 및 표지 파일도 모두 삭제됩니다.`)) {
+      try {
+        const filesToRemove = [];
+        
+        if (issue.articles && issue.articles.length > 0) {
+          issue.articles.forEach(art => {
+            const fileUrl = art.fileUrl || art.file_url;
+            if (fileUrl) filesToRemove.push(fileUrl.split('/').pop());
+          });
+        }
+        
+        const coverUrl = issue.cover_url || issue.coverUrl;
+        if (coverUrl) {
+          filesToRemove.push(coverUrl.split('/').pop());
+        }
+
+        if (filesToRemove.length > 0) {
+          await supabase.storage.from('files').remove(filesToRemove);
+        }
+
+        await supabase.from('issues').delete().eq('id', issue.id);
+        
+        alert('파일과 게시물이 모두 안전하게 삭제되었습니다.');
+        window.location.reload();
+      } catch (e) {
+        console.error("삭제 중 오류:", e);
+        alert("삭제 처리에 실패했습니다.");
+      }
+    }
+  };
   
   const handleEditIssue = async (issue) => {
     const newTitle = prompt(`'${issue.vol}호'의 새로운 제목을 입력하세요:`, issue.title);
@@ -1569,7 +1596,6 @@ const MainApp = () => {
                 <div className="absolute top-4 left-4 text-teal-100 dark:text-teal-900/30 opacity-60 z-0"><Book size={48} className="text-teal-200 dark:text-teal-800"/></div>
                 <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-slate-800 dark:text-white tracking-tight relative z-10">자료실 <Book className="text-teal-500 dark:text-teal-400" size={36}/></h2>
                 
-                {/* 🚨 관리자 전용 메뉴 영역 업데이트 */}
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
                     <button onClick={handleMigrateCovers} disabled={isMigrating} className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50">
