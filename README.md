@@ -23,6 +23,12 @@
 
 ## 📜 프로젝트 진행 로그 (Change Log)
 
+### 🎉 [ v1.5.3 ] Selective Cover Regeneration & Traffic Optimization (Current)
+**트래픽 최적화를 위한 개별 표지 재생성 아키텍처 도입**
+* **개별 표지 강제 재생성 도구:** 모든 PDF를 일괄 다운로드하여 Supabase 발신 트래픽(Cached Egress) 폭탄을 유발하던 기존 '전체 표지 복구' 로직을 폐기. 관리자가 표지가 누락된 특정 호수(Issue)만 콕 집어 개별적으로 썸네일을 강제 재추출(upsert)할 수 있는 안전한 툴로 전면 개편.
+* **UI/UX 개선:** 각 자료실 카드의 관리자 툴바에 '표지 재생성(RefreshCw)' 아이콘 버튼을 배치하여 즉각적인 개별 유지보수 편의성 확보.
+* (이전 v1.5.2의 DB URL 영구 마이그레이션 로직 유지)
+
 ### 🎉 [ v1.5.2 ] Database URL Migration & Infrastructure Hardening (Current)
 **구형 Supabase URL의 영구적 마이그레이션 및 데이터 무결성 확보**
 * **DB 주소 일괄 변환 도구 (One-time Migration):** 데이터베이스(장부)를 전수 조사하여 JSON 내부에 숨겨진 옛날 Supabase 도메인 주소들을 현재 환경변수(`VITE_SUPABASE_URL`) 주소로 영구 치환하는 관리자 전용 툴 탑재.
