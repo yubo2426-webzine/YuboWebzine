@@ -177,7 +177,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// 🚨 [v1.5.2 추가] 옛날 주소를 현재 환경변수 주소로 자동 교정해주는 헬퍼
+// 🚨 [v1.5.2 도입] 옛날 주소를 현재 환경변수 주소로 자동 교정해주는 헬퍼
 const getValidSupabaseUrl = (url) => {
   if (!url || !supabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
@@ -997,8 +997,8 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
-  // 🚨 [v1.5.2] 헬퍼 함수 감싸기로 과거 URL 호환성 확보
+// 🚨 [v1.5.3] onRegenerateCover props 추가 및 버튼 렌더링
+const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit, onRegenerateCover }) => {
   const coverSrc = getValidSupabaseUrl(issue.cover_url || issue.coverUrl || null);
   
   return (
@@ -1011,6 +1011,13 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
                <div className="absolute top-6 right-6 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={56} strokeWidth={1.5}/></div>
                <div className="absolute bottom-6 left-6 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={56}/></div>
                <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={150} className="text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
+               {isAdmin && (
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/5 z-20">
+                   <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur px-4 py-2 rounded-xl text-sm font-bold text-emerald-600 shadow-sm flex items-center gap-2 hover:bg-emerald-50 transition-colors border border-emerald-100">
+                     <RefreshCw size={16}/> 표지 재생성
+                   </button>
+                 </div>
+               )}
              </>
          )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
@@ -1028,6 +1035,10 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
              <div className="flex gap-1.5 shrink-0">
                 <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={14} className="md:w-4 md:h-4"/></button>
                 <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={14} className="md:w-4 md:h-4"/></button>
+                
+                {/* 🚨 관리자 전용 '표지 재생성' 버튼 */}
+                <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="text-emerald-500 hover:text-white bg-emerald-50 hover:bg-emerald-500 dark:bg-emerald-900/30 dark:hover:bg-emerald-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="표지 재생성"><RefreshCw size={14} className="md:w-4 md:h-4"/></button>
+                
                 <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
              </div>
           )}
@@ -1241,51 +1252,6 @@ const MainApp = () => {
     } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
   };
 
-  const handleMigrateCovers = async () => {
-    if (!confirm("기존 호수들의 표지를 일괄 생성하시겠습니까?\n(데이터 크기에 따라 다소 시간이 걸릴 수 있습니다.)")) return;
-    setIsMigrating(true);
-    let migratedCount = 0;
-
-    try {
-      for (const issue of issues) {
-        if (!issue.cover_url && issue.articles && issue.articles.length > 0) {
-          const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
-          if (fileUrl) {
-            try {
-              const response = await fetch(getValidSupabaseUrl(fileUrl));
-              const blob = await response.blob();
-              const coverBlob = await extractPdfCover(blob);
-
-              if (coverBlob) {
-                 const timestamp = Date.now();
-                 const coverFn = `cover_migrated_${issue.id}_${timestamp}.jpg`;
-                 await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
-                 const newCoverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
-
-                 await supabase.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
-                 migratedCount++;
-              }
-            } catch (err) {
-              console.error(`호수(Vol.${issue.vol}) 마이그레이션 실패:`, err);
-            }
-          }
-        }
-      }
-      
-      if (migratedCount > 0) {
-        alert(`총 ${migratedCount}개의 구버전 표지 복구가 완료되었습니다!`);
-        window.location.reload();
-      } else {
-        alert("복구할 표지가 없거나 처리에 실패했습니다.");
-      }
-    } catch (e) {
-      alert("마이그레이션 중 오류가 발생했습니다.");
-    } finally {
-      setIsMigrating(false);
-    }
-  };
-
-  // 🚨 [v1.5.2 추가] DB 내 JSON 데이터의 예전 URL을 새 URL로 영구 교정하는 도구
   const handleFixDatabaseUrls = async () => {
     if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
     setIsMigrating(true);
@@ -1299,7 +1265,6 @@ const MainApp = () => {
         let newCoverUrl = issue.cover_url || issue.coverUrl;
         let newArticles = issue.articles ? [...issue.articles] : [];
 
-        // 1. 표지 URL 영구 교정
         if (newCoverUrl && newCoverUrl.includes('/storage/v1/object/public/')) {
           const expectedUrl = getValidSupabaseUrl(newCoverUrl);
           if (newCoverUrl !== expectedUrl) {
@@ -1308,7 +1273,6 @@ const MainApp = () => {
           }
         }
 
-        // 2. PDF 아티클 배열 내 URL 영구 교정
         if (newArticles.length > 0) {
           newArticles = newArticles.map(art => {
             const oldUrl = art.fileUrl || art.file_url;
@@ -1323,7 +1287,6 @@ const MainApp = () => {
           });
         }
 
-        // 3. 실제 DB 영구 업데이트
         if (isModified) {
           await supabase.from('issues').update({
             cover_url: newCoverUrl,
@@ -1338,6 +1301,46 @@ const MainApp = () => {
     } catch (error) {
       console.error("DB 업데이트 실패:", error);
       alert("업데이트 중 오류가 발생했습니다.");
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  // 🚨 [v1.5.3] 특정 호수 전용 개별 표지 강제 재생성 로직 추가
+  const handleRegenerateCover = async (issue) => {
+    if (!issue.articles || issue.articles.length === 0) {
+      alert("첨부된 PDF 파일이 없습니다.");
+      return;
+    }
+    
+    if (!confirm(`'Vol.${issue.vol}'호의 표지를 새로 추출하시겠습니까?\n(해당 PDF 1개 분량의 다운로드 트래픽이 발생합니다.)`)) return;
+
+    setIsMigrating(true);
+    try {
+      const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
+      const validUrl = getValidSupabaseUrl(fileUrl);
+
+      const response = await fetch(validUrl);
+      const blob = await response.blob();
+      const coverBlob = await extractPdfCover(blob);
+
+      if (coverBlob) {
+        const timestamp = Date.now();
+        const coverFn = `cover_regen_${issue.id}_${timestamp}.jpg`;
+
+        await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
+        const newCoverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
+
+        await supabase.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
+
+        setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, cover_url: newCoverUrl } : i));
+        alert("표지가 성공적으로 재생성되었습니다!");
+      } else {
+        alert("표지 추출에 실패했습니다. (CORS 또는 PDF 형식 오류)");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("오류가 발생했습니다: " + error.message);
     } finally {
       setIsMigrating(false);
     }
@@ -1566,8 +1569,9 @@ const MainApp = () => {
                          <button onClick={() => setView('issue_list')} className="text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
                       <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2 flex-1">
+                        {/* 🚨 IssueCard 호출 시 onRegenerateCover 추가 */}
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue}/>
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
                         ))}
                       </div>
                    </div>
@@ -1666,16 +1670,11 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
-                    {/* 🚨 [v1.5.2] DB 주소 영구 변환 도구 버튼 */}
                     <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>
                     </button>
-
-                    <button onClick={handleMigrateCovers} disabled={isMigrating} className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50">
-                      {isMigrating ? <Loader2 size={20} className="animate-spin text-teal-500" /> : <RefreshCw size={20} />}
-                      <span className="hidden sm:inline">{isMigrating ? '표지 복원중...' : '구버전 표지 일괄 복구'}</span>
-                    </button>
+                    {/* 전체 일괄 추출 버튼은 제거됨 */}
                     <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors">
                       <Plus size={20}/> 호수 발행
                     </button>
@@ -1684,7 +1683,8 @@ const MainApp = () => {
               </div>
         
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue}/>)}
+                {/* 🚨 IssueCard 호출 시 onRegenerateCover 추가 */}
+                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>)}
               </div>
             </div>
           )}
