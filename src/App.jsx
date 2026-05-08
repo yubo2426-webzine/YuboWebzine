@@ -177,6 +177,18 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+// 🚨 [v1.5.2 추가] 옛날 주소를 현재 환경변수 주소로 자동 교정해주는 헬퍼
+const getValidSupabaseUrl = (url) => {
+  if (!url || !supabaseUrl) return url;
+  const marker = '/storage/v1/object/public/';
+  if (url.includes(marker)) {
+    const filePath = url.substring(url.indexOf(marker) + marker.length);
+    const cleanBaseUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
+    return `${cleanBaseUrl}${marker}${filePath}`; 
+  }
+  return url;
+};
+
 const parseNewsData = (rawTitle) => {
   if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
   const parts = rawTitle.split(' - ');
@@ -226,7 +238,6 @@ const loadPdfScript = () => {
   });
 };
 
-// 🚨 PDF 표지 추출 헬퍼 함수 (캐시 최적화의 핵심)
 const extractPdfCover = async (fileOrBlob) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -399,7 +410,8 @@ const CustomPDFViewer = ({ article, onBack }) => {
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
         const doc = await window.pdfjsLib.getDocument({
-           url: article.fileUrl || article.file_url,
+           // 🚨 [v1.5.2] 헬퍼 함수 감싸기로 과거 URL 호환성 확보
+           url: getValidSupabaseUrl(article.fileUrl || article.file_url),
            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
            cMapPacked: true,
            disableAutoFetch: true
@@ -626,7 +638,7 @@ const CustomPDFViewer = ({ article, onBack }) => {
                  <span className="text-sm w-12 text-center font-bold text-slate-800 dark:text-white">{Math.round(scale * 100)}%</span>
                  <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomIn size={18}/></button>
              </div>
-             <button onClick={() => window.open(article.fileUrl || article.file_url, '_blank')} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
+             <button onClick={() => window.open(getValidSupabaseUrl(article.fileUrl || article.file_url), '_blank')} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}><ListIcon size={24}/></button>
           </div>
        </div>
@@ -985,9 +997,9 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
   );
 };
 
-// 🚨 [캐시 최적화 적용] DB에 등록된 cover_url을 즉각 사용하도록 IssueCard 전면 개편
 const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) => {
-  const coverSrc = issue.cover_url || issue.coverUrl || null;
+  // 🚨 [v1.5.2] 헬퍼 함수 감싸기로 과거 URL 호환성 확보
+  const coverSrc = getValidSupabaseUrl(issue.cover_url || issue.coverUrl || null);
   
   return (
     <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
@@ -1016,7 +1028,6 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit }) 
              <div className="flex gap-1.5 shrink-0">
                 <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={14} className="md:w-4 md:h-4"/></button>
                 <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={14} className="md:w-4 md:h-4"/></button>
-                {/* 🚨 onDelete로 id 대신 issue 전체 객체를 넘기도록 수정 */}
                 <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
              </div>
           )}
@@ -1241,7 +1252,7 @@ const MainApp = () => {
           const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
           if (fileUrl) {
             try {
-              const response = await fetch(fileUrl);
+              const response = await fetch(getValidSupabaseUrl(fileUrl));
               const blob = await response.blob();
               const coverBlob = await extractPdfCover(blob);
 
@@ -1274,7 +1285,64 @@ const MainApp = () => {
     }
   };
 
-  // 🚨 [수정된 삭제 로직] Storage 파일과 DB 레코드를 함께 완전 삭제
+  // 🚨 [v1.5.2 추가] DB 내 JSON 데이터의 예전 URL을 새 URL로 영구 교정하는 도구
+  const handleFixDatabaseUrls = async () => {
+    if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
+    setIsMigrating(true);
+
+    try {
+      const { data: allIssues } = await supabase.from('issues').select('*');
+      let updatedCount = 0;
+
+      for (const issue of allIssues) {
+        let isModified = false;
+        let newCoverUrl = issue.cover_url || issue.coverUrl;
+        let newArticles = issue.articles ? [...issue.articles] : [];
+
+        // 1. 표지 URL 영구 교정
+        if (newCoverUrl && newCoverUrl.includes('/storage/v1/object/public/')) {
+          const expectedUrl = getValidSupabaseUrl(newCoverUrl);
+          if (newCoverUrl !== expectedUrl) {
+            newCoverUrl = expectedUrl;
+            isModified = true;
+          }
+        }
+
+        // 2. PDF 아티클 배열 내 URL 영구 교정
+        if (newArticles.length > 0) {
+          newArticles = newArticles.map(art => {
+            const oldUrl = art.fileUrl || art.file_url;
+            if (oldUrl && oldUrl.includes('/storage/v1/object/public/')) {
+              const expectedUrl = getValidSupabaseUrl(oldUrl);
+              if (oldUrl !== expectedUrl) {
+                isModified = true;
+                return { ...art, fileUrl: expectedUrl, file_url: expectedUrl };
+              }
+            }
+            return art;
+          });
+        }
+
+        // 3. 실제 DB 영구 업데이트
+        if (isModified) {
+          await supabase.from('issues').update({
+            cover_url: newCoverUrl,
+            articles: newArticles
+          }).eq('id', issue.id);
+          updatedCount++;
+        }
+      }
+
+      alert(`🎉 총 ${updatedCount}개의 게시물 DB 주소가 영구적으로 수정되었습니다!`);
+      window.location.reload();
+    } catch (error) {
+      console.error("DB 업데이트 실패:", error);
+      alert("업데이트 중 오류가 발생했습니다.");
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const handleDeleteIssue = async (issue) => {
     if (confirm(`'Vol.${issue.vol}'호를 삭제하시겠습니까? 관련 PDF 및 표지 파일도 모두 삭제됩니다.`)) {
       try {
@@ -1598,6 +1666,12 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
+                    {/* 🚨 [v1.5.2] DB 주소 영구 변환 도구 버튼 */}
+                    <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
+                      {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+                      <span className="hidden sm:inline">DB 주소 영구 변환</span>
+                    </button>
+
                     <button onClick={handleMigrateCovers} disabled={isMigrating} className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin text-teal-500" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">{isMigrating ? '표지 복원중...' : '구버전 표지 일괄 복구'}</span>
