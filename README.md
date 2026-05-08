@@ -23,6 +23,12 @@
 
 ## 📜 프로젝트 진행 로그 (Change Log)
 
+### 🎉 [ v1.5.2 ] Database URL Migration & Infrastructure Hardening (Current)
+**구형 Supabase URL의 영구적 마이그레이션 및 데이터 무결성 확보**
+* **DB 주소 일괄 변환 도구 (One-time Migration):** 데이터베이스(장부)를 전수 조사하여 JSON 내부에 숨겨진 옛날 Supabase 도메인 주소들을 현재 환경변수(`VITE_SUPABASE_URL`) 주소로 영구 치환하는 관리자 전용 툴 탑재.
+* **URL 클렌징 헬퍼 (Safeguard):** 마이그레이션 완료 전후의 과도기적 안정성을 위해, 파일 로드 시 실시간으로 주소 규격을 보정해주는 `getValidSupabaseUrl` 로직 적용.
+* **인프라 정합성 검증:** Vercel 환경변수와 새 Supabase 프로젝트 간의 연결 고리를 최종 점검하고 404(ERR_NAME_NOT_RESOLVED) 에러 완전 해결.
+
 ### 🎉 [ v1.5.1 ] Storage Optimization & Thumbnail Architecture Overhaul (Current)
 **스토리지 최적화 및 고아 파일(Orphaned File) 누수 완벽 차단**
 * **업로드 시점 썸네일 생성 (Upload-time Generation):** 사용자가 화면을 볼 때마다 대용량 PDF를 다운로드하여 표지를 렌더링하던 기존 방식에서, 관리자가 자료를 업로드하는 시점에 브라우저 엔진(`pdf.js`)을 활용해 단 1회 썸네일을 추출(.jpg)하여 저장하는 아키텍처로 전면 개편. Cached Egress 트래픽을 99% 이상 획기적으로 절감.
