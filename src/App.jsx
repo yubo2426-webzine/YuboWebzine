@@ -1002,19 +1002,19 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit, on
   const coverSrc = getValidSupabaseUrl(issue.cover_url || issue.coverUrl || null);
   
   return (
-    <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
+    <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
       <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700">
          {coverSrc ? (
              <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
          ) : (
              <>
-               <div className="absolute top-6 right-6 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={56} strokeWidth={1.5}/></div>
-               <div className="absolute bottom-6 left-6 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={56}/></div>
-               <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={150} className="text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
+               <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={40} strokeWidth={1.5} className="md:w-14 md:h-14"/></div>
+               <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={40} className="md:w-14 md:h-14"/></div>
+               <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={80} className="md:w-[150px] md:h-[150px] text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
                {isAdmin && (
                  <div className="absolute inset-0 flex items-center justify-center bg-black/5 z-20">
-                   <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur px-4 py-2 rounded-xl text-sm font-bold text-emerald-600 shadow-sm flex items-center gap-2 hover:bg-emerald-50 transition-colors border border-emerald-100">
-                     <RefreshCw size={16}/> 표지 재생성
+                   <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold text-emerald-600 shadow-sm flex items-center gap-1.5 hover:bg-emerald-50 transition-colors border border-emerald-100">
+                     <RefreshCw size={14} className="md:w-4 md:h-4"/> <span className="hidden sm:inline">표지 재생성</span>
                    </button>
                  </div>
                )}
@@ -1022,31 +1022,28 @@ const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit, on
          )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
          
-         <div className="p-4 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-6 md:pb-10 overflow-hidden">
-            <div className="bg-teal-500 text-white text-sm md:text-lg font-black px-4 py-1.5 md:px-5 md:py-2 rounded-full mb-3 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
-            <h3 className="text-xl md:text-3xl font-black text-white leading-snug line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-2">{issue.title}</h3>
+         <div className="p-3 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-4 md:pb-10 overflow-hidden">
+            <div className="bg-teal-500 text-white text-[10px] md:text-lg font-black px-2.5 py-1 md:px-5 md:py-2 rounded-full mb-2 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
+            <h3 className="text-sm sm:text-base md:text-3xl font-black text-white leading-tight line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-1">{issue.title}</h3>
          </div>
       </div>
 
-      <div className="shrink-0 px-5 py-4 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
-         <div className="flex justify-between items-center mb-1.5 md:mb-2">
-          <span className="text-xs md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
+      <div className="shrink-0 px-3 py-3 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
+         <div className="flex justify-between items-center mb-1.5 md:mb-2 gap-1">
+          <span className="text-[10px] md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
           {isAdmin && (
-             <div className="flex gap-1.5 shrink-0">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={14} className="md:w-4 md:h-4"/></button>
-                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={14} className="md:w-4 md:h-4"/></button>
-                
-                {/* 🚨 관리자 전용 '표지 재생성' 버튼 */}
-                <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="text-emerald-500 hover:text-white bg-emerald-50 hover:bg-emerald-500 dark:bg-emerald-900/30 dark:hover:bg-emerald-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="표지 재생성"><RefreshCw size={14} className="md:w-4 md:h-4"/></button>
-                
-                <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1.5 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={14} className="md:w-4 md:h-4"/></button>
+             <div className="flex gap-1 shrink-0">
+                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={12} className="md:w-4 md:h-4"/></button>
+                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={12} className="md:w-4 md:h-4"/></button>
+                <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="text-emerald-500 hover:text-white bg-emerald-50 hover:bg-emerald-500 dark:bg-emerald-900/30 dark:hover:bg-emerald-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="표지 재생성"><RefreshCw size={12} className="md:w-4 md:h-4"/></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={12} className="md:w-4 md:h-4"/></button>
              </div>
           )}
         </div>
-        <p className="text-xs md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
-        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs md:text-base font-black text-slate-400 dark:text-slate-500">
-           <span className="flex items-center gap-1 md:gap-1.5"><Eye size={16} className="md:w-5 md:h-5"/> {issue.views || 0}</span>
-           <span className="flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg md:rounded-xl"><Paperclip size={14} className="md:w-[18px] md:h-[18px] text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
+        <p className="text-[11px] md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
+        <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-[10px] md:text-base font-black text-slate-400 dark:text-slate-500">
+           <span className="flex items-center gap-1 md:gap-1.5"><Eye size={12} className="md:w-5 md:h-5"/> {issue.views || 0}</span>
+           <span className="flex items-center gap-1 md:gap-1.5 px-1.5 py-1 md:px-3 md:py-1.5 bg-slate-50 dark:bg-slate-900 rounded-md md:rounded-xl"><Paperclip size={10} className="md:w-[18px] md:h-[18px] text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
         </div>
       </div>
     </div>
@@ -1067,7 +1064,7 @@ const Navbar = ({ onHomeClick, onViewChange, currentView, onMenuClick, toggleThe
       <nav className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-slate-800/80 px-2.5 py-2.5 rounded-full border border-slate-100 dark:border-slate-700">
         {['home', 'issue_list', 'notice', 'news', 'resource_map'].map(key => (
           <button key={key} onClick={() => onViewChange(key)} className={`px-5 py-2.5 rounded-full text-sm font-black transition-all ${currentView === key ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-100 dark:border-slate-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '뉴스' : '체험자원 지도'}
+            {key === 'home' ? '홈' : key === 'issue_list' ? '자료실' : key === 'notice' ? '소식' : key === 'news' ? '체험자원 지도' : '체험자원 지도'}
           </button>
         ))}
       </nav>
@@ -1525,24 +1522,42 @@ const MainApp = () => {
 
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
+                   
+                   {/* 1. 최신 자료실 패널 (체험자원 바로 다음으로 오도록 위로 이동) */}
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
+                      <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
+                      <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
+
+                      <div className="flex justify-between items-center mb-6 md:mb-8 border-b border-slate-800 dark:border-slate-600 pb-4 md:pb-6 relative z-10 shrink-0">
+                         <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-3 md:gap-4 tracking-tight">최신 자료실 <Flower2 className="text-sky-500 dark:text-sky-400 w-7 h-7 md:w-9 md:h-9" strokeWidth={2}/></h3>
+                         <button onClick={() => setView('issue_list')} className="text-sm md:text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1 md:gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 md:gap-8 pt-2 relative z-10 flex-1">
+                        {issues.slice(0, 2).map(issue => (
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
+                        ))}
+                      </div>
+                   </div>
+
+                   {/* 2. 최근 소식/뉴스 패널 (가장 마지막으로 이동) */}
+                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
-                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10">
+                      <div className="flex justify-between items-center mb-6 md:mb-8 border-b border-slate-800 dark:border-slate-600 pb-4 md:pb-6 relative z-10">
                          <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-700 shadow-inner">
-                            <button onClick={() => setActiveHomeTab('notice')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
-                            <button onClick={() => setActiveHomeTab('news')} className={`px-5 md:px-7 py-2.5 rounded-full text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
+                            <button onClick={() => setActiveHomeTab('notice')} className={`px-4 sm:px-5 md:px-7 py-2 md:py-2.5 rounded-full text-sm sm:text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
+                            <button onClick={() => setActiveHomeTab('news')} className={`px-4 sm:px-5 md:px-7 py-2 md:py-2.5 rounded-full text-sm sm:text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
                          </div>
-                         <button onClick={() => setView(activeHomeTab === 'notice' ? 'notice' : 'news')} className="text-sm md:text-base font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group">더보기 <ChevronRight size={18} className="text-indigo-400 group-hover:translate-x-1.5 transition-transform"/></button>
+                         <button onClick={() => setView(activeHomeTab === 'notice' ? 'notice' : 'news')} className="text-sm md:text-base font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group shrink-0">더보기 <ChevronRight size={18} className="text-indigo-400 group-hover:translate-x-1.5 transition-transform"/></button>
                       </div>
 
-                      <div className="flex flex-col relative z-10 pl-2">
+                      <div className="flex flex-col relative z-10 pl-1 md:pl-2">
                         {activeHomeTab === 'notice' && recentNotices.map(n => (
                            <div key={n.id} onClick={() => {setView('notice');}} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                              <div className="flex items-center gap-5 w-full">
-                                 <span className={`text-[13px] font-black px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
-                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight">{n.title}</span>
-                                 <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
+                              <div className="flex items-center gap-3 md:gap-5 w-full">
+                                 <span className={`text-[11px] md:text-[13px] font-black px-3 md:px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
+                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight">{n.title}</span>
+                                 <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
                               </div>
                            </div>
                         ))}
@@ -1550,29 +1565,13 @@ const MainApp = () => {
                            const { title: cleanTitle } = parseNewsData(n.title);
                            return (
                              <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                                <div className="flex items-center gap-5 w-full">
-                                   <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-lg flex-1 tracking-tight pl-2">{cleanTitle}</span>
-                                   <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden md:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-3 md:gap-5 w-full">
+                                   <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight pl-1 md:pl-2">{cleanTitle}</span>
+                                   <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
                                 </div>
                              </div>
                            );
                         })}
-                      </div>
-                   </div>
-
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
-                      <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
-                      <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
-
-                      <div className="flex justify-between items-center mb-8 border-b border-slate-800 dark:border-slate-600 pb-6 relative z-10 shrink-0">
-                         <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 tracking-tight">최신 자료실 <Flower2 size={36} className="text-sky-500 dark:text-sky-400" strokeWidth={2}/></h3>
-                         <button onClick={() => setView('issue_list')} className="text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-8 pt-2 relative z-10 pl-2 flex-1">
-                        {/* 🚨 IssueCard 호출 시 onRegenerateCover 추가 */}
-                        {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
-                        ))}
                       </div>
                    </div>
 
@@ -1682,7 +1681,7 @@ const MainApp = () => {
                 )}
               </div>
         
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8">
                 {/* 🚨 IssueCard 호출 시 onRegenerateCover 추가 */}
                 {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>)}
               </div>
