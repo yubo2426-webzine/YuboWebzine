@@ -1218,35 +1218,62 @@ const MainApp = () => {
 
     setIsUploading(true);
     try {
-       if (data.type === 'notice') await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
-       else if (data.type === 'issue') await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
+       if (data.type === 'notice') {
+           const { error } = await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
+           if (error) throw new Error(`공지 등록 실패: ${error.message}`);
+       }
+       else if (data.type === 'issue') {
+           const { error } = await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
+           if (error) throw new Error(`호수 발행 실패: ${error.message}`);
+       }
        else if (data.type === 'article' && currentIssue) { 
            let fileUrl = '';
-           let coverUrl = currentIssue.cover_url || null; 
+           let coverUrl = currentIssue.cover_url || currentIssue.coverUrl || null; 
 
            if (data.file) { 
                const timestamp = Date.now();
                const fn = `${timestamp}.pdf`;
                
-               await supabase.storage.from('files').upload(fn, data.file); 
+               // 🚨 1. PDF 업로드 에러 체크
+               const { error: uploadError } = await supabase.storage.from('files').upload(fn, data.file); 
+               if (uploadError) throw new Error(`PDF 저장소 업로드 실패: ${uploadError.message}`);
+
                fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; 
 
                const coverBlob = await extractPdfCover(data.file);
                if (coverBlob) {
                    const coverFn = `cover_${timestamp}.jpg`;
-                   await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                   // 🚨 2. 썸네일 업로드 에러 체크
+                   const { error: coverError } = await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                   if (coverError) throw new Error(`표지 이미지 업로드 실패: ${coverError.message}`);
+                   
                    coverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
                }
            } 
 
-           const updated = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
+           const updatedArticles = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
            
-           await supabase.from('issues').update({ articles: updated, cover_url: coverUrl }).eq('id', currentIssue.id); 
-           setCurrentIssue({...currentIssue, articles: updated, cover_url: coverUrl}); 
+           // 🚨 3. DB 업데이트 에러 체크
+           const { error: dbError } = await supabase.from('issues').update({ articles: updatedArticles, cover_url: coverUrl }).eq('id', currentIssue.id); 
+           if (dbError) throw new Error(`DB 업데이트 실패: ${dbError.message}`);
+
+           const updatedIssue = {...currentIssue, articles: updatedArticles, cover_url: coverUrl};
+           setCurrentIssue(updatedIssue);
+           
+           // 🚨 4. 메인 상태도 업데이트하여 새로고침 없이 즉각 UI 반영
+           setIssues(prev => prev.map(i => i.id === currentIssue.id ? updatedIssue : i));
        }
-       alert("등록 완료되었습니다!"); setIsUploadOpen(false);
+       
+       alert("등록 완료되었습니다!"); 
+       setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
-    } catch (e) { alert("오류: " + e.message); } finally { setIsUploading(false); }
+       
+    } catch (e) { 
+       console.error("업로드 에러 상세:", e);
+       alert("오류: " + e.message); 
+    } finally { 
+       setIsUploading(false); 
+    }
   };
 
   const handleFixDatabaseUrls = async () => {
