@@ -15,6 +15,7 @@ import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import UniversalUploadModal from './components/UniversalUploadModal';
 import IssueCard from './components/IssueCard';
+import NoticeBoard from './components/NoticeBoard';
 
 const imgKakao = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23FEE500"/><path d="M50 25c-17.9 0-32.5 11.4-32.5 25.4 0 9.2 6.1 17.3 15.3 21.8l-3.9 14.3c-.3 1 1.1 1.7 1.9 1.1l16.7-11.4c.8.1 1.7.1 2.5.1 17.9 0 32.5-11.4 32.5-25.4S67.9 25 50 25z" fill="%23000000"/></svg>';
 const imgBand = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2300C300"/><path d="M28 30h12v40H28zM60 30h12v40H60zM40 30l20 25v15L40 45z" fill="%23FFFFFF"/></svg>';
@@ -779,38 +780,6 @@ const NewsFeed = ({ limit, isAdmin }) => {
   );
 };
 
-const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
-  const [filter, setFilter] = useState('all');
-  const [notices, setNotices] = useState([]);
-  const [selectedNotice, setSelectedNotice] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-
-  const itemsPerPage = 10;
-
-  const fetchNotices = async () => {
-    if (!supabase) return;
-    setLoading(true);
-    try {
-      let query = supabase.from('notices').select('*', { count: 'exact' });
-      if (filter === 'notice') query = query.neq('category', 'event');
-      if (filter === 'event') query = query.eq('category', 'event');
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      const { data, count } = await query
-        .order('created_at', { ascending: false })
-        .range(from, to);
-      if (data) {
-        setNotices(data);
-        setTotalCount(count || 0);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     setCurrentPage(1);
