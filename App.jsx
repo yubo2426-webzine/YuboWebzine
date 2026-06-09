@@ -16,6 +16,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import UniversalUploadModal from './components/UniversalUploadModal';
 import IssueCard from './components/IssueCard';
 import NoticeBoard from './components/NoticeBoard';
+import NewsFeed from './components/NewsFeed';
 
 const imgKakao = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23FEE500"/><path d="M50 25c-17.9 0-32.5 11.4-32.5 25.4 0 9.2 6.1 17.3 15.3 21.8l-3.9 14.3c-.3 1 1.1 1.7 1.9 1.1l16.7-11.4c.8.1 1.7.1 2.5.1 17.9 0 32.5-11.4 32.5-25.4S67.9 25 50 25z" fill="%23000000"/></svg>';
 const imgBand = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2300C300"/><path d="M28 30h12v40H28zM60 30h12v40H60zM40 30l20 25v15L40 45z" fill="%23FFFFFF"/></svg>';
@@ -629,68 +630,6 @@ const CustomPDFViewer = ({ article, onBack }) => {
     </div>
   );
 };
-
-const NewsFeed = ({ limit, isAdmin }) => {
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-
-  const itemsPerPage = limit || 20;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (debouncedKeyword !== searchKeyword) {
-        setDebouncedKeyword(searchKeyword);
-        setCurrentPage(1); 
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchKeyword, debouncedKeyword]);
-
-  const fetchNews = async () => {
-    if(!supabase) return;
-    setLoading(true);
-    try {
-      let query = supabase.from('news').select('*', { count: 'exact' });
-      if (debouncedKeyword.trim()) {
-        query = query.ilike('title', `%${debouncedKeyword}%`);
-      }
-      
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      
-      const { data, count, error } = await query
-        .order('pub_date', { ascending: false })
-        .range(from, to);
-
-      if (data) {
-        setNews(data);
-        setTotalCount(count || 0);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchNews(); }, [currentPage, debouncedKeyword, limit]);
-
-  const handleNewsClick = (item) => {
-      incrementViewCount('news', item.id, item.views);
-      setNews(prev => prev.map(n => n.id === item.id ? {...n, views: (n.views || 0) + 1} : n));
-      if (item.link) window.open(item.link, '_blank');
-  };
-
-  const handleDelete = async (id) => {
-    if(confirm('이 뉴스를 삭제하시겠습니까?')) {
-        await supabase.from('news').delete().eq('id', id);
-        fetchNews(); 
-    }
-  };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   let startPage = Math.max(1, currentPage - 2);
