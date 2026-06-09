@@ -14,6 +14,7 @@ import {
 import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import UniversalUploadModal from './components/UniversalUploadModal';
+import IssueCard from './components/IssueCard';
 
 const imgKakao = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23FEE500"/><path d="M50 25c-17.9 0-32.5 11.4-32.5 25.4 0 9.2 6.1 17.3 15.3 21.8l-3.9 14.3c-.3 1 1.1 1.7 1.9 1.1l16.7-11.4c.8.1 1.7.1 2.5.1 17.9 0 32.5-11.4 32.5-25.4S67.9 25 50 25z" fill="%23000000"/></svg>';
 const imgBand = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2300C300"/><path d="M28 30h12v40H28zM60 30h12v40H60zM40 30l20 25v15L40 45z" fill="%23FFFFFF"/></svg>';
@@ -934,59 +935,6 @@ const NoticeBoard = ({ userRole, onWriteClick, initialMode }) => {
            </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// 🚨 [v1.5.3] onRegenerateCover props 추가 및 버튼 렌더링
-const IssueCard = ({ issue, onClick, isAdmin, onDelete, onAddArticle, onEdit, onRegenerateCover }) => {
-  const coverSrc = getValidSupabaseUrl(issue.cover_url || issue.coverUrl || null);
-  
-  return (
-    <div onClick={() => onClick(issue)} className="group cursor-pointer flex flex-col bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 transition-all duration-500 relative shadow-sm aspect-[2/3]">
-      <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-900 border-b border-gray-100 dark:border-slate-700">
-         {coverSrc ? (
-             <img src={coverSrc} alt={`${issue.title} 표지`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-         ) : (
-             <>
-               <div className="absolute top-4 right-4 text-emerald-100 dark:text-emerald-900/40 opacity-60 z-0"><Rabbit size={40} strokeWidth={1.5} className="md:w-14 md:h-14"/></div>
-               <div className="absolute bottom-4 left-4 text-sky-100 dark:text-sky-900/40 opacity-60 z-0"><Sprout size={40} className="md:w-14 md:h-14"/></div>
-               <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-[0.03]"><Book size={80} className="md:w-[150px] md:h-[150px] text-teal-300 dark:text-teal-500" strokeWidth={0.5}/></div>
-               {isAdmin && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/5 z-20">
-                   <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold text-emerald-600 shadow-sm flex items-center gap-1.5 hover:bg-emerald-50 transition-colors border border-emerald-100">
-                     <RefreshCw size={14} className="md:w-4 md:h-4"/> <span className="hidden sm:inline">표지 재생성</span>
-                   </button>
-                 </div>
-               )}
-             </>
-         )}
-         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500 z-10" />
-         
-         <div className="p-3 md:p-8 text-center w-full h-full flex flex-col justify-end items-center group-hover:translate-y-[-8px] transition-transform duration-500 z-20 relative pb-4 md:pb-10 overflow-hidden">
-            <div className="bg-teal-500 text-white text-[10px] md:text-lg font-black px-2.5 py-1 md:px-5 md:py-2 rounded-full mb-2 md:mb-5 shadow-lg border border-teal-400 shrink-0">Vol.{issue.vol}</div>
-            <h3 className="text-sm sm:text-base md:text-3xl font-black text-white leading-tight line-clamp-3 tracking-tight drop-shadow-md break-keep w-full px-1">{issue.title}</h3>
-         </div>
-      </div>
-
-      <div className="shrink-0 px-3 py-3 md:px-8 md:py-6 flex flex-col justify-between relative z-10 bg-white dark:bg-slate-800">
-         <div className="flex justify-between items-center mb-1.5 md:mb-2 gap-1">
-          <span className="text-[10px] md:text-base font-black text-slate-400 dark:text-slate-500 shrink-0">{issue.date}</span>
-          {isAdmin && (
-             <div className="flex gap-1 shrink-0">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(issue); }} className="text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 dark:bg-indigo-900/30 dark:hover:bg-indigo-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="제목 수정"><Pencil size={12} className="md:w-4 md:h-4"/></button>
-                <button onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} className="text-sky-500 hover:text-white bg-sky-50 hover:bg-sky-500 dark:bg-sky-900/30 dark:hover:bg-sky-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="자료 첨부"><Plus size={12} className="md:w-4 md:h-4"/></button>
-                <button onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} className="text-emerald-500 hover:text-white bg-emerald-50 hover:bg-emerald-500 dark:bg-emerald-900/30 dark:hover:bg-emerald-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="표지 재생성"><RefreshCw size={12} className="md:w-4 md:h-4"/></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(issue); }} className="text-slate-400 dark:text-slate-500 hover:text-white bg-slate-50 hover:bg-rose-500 dark:bg-slate-900 dark:hover:bg-rose-500 p-1 md:p-2.5 rounded-full transition-colors shadow-sm" title="호수 삭제"><Trash2 size={12} className="md:w-4 md:h-4"/></button>
-             </div>
-          )}
-        </div>
-        <p className="text-[11px] md:text-lg font-bold text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed tracking-tight">{issue.description || "내용 없음"}</p>
-        <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-[10px] md:text-base font-black text-slate-400 dark:text-slate-500">
-           <span className="flex items-center gap-1 md:gap-1.5"><Eye size={12} className="md:w-5 md:h-5"/> {issue.views || 0}</span>
-           <span className="flex items-center gap-1 md:gap-1.5 px-1.5 py-1 md:px-3 md:py-1.5 bg-slate-50 dark:bg-slate-900 rounded-md md:rounded-xl"><Paperclip size={10} className="md:w-[18px] md:h-[18px] text-slate-400 dark:text-slate-500"/> {(issue.articles || []).length}개</span>
-        </div>
-      </div>
     </div>
   );
 };
