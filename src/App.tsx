@@ -1,18 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Book, FileText, User, ChevronRight, ArrowLeft, 
-  Plus, Trash2, ChevronLeft, Pencil,
-  X, Newspaper, Calendar as CalendarIcon, 
-  List as ListIcon, MapPin, Navigation,
-  RefreshCw, ArrowRight, ArrowUpRight, Paperclip, Loader2, Home, Search, 
-  Sun, Moon, Eye, Megaphone,
-  ZoomIn, ZoomOut, Download, AlertTriangle,
-  Map as MapIcon, Menu, Filter, Phone, CheckCircle2, Sparkles, LayoutGrid, Globe,
-  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit,
-  Link, Check
+  Book, ChevronRight, X, Newspaper, Calendar as CalendarIcon, 
+  MapPin, RefreshCw, ArrowUpRight, Loader2, Home, Search, 
+  Eye, Map as MapIcon, Phone, CheckCircle2, Sparkles, LayoutGrid,
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus
 } from 'lucide-react';
-import { Button } from 'krds-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
 import UniversalUploadModal from './components/UniversalUploadModal';
 import IssueCard from './components/IssueCard';
 import NoticeBoard from './components/NoticeBoard';
@@ -20,6 +14,7 @@ import NewsFeed from './components/NewsFeed';
 import CustomPDFViewer from './components/CustomPDFViewer';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ResourceMap from './components/ResourceMap';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -32,41 +27,13 @@ const globalStyles = `
   }
 `;
 
-const useCustomKakaoLoader = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+interface KRDSBadgeProps {
+  variant?: 'primary' | 'success' | 'warning' | 'neutral';
+  children: React.ReactNode;
+  className?: string;
+}
 
-  useEffect(() => {
-    if (window.kakao && window.kakao.maps) { setLoading(false); return; }
-    const scriptId = 'kakao-map-script';
-    let script = document.getElementById(scriptId);
-
-    if (!script) {
-      script = document.createElement('script');
-      script.id = scriptId;
-      const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY || '';
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    const handleLoad = () => window.kakao.maps.load(() => setLoading(false));
-    const handleError = () => { console.error("카카오맵 API 로드 실패"); setError(true); };
-
-    script.addEventListener('load', handleLoad);
-    script.addEventListener('error', handleError);
-
-    return () => {
-      script.removeEventListener('load', handleLoad);
-      script.removeEventListener('error', handleError);
-    };
-  }, []);
-
-  return [loading, error];
-};
-
-
-const KRDSBadge = ({ variant = 'neutral', children, className }) => {
+const KRDSBadge: React.FC<KRDSBadgeProps> = ({ variant = 'neutral', children, className = '' }) => {
   const styles = {
     primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800',
     success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800',
@@ -80,8 +47,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// 🚨 [v1.5.2 도입] 옛날 주소를 현재 환경변수 주소로 자동 교정해주는 헬퍼
-const getValidSupabaseUrl = (url) => {
+const getValidSupabaseUrl = (url: string) => {
   if (!url || !supabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
   if (url.includes(marker)) {
@@ -92,11 +58,11 @@ const getValidSupabaseUrl = (url) => {
   return url;
 };
 
-const parseNewsData = (rawTitle) => {
+const parseNewsData = (rawTitle: string) => {
   if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
   const parts = rawTitle.split(' - ');
   if (parts.length > 1) {
-    const publisher = parts.pop().trim();
+    const publisher = parts.pop()?.trim() || '뉴스';
     let title = parts.join(' - ').trim();
     title = title.replace(/\s*>\s*뉴스$/, '').replace(/\s*\|$/, '').trim();
     return { title, publisher };
@@ -104,7 +70,7 @@ const parseNewsData = (rawTitle) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
-const incrementViewCount = async (table, id, currentViews) => {
+const incrementViewCount = async (table: string, id: any, currentViews: number) => {
   if (!supabase) return;
   const sessionKey = `viewed_${table}_${id}`;
   if (sessionStorage.getItem(sessionKey)) return;
@@ -114,15 +80,15 @@ const incrementViewCount = async (table, id, currentViews) => {
   } catch (e) { console.error(e); }
 };
 
-const useHistoryState = (initialState) => {
-  const [state, setState] = useState(initialState);
+const useHistoryState = (initialState: string): [string, (newState: string) => void] => {
+  const [state, setState] = useState<string>(initialState);
   useEffect(() => {
     window.history.replaceState({ view: initialState }, '');
-    const handlePopState = (event) => { if (event.state && event.state.view) setState(event.state.view); };
+    const handlePopState = (event: PopStateEvent) => { if (event.state && event.state.view) setState(event.state.view); };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-  const setHistoryState = (newState) => {
+  }, [initialState]);
+  const setHistoryState = (newState: string) => {
     if (newState !== state) { 
       window.history.pushState({ view: newState }, '', `?view=${newState}`);
       setState(newState); 
@@ -131,27 +97,28 @@ const useHistoryState = (initialState) => {
   return [state, setHistoryState];
 };
 
-const loadPdfScript = () => {
+const loadPdfScript = (): Promise<any> => {
   return new Promise((resolve) => {
-    if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
+    if ((window as any).pdfjsLib) { resolve((window as any).pdfjsLib); return; }
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(window.pdfjsLib); };
+    script.onload = () => { (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve((window as any).pdfjsLib); };
     document.head.appendChild(script);
   });
 };
 
-const extractPdfCover = async (fileOrBlob) => {
-  return new Promise(async (resolve, reject) => {
+const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> => {
+  return new Promise(async (resolve) => {
     try {
       await loadPdfScript();
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
       const fileReader = new FileReader();
       fileReader.onload = async function() {
         try {
-          const typedarray = new Uint8Array(this.result);
-          const loadingTask = window.pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
+          const typedarray = new Uint8Array(this.result as ArrayBuffer);
+          const loadingTask = (window as any).pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
+    
           const pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 0.6 });
@@ -163,14 +130,13 @@ const extractPdfCover = async (fileOrBlob) => {
 
           const isSpread = viewport.width > viewport.height * 1.2;
           let finalCanvas = canvas;
-
           if (isSpread) {
             const halfWidth = canvas.width / 2;
             const fullHeight = canvas.height;
             finalCanvas = document.createElement('canvas');
             finalCanvas.width = halfWidth;
             finalCanvas.height = fullHeight;
-            finalCanvas.getContext('2d').drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
+            finalCanvas.getContext('2d')?.drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
           }
 
           finalCanvas.toBlob((blob) => {
@@ -190,40 +156,38 @@ const extractPdfCover = async (fileOrBlob) => {
 };
 
 const MainApp = () => {
-  const [role, setRole] = useState(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
+  const [role, setRole] = useState<string>(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
   const [view, setView] = useHistoryState('home');
-  const [issues, setIssues] = useState([]);
-  const [currentIssue, setCurrentIssue] = useState(null);
-  const [currentArticle, setCurrentArticle] = useState(null);
-  const [recentNotices, setRecentNotices] = useState([]);
-  const [recentNews, setRecentNews] = useState([]);
+  const [issues, setIssues] = useState<any[]>([]);
+  const [currentIssue, setCurrentIssue] = useState<any>(null);
+  const [currentArticle, setCurrentArticle] = useState<any>(null);
+  const [recentNotices, setRecentNotices] = useState<any[]>([]);
+  const [recentNews, setRecentNews] = useState<any[]>([]);
   
-  const [activeHomeTab, setActiveHomeTab] = useState('news'); 
+  const [activeHomeTab, setActiveHomeTab] = useState<string>('news'); 
 
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [uploadType, setUploadType] = useState('notice');
-  const [isUploading, setIsUploading] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [uploadType, setUploadType] = useState<string>('notice');
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isMigrating, setIsMigrating] = useState<boolean>(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState<boolean>(false);
+  const [resources, setResources] = useState<any[]>([]);
   
-  const [resources, setResources] = useState([]);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('전체');
-  const [selectedType, setSelectedType] = useState('전체');
-  const [selectedResource, setSelectedResource] = useState(null);
-  const [recentTags, setRecentTags] = useState(() => {
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('전체');
+  const [selectedType, setSelectedType] = useState<string>('전체');
+  
+  const [recentTags, setRecentTags] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('recentTags');
       if (saved) return JSON.parse(saved);
     }
     return ['전주시', '익산시', '군산시', '정읍시', '남원시'];
   });
-
-  const [mapLoading, mapError] = useCustomKakaoLoader();
-  const mapContainerRefStandalone = useRef(null);
-
+  
   const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
-  const [isDarkMode, setIsDarkMode] = useState(() => {
+  
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
       return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -260,45 +224,6 @@ const MainApp = () => {
     fetchData();
   }, []);
 
-  const filteredResources = resources.filter(res => {
-    const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
-    const matchType = selectedType === '전체' || res.category === selectedType;
-    const matchKeyword = res.name.includes(searchKeyword) || res.address.includes(searchKeyword);
-    return matchRegion && matchType && matchKeyword;
-  });
-
-  const renderMap = (ref) => {
-    if (!mapLoading && !mapError && ref.current && window.kakao && window.kakao.maps) {
-        ref.current.innerHTML = '';
-        let centerPos = new window.kakao.maps.LatLng(35.8242238, 127.1479532);
-        let level = 10;
-        if (selectedResource) { centerPos = new window.kakao.maps.LatLng(selectedResource.lat, selectedResource.lng); level = 4; }
-        const map = new window.kakao.maps.Map(ref.current, { center: centerPos, level: level });
-        const bounds = new window.kakao.maps.LatLngBounds();
-        let hasMarkers = false;
-
-        const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
-        const imageSize = new window.kakao.maps.Size(24, 35);
-        const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize); 
-
-        filteredResources.forEach(res => {
-          const position = new window.kakao.maps.LatLng(res.lat, res.lng);
-          const marker = new window.kakao.maps.Marker({ position: position, image: markerImage });
-          marker.setMap(map);
-          bounds.extend(position);
-          hasMarkers = true;
-          window.kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
-        });
-        setTimeout(() => {
-          if (map) { map.relayout(); if (!selectedResource && hasMarkers) map.setBounds(bounds); else if (selectedResource) map.setCenter(centerPos); }
-        }, 150);
-    }
-  };
-
-  useEffect(() => {
-    if (view === 'resource_map') renderMap(mapContainerRefStandalone);
-  }, [view, mapLoading, mapError, filteredResources, selectedResource]);
-
   const handleSearchSubmit = () => {
     if (selectedRegion !== '전체') {
       setRecentTags(prev => {
@@ -310,13 +235,13 @@ const MainApp = () => {
     setView('resource_map');
   };
 
-  const openArticleUploadForIssue = (issue) => {
+  const openArticleUploadForIssue = (issue: any) => {
      setCurrentIssue(issue);
      setUploadType('article');
      setIsUploadOpen(true);
   };
 
-  const handleUpload = async (data) => {
+  const handleUpload = async (data: any) => {
     if (data.type === 'article' && data.file) {
       const maxSize = 50 * 1024 * 1024;
       if (data.file.size > maxSize) {
@@ -328,11 +253,11 @@ const MainApp = () => {
     setIsUploading(true);
     try {
        if (data.type === 'notice') {
-           const { error } = await supabase.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
+           const { error } = await supabase!.from('notices').insert([{ title: data.title, content: data.content, event_date: data.event_date || null, category: data.event_date ? 'event' : 'notice' }]);
            if (error) throw new Error(`공지 등록 실패: ${error.message}`);
        }
        else if (data.type === 'issue') {
-           const { error } = await supabase.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
+           const { error } = await supabase!.from('issues').insert([{ vol: data.vol, title: data.title, description: data.description, date: new Date().toLocaleDateString(), cover_color: 'bg-teal-100', icon: '📘' }]);
            if (error) throw new Error(`호수 발행 실패: ${error.message}`);
        }
        else if (data.type === 'article' && currentIssue) { 
@@ -343,33 +268,27 @@ const MainApp = () => {
                const timestamp = Date.now();
                const fn = `${timestamp}.pdf`;
                
-               // 🚨 1. PDF 업로드 에러 체크
-               const { error: uploadError } = await supabase.storage.from('files').upload(fn, data.file); 
+               const { error: uploadError } = await supabase!.storage.from('files').upload(fn, data.file);
                if (uploadError) throw new Error(`PDF 저장소 업로드 실패: ${uploadError.message}`);
 
-               fileUrl = supabase.storage.from('files').getPublicUrl(fn).data.publicUrl; 
+               fileUrl = supabase!.storage.from('files').getPublicUrl(fn).data.publicUrl; 
 
                const coverBlob = await extractPdfCover(data.file);
                if (coverBlob) {
                    const coverFn = `cover_${timestamp}.jpg`;
-                   // 🚨 2. 썸네일 업로드 에러 체크
-                   const { error: coverError } = await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                   const { error: coverError } = await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
                    if (coverError) throw new Error(`표지 이미지 업로드 실패: ${coverError.message}`);
                    
-                   coverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
+                   coverUrl = supabase!.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
                }
            } 
 
            const updatedArticles = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
-           
-           // 🚨 3. DB 업데이트 에러 체크
-           const { error: dbError } = await supabase.from('issues').update({ articles: updatedArticles, cover_url: coverUrl }).eq('id', currentIssue.id); 
+           const { error: dbError } = await supabase!.from('issues').update({ articles: updatedArticles, cover_url: coverUrl }).eq('id', currentIssue.id);
            if (dbError) throw new Error(`DB 업데이트 실패: ${dbError.message}`);
 
            const updatedIssue = {...currentIssue, articles: updatedArticles, cover_url: coverUrl};
            setCurrentIssue(updatedIssue);
-           
-           // 🚨 4. 메인 상태도 업데이트하여 새로고침 없이 즉각 UI 반영
            setIssues(prev => prev.map(i => i.id === currentIssue.id ? updatedIssue : i));
        }
        
@@ -377,7 +296,7 @@ const MainApp = () => {
        setIsUploadOpen(false);
        if (data.type !== 'article') window.location.reload();
        
-    } catch (e) { 
+    } catch (e: any) { 
        console.error("업로드 에러 상세:", e);
        alert("오류: " + e.message); 
     } finally { 
@@ -390,42 +309,43 @@ const MainApp = () => {
     setIsMigrating(true);
 
     try {
-      const { data: allIssues } = await supabase.from('issues').select('*');
+      const { data: allIssues } = await supabase!.from('issues').select('*');
       let updatedCount = 0;
-
-      for (const issue of allIssues) {
-        let isModified = false;
-        let newCoverUrl = issue.cover_url || issue.coverUrl;
-        let newArticles = issue.articles ? [...issue.articles] : [];
-
-        if (newCoverUrl && newCoverUrl.includes('/storage/v1/object/public/')) {
-          const expectedUrl = getValidSupabaseUrl(newCoverUrl);
-          if (newCoverUrl !== expectedUrl) {
-            newCoverUrl = expectedUrl;
-            isModified = true;
-          }
-        }
-
-        if (newArticles.length > 0) {
-          newArticles = newArticles.map(art => {
-            const oldUrl = art.fileUrl || art.file_url;
-            if (oldUrl && oldUrl.includes('/storage/v1/object/public/')) {
-              const expectedUrl = getValidSupabaseUrl(oldUrl);
-              if (oldUrl !== expectedUrl) {
-                isModified = true;
-                return { ...art, fileUrl: expectedUrl, file_url: expectedUrl };
-              }
+      if (allIssues) {
+        for (const issue of allIssues) {
+          let isModified = false;
+          let newCoverUrl = issue.cover_url || issue.coverUrl;
+          let newArticles = issue.articles ? [...issue.articles] : [];
+          if (newCoverUrl && newCoverUrl.includes('/storage/v1/object/public/')) {
+            const expectedUrl = getValidSupabaseUrl(newCoverUrl);
+            if (newCoverUrl !== expectedUrl) {
+              newCoverUrl = expectedUrl;
+              isModified = true;
             }
-            return art;
-          });
-        }
+          }
 
-        if (isModified) {
-          await supabase.from('issues').update({
-            cover_url: newCoverUrl,
-            articles: newArticles
-          }).eq('id', issue.id);
-          updatedCount++;
+          if (newArticles.length > 0) {
+            newArticles = newArticles.map(art => {
+              const oldUrl = art.fileUrl || art.file_url;
+              if (oldUrl && oldUrl.includes('/storage/v1/object/public/')) {
+                const expectedUrl = getValidSupabaseUrl(oldUrl);
+               
+                if (oldUrl !== expectedUrl) {
+                  isModified = true;
+                  return { ...art, fileUrl: expectedUrl, file_url: expectedUrl };
+                }
+              }
+              return art;
+            });
+          }
+
+          if (isModified) {
+            await supabase!.from('issues').update({
+              cover_url: newCoverUrl,
+              articles: newArticles
+            }).eq('id', issue.id);
+            updatedCount++;
+          }
         }
       }
 
@@ -439,39 +359,33 @@ const MainApp = () => {
     }
   };
 
-  // 🚨 [v1.5.3] 특정 호수 전용 개별 표지 강제 재생성 로직 추가
-  const handleRegenerateCover = async (issue) => {
+  const handleRegenerateCover = async (issue: any) => {
     if (!issue.articles || issue.articles.length === 0) {
       alert("첨부된 PDF 파일이 없습니다.");
       return;
     }
     
     if (!confirm(`'Vol.${issue.vol}'호의 표지를 새로 추출하시겠습니까?\n(해당 PDF 1개 분량의 다운로드 트래픽이 발생합니다.)`)) return;
-
     setIsMigrating(true);
     try {
       const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
       const validUrl = getValidSupabaseUrl(fileUrl);
-
       const response = await fetch(validUrl);
       const blob = await response.blob();
       const coverBlob = await extractPdfCover(blob);
-
       if (coverBlob) {
         const timestamp = Date.now();
         const coverFn = `cover_regen_${issue.id}_${timestamp}.jpg`;
+        await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
+        const newCoverUrl = supabase!.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
 
-        await supabase.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
-        const newCoverUrl = supabase.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
-
-        await supabase.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
-
+        await supabase!.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
         setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, cover_url: newCoverUrl } : i));
         alert("표지가 성공적으로 재생성되었습니다!");
       } else {
         alert("표지 추출에 실패했습니다. (CORS 또는 PDF 형식 오류)");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       alert("오류가 발생했습니다: " + error.message);
     } finally {
@@ -479,13 +393,12 @@ const MainApp = () => {
     }
   };
 
-  const handleDeleteIssue = async (issue) => {
+  const handleDeleteIssue = async (issue: any) => {
     if (confirm(`'Vol.${issue.vol}'호를 삭제하시겠습니까? 관련 PDF 및 표지 파일도 모두 삭제됩니다.`)) {
       try {
-        const filesToRemove = [];
-        
+        const filesToRemove: string[] = [];
         if (issue.articles && issue.articles.length > 0) {
-          issue.articles.forEach(art => {
+          issue.articles.forEach((art: any) => {
             const fileUrl = art.fileUrl || art.file_url;
             if (fileUrl) filesToRemove.push(fileUrl.split('/').pop());
           });
@@ -497,10 +410,10 @@ const MainApp = () => {
         }
 
         if (filesToRemove.length > 0) {
-          await supabase.storage.from('files').remove(filesToRemove);
+          await supabase!.storage.from('files').remove(filesToRemove);
         }
 
-        await supabase.from('issues').delete().eq('id', issue.id);
+        await supabase!.from('issues').delete().eq('id', issue.id);
         
         alert('파일과 게시물이 모두 안전하게 삭제되었습니다.');
         window.location.reload();
@@ -511,19 +424,19 @@ const MainApp = () => {
     }
   };
   
-  const handleEditIssue = async (issue) => {
+  const handleEditIssue = async (issue: any) => {
     const newTitle = prompt(`'${issue.vol}호'의 새로운 제목을 입력하세요:`, issue.title);
     if (newTitle && newTitle.trim() !== "" && newTitle !== issue.title) {
         try {
-            await supabase.from('issues').update({ title: newTitle.trim() }).eq('id', issue.id);
+            await supabase!.from('issues').update({ title: newTitle.trim() }).eq('id', issue.id);
             setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, title: newTitle.trim() } : i));
-        } catch(e) {
+        } catch(e: any) {
             alert("제목 수정 중 오류가 발생했습니다: " + e.message);
         }
     }
   };
 
-  const handleIssueClick = (issue) => { 
+  const handleIssueClick = (issue: any) => { 
     incrementViewCount('issues', issue.id, issue.views);
     const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
     setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
@@ -659,7 +572,6 @@ const MainApp = () => {
                <section className="max-w-7xl mx-auto px-4 pb-28">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                    
-                   {/* 1. 최신 자료실 패널 (체험자원 바로 다음으로 오도록 위로 이동) */}
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
                       <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
                       <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
@@ -675,7 +587,6 @@ const MainApp = () => {
                       </div>
                    </div>
 
-                   {/* 2. 최근 소식/뉴스 패널 (가장 마지막으로 이동) */}
                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
                       <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
 
@@ -717,85 +628,19 @@ const MainApp = () => {
           )}
 
           {view === 'resource_map' && (
-             <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
-                <div className="w-full md:w-[480px] bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 h-[55%] md:h-full relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl relative">
-                   <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
-
-                   <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-20 relative">
-                      <div className="flex items-center gap-3 mb-6 relative z-10">
-                        <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
-                        <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
-                      </div>
-
-                      <div className="relative mb-4 z-10 flex gap-2">
-                         <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
-                           <option value="전체">= 지역 전체 =</option>
-                           {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
-                         </select>
-                         <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
-                           <option value="전체">= 형태 전체 =</option>
-                           {['형태 1', '형태 2', '형태 3', '형태 4', '형태 5', '형태 6', '형태 7'].map(t => <option key={t} value={t}>{t}</option>)}
-                         </select>
-                      </div>
-
-                      <div className="relative mb-2 z-10">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20}/>
-                        <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-[1.5rem] text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-black text-base shadow-inner" />
-                      </div>
-                   </div>
-            
-                   <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
-                      <div className="font-black text-slate-700 dark:text-slate-300 px-4">총 <span className="text-emerald-600 dark:text-emerald-400 text-xl">{filteredResources.length}</span>건</div>
-                   </div>
-                   <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 md:gap-5 custom-scrollbar pb-24 bg-slate-50/20 dark:bg-slate-900/20">
-                     {filteredResources.map(res => (
-                       <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-6 rounded-[1.5rem] cursor-pointer transition-all border bg-white dark:bg-slate-800 group ${selectedResource?.id === res.id ? 'border-emerald-500 dark:border-emerald-500 ring-4 ring-emerald-50 dark:ring-emerald-900/30 shadow-[0_15px_30px_rgba(16,185,129,0.15)]' : 'border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-sm'}`}>
-                         <div className="flex flex-wrap gap-1.5 mb-4">
-                            <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-100/50 dark:border-emerald-800 px-2.5 py-1 rounded-full">#{res.category}</span>
-                            <span className="text-[11px] font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/40 border border-sky-100/50 dark:border-sky-800 px-2.5 py-1 rounded-full">#누리과정</span>
-                         </div>
-                         <h4 className="font-black text-xl md:text-2xl text-slate-800 dark:text-white mb-5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">{res.name}</h4>
-                         <ul className="flex flex-col gap-3">
-                            <li className="flex items-start gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0 mt-0.5"><MapPin size={16} className="text-slate-400 dark:text-slate-500"/></div>
-                               <span className="leading-snug pt-1">{res.address}</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-                               <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg shrink-0"><Phone size={16} className="text-slate-400 dark:text-slate-500"/></div>
-                               <span className="pt-0.5">{res.phone || '연락처 정보 없음'}</span>
-                            </li>
-                         </ul>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-
-                <div className="w-full md:flex-1 relative h-[45%] md:h-full bg-slate-100 dark:bg-slate-950 relative">
-                   <div className="absolute bottom-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float"><Compass size={150} strokeWidth={1}/></div>
-
-                   {mapLoading ? <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={40} /></div> 
-                   : <div ref={mapContainerRefStandalone} className="w-full h-full" />}
-                   
-                   <div className={`fixed md:absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 transform transition-transform duration-500 ${selectedResource ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                      {selectedResource && (
-                        <div className="p-8 md:p-10 pb-12 relative border-t border-slate-100 dark:border-slate-700">
-                           <button className="absolute top-6 right-6 p-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" onClick={() => setSelectedResource(null)}><X size={24}/></button>
-                           <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                           <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight leading-tight pr-12">{selectedResource.name}</h3>
-                           <p className="text-slate-500 dark:text-slate-400 font-bold text-base md:text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500 dark:text-emerald-400"/> {selectedResource.address}</p>
-                           <div className="grid grid-cols-2 gap-4">
-                              <button className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 size={24}/> 프로그램 보기</button>
-                              <button className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl flex justify-center items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><Phone size={24}/> 전화 연결</button>
-                           </div>
-                        </div>
-                      )}
-                   </div>
-                </div>
-             </div>
+             <ResourceMap 
+                resources={resources} 
+                searchKeyword={searchKeyword} 
+                setSearchKeyword={setSearchKeyword} 
+                selectedRegion={selectedRegion} 
+                setSelectedRegion={setSelectedRegion} 
+                selectedType={selectedType} 
+                setSelectedType={setSelectedType} 
+             />
           )}
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
-          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t) => { setUploadType(t); setIsUploadOpen(true);}}/>}
+          {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t: string) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           
           {view === 'issue_list' && (
             <div className="pt-16 max-w-7xl mx-auto px-4 animate-in fade-in mb-28">
@@ -809,7 +654,6 @@ const MainApp = () => {
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>
                     </button>
-                    {/* 전체 일괄 추출 버튼은 제거됨 */}
                     <button onClick={() => { setUploadType('issue'); setIsUploadOpen(true); }} className="bg-teal-500 dark:bg-teal-600 text-white px-7 py-3.5 rounded-2xl font-black shadow-md flex items-center gap-2 hover:bg-teal-600 dark:hover:bg-teal-500 transition-colors">
                       <Plus size={20}/> 호수 발행
                     </button>
@@ -818,7 +662,6 @@ const MainApp = () => {
               </div>
         
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8">
-                {/* 🚨 IssueCard 호출 시 onRegenerateCover 추가 */}
                 {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>)}
               </div>
             </div>
