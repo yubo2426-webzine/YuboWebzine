@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "api/cron.js": {
+      "memory": 1024,
+      "maxDuration": 15
+    }
+  },
   "crons": [
     {
       "path": "/api/cron",
