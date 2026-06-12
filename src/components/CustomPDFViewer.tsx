@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ZoomOut, ZoomIn, Download, List as ListIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ZoomOut, ZoomIn, Download, List as ListIcon, Loader2, ChevronLeft, ChevronRight, BookOpen, Maximize } from 'lucide-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// 💡 1. 뷰어 독립 작동을 위한 필수 도구 탑재
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
@@ -41,7 +40,6 @@ const loadPdfScript = () => {
   });
 };
 
-// 💡 2. 데이터 타입 정의
 export interface Article {
   id: number;
   title: string;
@@ -66,6 +64,9 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
   const [scale, setScale] = useState(1.0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pageImages, setPageImages] = useState<any>(null);
+  
+  // 💡 한쪽 보기 / 양쪽 보기 토글 상태 (모바일은 기본 한쪽 보기)
+  const [viewMode, setViewMode] = useState<'single' | 'double'>(typeof window !== 'undefined' && window.innerWidth < 768 ? 'single' : 'double');
 
   const pageCache = useRef(new Map());
   const pageInfoCache = useRef(new Map()); 
@@ -103,20 +104,10 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
     if (!pdfDoc || !containerRef.current) return;
     let isMounted = true;
 
-    const adjustSubPage = (pageNum: number, isSpread: boolean) => {
-       const isMobile = window.innerWidth < 768;
-       if (isSpread && isMobile) {
-          setSubPage(prev => (prev === 'full' ? 'left' : prev));
-       } else {
-          setSubPage('full');
-       }
-    };
-
     const renderCurrentPage = async () => {
       if (pageCache.current.has(physicalPage)) {
         const cached = pageCache.current.get(physicalPage);
         setPageImages(cached);
-        adjustSubPage(physicalPage, pageInfoCache.current.get(physicalPage)?.isSpread);
         return;
       }
 
@@ -125,8 +116,6 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
         const vp = page.getViewport({ scale: 1.0 });
         const isSpread = vp.width > vp.height * 1.2; 
         pageInfoCache.current.set(physicalPage, { isSpread });
-
-        if (isMounted) adjustSubPage(physicalPage, isSpread);
 
         const outputScale = window.devicePixelRatio || 2;
         const viewport = page.getViewport({ scale: 2.0 }); 
@@ -164,33 +153,6 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
 
            pageCache.current.set(physicalPage, cacheObj);
            setPageImages(cacheObj);
-
-           if (physicalPage < pdfDoc.numPages && !pageCache.current.has(physicalPage + 1)) {
-              setTimeout(async () => {
-                 try {
-                   const np = await pdfDoc.getPage(physicalPage + 1);
-                   const nvp = np.getViewport({ scale: 2.0 });
-                   const nc = document.createElement('canvas');
-                   nc.width = Math.floor(nvp.width * outputScale);
-                   nc.height = Math.floor(nvp.height * outputScale);
-                   await np.render({ canvasContext: nc.getContext('2d')!, viewport: nvp, transform }).promise;
-             
-                   const nIsSpread = nvp.width > nvp.height * 1.2;
-                   const nCacheObj: any = { full: nc.toDataURL('image/jpeg', 0.85) };
-                   if(nIsSpread) {
-                       const hw = nc.width / 2; const fh = nc.height;
-                       const lC = document.createElement('canvas'); lC.width = hw; lC.height = fh;
-                       lC.getContext('2d')?.drawImage(nc, 0, 0, hw, fh, 0, 0, hw, fh);
-                       const rC = document.createElement('canvas'); rC.width = hw; rC.height = fh;
-                       rC.getContext('2d')?.drawImage(nc, hw, 0, hw, fh, 0, 0, hw, fh);
-                       nCacheObj.left = lC.toDataURL('image/jpeg', 0.85);
-                       nCacheObj.right = rC.toDataURL('image/jpeg', 0.85);
-                   }
-                   pageCache.current.set(physicalPage + 1, nCacheObj);
-                   pageInfoCache.current.set(physicalPage + 1, { isSpread: nIsSpread });
-                 } catch(e){}
-              }, 500);
-           }
         }
       } catch (err: any) {
         if (err.name !== 'RenderingCancelledException') console.error(err);
@@ -203,10 +165,19 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
     return () => { isMounted = false; };
   }, [pdfDoc, physicalPage]);
 
+  // 💡 사용자가 뷰 모드를 바꾸거나 페이지를 넘길 때 올바른 파트(좌/우/전체)를 보여주도록 계산
+  useEffect(() => {
+    const info = pageInfoCache.current.get(physicalPage);
+    if (info?.isSpread && viewMode === 'single') {
+        if (subPage === 'full') setSubPage('left');
+    } else {
+        setSubPage('full');
+    }
+  }, [viewMode, physicalPage]);
+
   const handleNext = () => {
      const info = pageInfoCache.current.get(physicalPage);
-     const isMobile = window.innerWidth < 768;
-     if (info?.isSpread && isMobile && subPage === 'left') {
+     if (info?.isSpread && viewMode === 'single' && subPage === 'left') {
          setSubPage('right');
      } else if (physicalPage < pdfDoc?.numPages) {
          setPhysicalPage(p => p + 1);
@@ -216,14 +187,13 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
 
   const handlePrev = () => {
      const info = pageInfoCache.current.get(physicalPage);
-     const isMobile = window.innerWidth < 768;
-     if (info?.isSpread && isMobile && subPage === 'right') {
+     if (info?.isSpread && viewMode === 'single' && subPage === 'right') {
          setSubPage('left');
      } else if (physicalPage > 1) {
-         const prevInfo = pageInfoCache.current.get(physicalPage - 1);
-         if (prevInfo?.isSpread && isMobile) setSubPage('right'); 
-         else setSubPage('full');
          setPhysicalPage(p => p - 1);
+         const prevInfo = pageInfoCache.current.get(physicalPage - 1);
+         if (prevInfo?.isSpread && viewMode === 'single') setSubPage('right');
+         else setSubPage('full');
      }
   };
 
@@ -243,13 +213,10 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
             isSwiping.current = false;
             return; 
         }
-
         isPinching.current = false; 
         isSwiping.current = true;
         touchStartX.current = e.touches[0].screenX; 
-        if (contentWrapperRef.current) {
-           contentWrapperRef.current.style.transition = 'none';
-        }
+        if (contentWrapperRef.current) contentWrapperRef.current.style.transition = 'none';
     }
   };
   
@@ -260,7 +227,6 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
     } else if (isSwiping.current && scale === 1.0 && contentWrapperRef.current) { 
         const currentX = e.touches[0].screenX;
         const diffX = currentX - touchStartX.current;
-        
         swipeOffsetRef.current = diffX * 0.8; 
         contentWrapperRef.current.style.transform = `translateX(${swipeOffsetRef.current}px)`;
     }
@@ -279,7 +245,6 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
            contentWrapperRef.current.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
            contentWrapperRef.current.style.transform = 'translateX(0px)';
         }
-
         if (diff < -80) { handleNext(); } 
         else if (diff > 80) { handlePrev(); }
     }
@@ -296,19 +261,26 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
             <h2 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
           </div>
           <div className="flex items-center gap-1">
+             {/* 💡 사용자가 직접 한쪽/양쪽 보기를 전환할 수 있는 버튼 */}
+             <button 
+                onClick={() => setViewMode(prev => prev === 'single' ? 'double' : 'single')} 
+                className="p-2 mr-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full flex items-center gap-1.5 text-sm font-bold border border-slate-200 dark:border-slate-700"
+             >
+                {viewMode === 'single' ? <><BookOpen size={16}/> 양쪽 보기</> : <><Maximize size={16}/> 한쪽 보기</>}
+             </button>
+             
              <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-full mr-2 px-2">
                  <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomOut size={18}/></button>
                  <span className="text-sm w-12 text-center font-bold text-slate-800 dark:text-white">{Math.round(scale * 100)}%</span>
                  <button onClick={() => setScale(s => Math.min(3.0, s + 0.2))} className="p-2 text-slate-600 dark:text-slate-300"><ZoomIn size={18}/></button>
              </div>
-             <button onClick={() => window.open(getValidSupabaseUrl(article.fileUrl || article.file_url || ''), '_blank')} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
+             <button onClick={() => window.open(getValidSupabaseUrl(article.fileUrl || article.file_url || ''), '_blank')} className="hidden sm:block p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Download size={24}/></button>
              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isSidebarOpen ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}><ListIcon size={24}/></button>
           </div>
        </div>
 
        {/* Main Area */}
        <div className="flex-1 overflow-hidden flex relative">
-          {/* Sidebar */}
           <div className={`absolute md:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-900 shadow-lg border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
              <div className="p-5 font-black border-b border-slate-100 dark:border-slate-800 text-lg dark:text-white">목차 ({pdfDoc?.numPages}p)</div>
              <div className="overflow-y-auto h-full p-3 space-y-1 pb-20">
@@ -320,13 +292,26 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
              </div>
           </div>
 
-          {/* Viewer Area */}
           <div className="flex-1 overflow-hidden bg-slate-200 dark:bg-slate-950 flex justify-center items-center p-0 md:p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
-             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-hidden flex w-full h-full items-center justify-center">
+             {/* 💡 가로 화면에 맞추기 위해 overflow-y-auto(세로 스크롤 허용) 및 flex-start 정렬 사용 */}
+             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-y-auto overflow-x-hidden flex w-full h-full items-start justify-center">
                 {currentImageSrc ? (
-                    <img src={currentImageSrc} style={{ transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)', width: '100%', height: 'auto', maxHeight: '100%', objectFit: 'contain', transform: `scale(${scale})` }} alt={`Page ${physicalPage}`} draggable={false} className="pointer-events-none" />
+                    <img 
+                       src={currentImageSrc} 
+                       style={{ 
+                         transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)', 
+                         width: '100%', 
+                         height: 'auto', 
+                         maxHeight: 'none', // 💡 가로 꽉 차게 하기 위해 최대 높이 제한 해제
+                         objectFit: 'contain', 
+                         transform: `scale(${scale})` 
+                       }} 
+                       alt={`Page ${physicalPage}`} 
+                       draggable={false} 
+                       className="pointer-events-none" 
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900">
                         <Loader2 className="animate-spin text-emerald-500" size={40} />

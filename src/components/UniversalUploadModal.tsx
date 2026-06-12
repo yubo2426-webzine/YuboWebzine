@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Megaphone, Book, FileText, X, Loader2, Paperclip } from 'lucide-react';
 
-// 💡 App.jsx에 있던 KRDSInput을 독립적으로 사용하기 위해 임시로 가져옵니다.
 interface KRDSInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 const KRDSInput: React.FC<KRDSInputProps> = ({ className, ...props }) => (
   <input className={`w-full h-[52px] px-5 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner ${className}`} {...props} />
@@ -62,7 +61,11 @@ const UniversalUploadModal: React.FC<UniversalUploadModalProps> = ({ isOpen, onC
             ) : (
                <form onSubmit={handleSubmit} className="space-y-6">
                   {type === 'issue' && <div><label className={getLabelClass}>호수 (Vol)</label><KRDSInput placeholder="예: 24" value={formData.vol} onChange={e => setFormData({...formData, vol: e.target.value})}/></div>}
-                  <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
+                  
+                  {/* 💡 자료(article) 등록일 때는 제목 입력을 숨깁니다 */}
+                  {type !== 'article' && (
+                     <div><label className={getLabelClass}>제목</label><KRDSInput placeholder="제목을 입력하세요" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required/></div>
+                  )}
                   
                   {type === 'notice' && (
                      <>
@@ -72,6 +75,7 @@ const UniversalUploadModal: React.FC<UniversalUploadModalProps> = ({ isOpen, onC
                   )}
               
                   {type === 'issue' && <div><label className={getLabelClass}>설명</label><textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-teal-400 h-28 resize-none shadow-inner text-slate-800 dark:text-slate-100" placeholder="설명 입력" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}/></div>}
+                  
                   {type === 'article' && (
                      <div>
                         <label className={getLabelClass}>PDF 파일 첨부</label>
