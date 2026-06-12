@@ -3,7 +3,8 @@ import {
   Book, ChevronRight, X, Newspaper, Calendar as CalendarIcon, 
   MapPin, RefreshCw, ArrowUpRight, Loader2, Home, Search, 
   Eye, Map as MapIcon, Phone, CheckCircle2, Sparkles, LayoutGrid,
-  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
+  ArrowDown, ArrowUp
 } from 'lucide-react';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -159,6 +160,11 @@ const MainApp = () => {
   const [role, setRole] = useState<string>(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
   const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState<any[]>([]);
+  
+  // 💡 정렬 상태 옵션
+  const [sortOption, setSortOption] = useState<string>('date_order');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+
   const [currentIssue, setCurrentIssue] = useState<any>(null);
   const [currentArticle, setCurrentArticle] = useState<any>(null);
   const [recentNotices, setRecentNotices] = useState<any[]>([]);
@@ -209,8 +215,12 @@ const MainApp = () => {
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
-      const resIssues = await supabase.from('issues').select('*').order('id', { ascending: false });
-      if (resIssues.data) setIssues(resIssues.data);
+      const resIssues = await supabase.from('issues').select('*');
+      if (resIssues.data) {
+        // 💡 최초 로딩 시 최신 호수(vol) 기준으로 무조건 정렬
+        const sortedByDate = resIssues.data.sort((a, b) => Number(b.vol || b.id || 0) - Number(a.vol || a.id || 0));
+        setIssues(sortedByDate);
+      }
       
       const resResources = await supabase.from('resources').select('*');
       if (resResources.data) setResources(resResources.data);
@@ -276,14 +286,15 @@ const MainApp = () => {
                const coverBlob = await extractPdfCover(data.file);
                if (coverBlob) {
                    const coverFn = `cover_${timestamp}.jpg`;
-                   const { error: coverError } = await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg' });
+                   const { error: coverError } = await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
                    if (coverError) throw new Error(`표지 이미지 업로드 실패: ${coverError.message}`);
                    
                    coverUrl = supabase!.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
                }
            } 
 
-           const updatedArticles = [...(currentIssue.articles || []), { id: Date.now(), title: data.title, fileUrl, views: 0 }];
+           // 💡 1이슈 1자료 원칙 적용 (기존 자료 덮어쓰기 & 호수 제목 그대로 사용)
+           const updatedArticles = [{ id: Date.now(), title: currentIssue.title, fileUrl, views: 0 }];
            const { error: dbError } = await supabase!.from('issues').update({ articles: updatedArticles, cover_url: coverUrl }).eq('id', currentIssue.id);
            if (dbError) throw new Error(`DB 업데이트 실패: ${dbError.message}`);
 
@@ -660,9 +671,46 @@ const MainApp = () => {
                   </div>
                 )}
               </div>
+
+              {/* 💡 정렬 옵션 및 오름/내림차순 버튼 추가 */}
+              <div className="flex justify-end mb-6 gap-2 px-2">
+                <select 
+                  value={sortOption} 
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="h-11 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <option value="date_order">날짜 순</option>
+                  <option value="hit_order">조회 순</option>
+                  <option value="thumbup_order">추천 순</option>
+                </select>
+                
+                <button 
+                  onClick={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
+                  className="h-11 px-3 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                  title="오름차순/내림차순 변경"
+                >
+                  {sortDirection === 'desc' ? <ArrowDown size={18} /> : <ArrowUp size={18} />}
+                </button>
+              </div>
         
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8">
-                {issues.map(issue => <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>)}
+                {/* 💡 선택된 정렬 방식에 따라 카드 재배치 */}
+                {[...issues].sort((a, b) => {
+                  let valA = 0, valB = 0;
+                  if (sortOption === 'date_order') {
+                    valA = Number(a.vol || a.id || 0); 
+                    valB = Number(b.vol || b.id || 0);
+                  } else if (sortOption === 'hit_order') {
+                    valA = Number(a.views || 0);
+                    valB = Number(b.views || 0);
+                  } else if (sortOption === 'thumbup_order') {
+                    valA = Number(a.likes || 0);
+                    valB = Number(b.likes || 0);
+                  }
+                  return sortDirection === 'desc' ? valB - valA : valA - valB;
+                }).map(issue => (
+                  <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
+                ))}
               </div>
             </div>
           )}
