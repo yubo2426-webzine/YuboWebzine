@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pencil, Trash2, Plus, RefreshCw, FileText } from 'lucide-react';
 
-// 💡 1. 데이터의 형태(타입)를 엄격하게 정의합니다. (에러 방지)
 export interface Issue {
   id: number;
   vol: string | number;
@@ -14,15 +13,15 @@ export interface Issue {
   views?: number;
 }
 
-// 💡 2. 부모(App)로부터 넘겨받을 함수들의 타입을 정의합니다.
+// 💡 1. App.tsx가 기대하는 대로, 오직 'issue' 데이터 1개만 전달하도록 타입 수정
 interface IssueCardProps {
   issue: Issue;
-  onClick: () => void;
+  onClick: (issue: Issue) => void;
   isAdmin: boolean;
-  onDelete: (e: React.MouseEvent, id: number) => void;
-  onAddArticle: (e: React.MouseEvent, issue: Issue) => void;
-  onEdit: (e: React.MouseEvent, issue: Issue) => void;
-  onRegenerateCover: (e: React.MouseEvent, issue: Issue) => void;
+  onDelete: (issue: Issue) => void;
+  onAddArticle: (issue: Issue) => void;
+  onEdit: (issue: Issue) => void;
+  onRegenerateCover: (issue: Issue) => void;
 }
 
 const IssueCard: React.FC<IssueCardProps> = ({
@@ -36,7 +35,8 @@ const IssueCard: React.FC<IssueCardProps> = ({
 }) => {
   return (
     <div 
-      onClick={onClick}
+      // 💡 2. 카드 전체 클릭 시에도 MouseEvent(e)가 아니라 issue 데이터를 전달!
+      onClick={() => onClick(issue)}
       className="group relative bg-white dark:bg-slate-800 rounded-[2rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-2 border border-gray-100 dark:border-slate-700 flex flex-col h-full"
     >
       {/* 썸네일 영역 */}
@@ -76,32 +76,33 @@ const IssueCard: React.FC<IssueCardProps> = ({
         </div>
       </div>
 
-      {/* 관리자 도구 (우측 상단 호버 시 등장) */}
+      {/* 관리자 도구 */}
       {isAdmin && (
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button 
-            onClick={(e) => onRegenerateCover(e, issue)} 
+            // 💡 3. e.stopPropagation()으로 중복 클릭 방지, 올바른 데이터(issue) 전달
+            onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} 
             className="p-2.5 bg-amber-500/90 text-white rounded-full hover:bg-amber-600 shadow-lg backdrop-blur-sm"
             title="표지 재생성"
           >
             <RefreshCw size={16} />
           </button>
           <button 
-            onClick={(e) => onEdit(e, issue)} 
+            onClick={(e) => { e.stopPropagation(); onEdit(issue); }} 
             className="p-2.5 bg-blue-500/90 text-white rounded-full hover:bg-blue-600 shadow-lg backdrop-blur-sm"
             title="수정"
           >
             <Pencil size={16} />
           </button>
           <button 
-            onClick={(e) => onAddArticle(e, issue)} 
+            onClick={(e) => { e.stopPropagation(); onAddArticle(issue); }} 
             className="p-2.5 bg-emerald-500/90 text-white rounded-full hover:bg-emerald-600 shadow-lg backdrop-blur-sm"
             title="자료 추가"
           >
             <Plus size={16} />
           </button>
           <button 
-            onClick={(e) => onDelete(e, issue.id)} 
+            onClick={(e) => { e.stopPropagation(); onDelete(issue); }} 
             className="p-2.5 bg-rose-500/90 text-white rounded-full hover:bg-rose-600 shadow-lg backdrop-blur-sm"
             title="삭제"
           >
