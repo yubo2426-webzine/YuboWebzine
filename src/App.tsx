@@ -337,25 +337,37 @@ const MainApp = () => {
 
   // ✅ 추가: 주소 → 좌표 변환 함수
   // ✅ 수정: Edge Function 호출 방식으로 교체
-  const handleGeocodeAll = async () => {
-    if (!confirm("429개 주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
-    setIsMigrating(true);
+ const handleGeocodeAll = async () => {
+  if (!confirm("429개 주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
+  setIsMigrating(true);
 
-    try {
-      const { data: result, error } = await supabase!.functions.invoke('geocode-addresses');
+  try {
+    const res = await fetch(
+      'https://jsxhagxjrqpdbjjmgync.supabase.co/functions/v1/geocode-addresses',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
 
-      if (error) throw error;
-
-      alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
-      window.location.reload();
-
-    } catch (e: any) {
-      alert("오류: " + e.message);
-    } finally {
-      setIsMigrating(false);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
     }
-  };
 
+    const result = await res.json();
+    alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
+    window.location.reload();
+
+  } catch (e: any) {
+    alert("오류: " + e.message);
+  } finally {
+    setIsMigrating(false);
+  }
+};
   const handleFixDatabaseUrls = async () => {
     if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
     setIsMigrating(true);
