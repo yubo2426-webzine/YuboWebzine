@@ -336,46 +336,17 @@ const MainApp = () => {
   };
 
   // ✅ 추가: 주소 → 좌표 변환 함수
+  // ✅ 수정: Edge Function 호출 방식으로 교체
   const handleGeocodeAll = async () => {
-    if (!confirm("429개 주소를 카카오 API로 좌표 변환합니다. 시간이 걸릴 수 있어요.")) return;
+    if (!confirm("429개 주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
     setIsMigrating(true);
 
     try {
-      const kakaoKey = import.meta.env.VITE_KAKAO_REST_API_KEY || '';
-      const { data: places } = await supabase!
-        .from('영유아체험기관')
-        .select('id, 주소, 위도, 경도')
-        .not('주소', 'is', null);
+      const { data: result, error } = await supabase!.functions.invoke('geocode-addresses');
 
-      if (!places) { alert("데이터 없음"); return; }
+      if (error) throw error;
 
-      const targets = places.filter((p: any) => !p.위도 || !p.경도);
-      let successCount = 0;
-
-      for (const place of targets) {
-        try {
-          const res = await fetch(
-            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(place.주소)}`,
-            { headers: { Authorization: `KakaoAK ${kakaoKey}` } }
-          );
-          const json = await res.json();
-          const doc = json.documents?.[0];
-
-          if (doc) {
-            await supabase!
-              .from('영유아체험기관')
-              .update({ 위도: parseFloat(doc.y), 경도: parseFloat(doc.x) })
-              .eq('id', place.id);
-            successCount++;
-          }
-
-          await new Promise(r => setTimeout(r, 100));
-        } catch (e) {
-          console.error(`변환 실패: ${place.주소}`, e);
-        }
-      }
-
-      alert(`✅ 완료! ${successCount}/${targets.length}개 좌표 변환 성공`);
+      alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
       window.location.reload();
 
     } catch (e: any) {
