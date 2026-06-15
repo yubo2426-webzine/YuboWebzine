@@ -6,11 +6,31 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
-const parser = new Parser();
+
+// 💡 1. 구글이 기계(봇)로 인식하지 못하도록 '일반 크롬 브라우저'인 척하는 신분증(헤더)을 달아줍니다.
+const parser = new Parser({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml;q=0.9, */*;q=0.8',
+    'Accept-Language': 'ko-KR,ko;q=0.9'
+  }
+});
+
+// 💡 2. 수석님이 손으로 하시던 '여러 번 새로고침'을 코드가 알아서 최대 3번까지 대신 해주는 마법의 함수입니다.
+async function fetchWithRetry(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await parser.parseURL(url);
+    } catch (error) {
+      console.log(`[시도 ${i + 1}/${maxRetries}] 구글 뉴스 연결 지연. 1초 뒤 자동 새로고침합니다...`);
+      if (i === maxRetries - 1) throw error; // 3번 다 실패하면 그때만 에러 처리
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 쉬고 다시 요청
+    }
+  }
+}
 
 export default async function handler(req, res) {
-  // 1. 보안 체크 (설정된 비밀번호가 맞는지 확인)
-  // Vercel Cron은 자동으로 헤더에 키를 담아 보내지만, 수동 호출을 위해 쿼리 파라미터도 허용합니다.
+  // 1. 보안 체크
   const authHeader = req.headers.authorization;
   if (req.query.key !== process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -20,9 +40,9 @@ export default async function handler(req, res) {
   let allNews = [];
 
   try {
-    // 2. 뉴스 수집 (구글 뉴스 RSS 직접 호출)
+    // 2. 뉴스 수집 (자동 재시도 함수 적용)
     for (const keyword of keywords) {
-      const feed = await parser.parseURL(
+      const feed = await fetchWithRetry(
         `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=ko&gl=KR&ceid=KR:ko`
       );
 
