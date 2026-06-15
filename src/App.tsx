@@ -156,12 +156,14 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
   });
 };
 
+// ✅ 실제 영역 데이터
+const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
+
 const MainApp = () => {
   const [role, setRole] = useState<string>(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
   const [view, setView] = useHistoryState('home');
   const [issues, setIssues] = useState<any[]>([]);
   
-  // 💡 정렬 상태 옵션
   const [sortOption, setSortOption] = useState<string>('date_order');
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
 
@@ -217,13 +219,32 @@ const MainApp = () => {
       if(!supabase) return;
       const resIssues = await supabase.from('issues').select('*');
       if (resIssues.data) {
-        // 💡 최초 로딩 시 최신 호수(vol) 기준으로 무조건 정렬
         const sortedByDate = resIssues.data.sort((a, b) => Number(b.vol || b.id || 0) - Number(a.vol || a.id || 0));
         setIssues(sortedByDate);
       }
       
-      const resResources = await supabase.from('resources').select('*');
-      if (resResources.data) setResources(resResources.data);
+      // ✅ 수정: 영유아체험기관 테이블 연결 + 필드 매핑
+      const resResources = await supabase
+        .from('영유아체험기관')
+        .select('*')
+        .not('기관시설', 'is', null);
+
+      if (resResources.data) {
+        const mapped = resResources.data.map((item: any) => ({
+          id: item.id,
+          name: item.기관시설,
+          region: item.시군구,
+          category: item.영역,
+          address: item.주소,
+          phone: item.연락처,
+          lat: item.위도 ?? 35.8242238,
+          lng: item.경도 ?? 127.1479532,
+          program: item.체험프로그램,
+          note: item.비고,
+          holiday: item.휴무일,
+        }));
+        setResources(mapped);
+      }
       
       const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
       if(resNotices.data) setRecentNotices(resNotices.data);
@@ -293,7 +314,6 @@ const MainApp = () => {
                }
            } 
 
-           // 💡 1이슈 1자료 원칙 적용 (기존 자료 덮어쓰기 & 호수 제목 그대로 사용)
            const updatedArticles = [{ id: Date.now(), title: currentIssue.title, fileUrl, views: 0 }];
            const { error: dbError } = await supabase!.from('issues').update({ articles: updatedArticles, cover_url: coverUrl }).eq('id', currentIssue.id);
            if (dbError) throw new Error(`DB 업데이트 실패: ${dbError.message}`);
@@ -340,7 +360,6 @@ const MainApp = () => {
               const oldUrl = art.fileUrl || art.file_url;
               if (oldUrl && oldUrl.includes('/storage/v1/object/public/')) {
                 const expectedUrl = getValidSupabaseUrl(oldUrl);
-               
                 if (oldUrl !== expectedUrl) {
                   isModified = true;
                   return { ...art, fileUrl: expectedUrl, file_url: expectedUrl };
@@ -532,9 +551,10 @@ const MainApp = () => {
                            <option value="전체">= 지역 전체 =</option>
                            {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
                         </select>
+                        {/* ✅ 수정: 실제 영역 데이터로 교체 */}
                         <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 자원형태 전체 =</option>
-                           {['형태 1', '형태 2', '형태 3', '형태 4', '형태 5', '형태 6', '형태 7'].map(t => <option key={t} value={t}>{t}</option>)}
+                           {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                      </div>
                      <div className="relative">
@@ -672,7 +692,6 @@ const MainApp = () => {
                 )}
               </div>
 
-              {/* 💡 정렬 옵션 및 오름/내림차순 버튼 추가 */}
               <div className="flex justify-end mb-6 gap-2 px-2">
                 <select 
                   value={sortOption} 
@@ -694,7 +713,6 @@ const MainApp = () => {
               </div>
         
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8">
-                {/* 💡 선택된 정렬 방식에 따라 카드 재배치 */}
                 {[...issues].sort((a, b) => {
                   let valA = 0, valB = 0;
                   if (sortOption === 'date_order') {
