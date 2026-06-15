@@ -335,6 +335,56 @@ const MainApp = () => {
     }
   };
 
+  // ✅ 추가: 주소 → 좌표 변환 함수
+  const handleGeocodeAll = async () => {
+    if (!confirm("429개 주소를 카카오 API로 좌표 변환합니다. 시간이 걸릴 수 있어요.")) return;
+    setIsMigrating(true);
+
+    try {
+      const kakaoKey = import.meta.env.VITE_KAKAO_REST_API_KEY || '';
+      const { data: places } = await supabase!
+        .from('영유아체험기관')
+        .select('id, 주소, 위도, 경도')
+        .not('주소', 'is', null);
+
+      if (!places) { alert("데이터 없음"); return; }
+
+      const targets = places.filter((p: any) => !p.위도 || !p.경도);
+      let successCount = 0;
+
+      for (const place of targets) {
+        try {
+          const res = await fetch(
+            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(place.주소)}`,
+            { headers: { Authorization: `KakaoAK ${kakaoKey}` } }
+          );
+          const json = await res.json();
+          const doc = json.documents?.[0];
+
+          if (doc) {
+            await supabase!
+              .from('영유아체험기관')
+              .update({ 위도: parseFloat(doc.y), 경도: parseFloat(doc.x) })
+              .eq('id', place.id);
+            successCount++;
+          }
+
+          await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+          console.error(`변환 실패: ${place.주소}`, e);
+        }
+      }
+
+      alert(`✅ 완료! ${successCount}/${targets.length}개 좌표 변환 성공`);
+      window.location.reload();
+
+    } catch (e: any) {
+      alert("오류: " + e.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const handleFixDatabaseUrls = async () => {
     if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
     setIsMigrating(true);
@@ -681,6 +731,11 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
+                    {/* ✅ 추가: 주소 → 좌표 변환 버튼 */}
+                    <button onClick={handleGeocodeAll} disabled={isMigrating} className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                      {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <MapPin size={20} />}
+                      <span className="hidden sm:inline">주소 → 좌표 변환</span>
+                    </button>
                     <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>
