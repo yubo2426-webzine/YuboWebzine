@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, Trash2, Plus, RefreshCw, FileText } from 'lucide-react';
+import { Pencil, Trash2, Plus, FileText } from 'lucide-react';
 
 export interface Issue {
   id: number;
@@ -13,7 +13,6 @@ export interface Issue {
   views?: number;
 }
 
-// 💡 1. App.tsx가 기대하는 대로, 오직 'issue' 데이터 1개만 전달하도록 타입 수정
 interface IssueCardProps {
   issue: Issue;
   onClick: (issue: Issue) => void;
@@ -21,7 +20,6 @@ interface IssueCardProps {
   onDelete: (issue: Issue) => void;
   onAddArticle: (issue: Issue) => void;
   onEdit: (issue: Issue) => void;
-  onRegenerateCover: (issue: Issue) => void;
 }
 
 const IssueCard: React.FC<IssueCardProps> = ({
@@ -30,12 +28,10 @@ const IssueCard: React.FC<IssueCardProps> = ({
   isAdmin,
   onDelete,
   onAddArticle,
-  onEdit,
-  onRegenerateCover
+  onEdit
 }) => {
   return (
     <div 
-      // 💡 2. 카드 전체 클릭 시에도 MouseEvent(e)가 아니라 issue 데이터를 전달!
       onClick={() => onClick(issue)}
       className="group relative bg-white dark:bg-slate-800 rounded-[2rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-2 border border-gray-100 dark:border-slate-700 flex flex-col h-full"
     >
@@ -79,14 +75,6 @@ const IssueCard: React.FC<IssueCardProps> = ({
       {/* 관리자 도구 */}
       {isAdmin && (
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button 
-            // 💡 3. e.stopPropagation()으로 중복 클릭 방지, 올바른 데이터(issue) 전달
-            onClick={(e) => { e.stopPropagation(); onRegenerateCover(issue); }} 
-            className="p-2.5 bg-amber-500/90 text-white rounded-full hover:bg-amber-600 shadow-lg backdrop-blur-sm"
-            title="표지 재생성"
-          >
-            <RefreshCw size={16} />
-          </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(issue); }} 
             className="p-2.5 bg-blue-500/90 text-white rounded-full hover:bg-blue-600 shadow-lg backdrop-blur-sm"

@@ -3,7 +3,7 @@ import {
   Book, ChevronRight, X, Newspaper, Calendar as CalendarIcon, 
   MapPin, RefreshCw, ArrowUpRight, Loader2, Home, Search, 
   Eye, Map as MapIcon, Phone, CheckCircle2, Sparkles, LayoutGrid,
-  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
+  Compass, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
   ArrowDown, ArrowUp
 } from 'lucide-react';
 
@@ -16,7 +16,6 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ResourceMap from './components/ResourceMap';
 
-// 💡 1. 싱글톤 패턴으로 분리해 둔 Supabase를 안전하게 불러옵니다.
 import { supabase } from './lib/supabase';
 
 const globalStyles = `
@@ -46,7 +45,6 @@ const KRDSBadge: React.FC<KRDSBadgeProps> = ({ variant = 'neutral', children, cl
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 💡 Supabase URL 변수가 지워졌으므로 함수 안에서 안전하게 환경변수를 바로 가져오도록 보완했습니다.
 const getValidSupabaseUrl = (url: string) => {
   const currentSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
   if (!url || !currentSupabaseUrl) return url;
@@ -116,7 +114,7 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
 
       const fileReader = new FileReader();
       fileReader.onload = async function() {
-        let pdf: any = null; // 💡 램 누수 방지를 위한 변수 선언
+        let pdf: any = null;
         try {
           const typedarray = new Uint8Array(this.result as ArrayBuffer);
           const loadingTask = (window as any).pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
@@ -142,12 +140,12 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
           }
 
           finalCanvas.toBlob(async (blob) => {
-            if (pdf) await pdf.destroy(); // 💡 작업 완료 후 PDF 메모리 강제 소각 (누수 방지)
+            if (pdf) await pdf.destroy();
             resolve(blob);
           }, 'image/jpeg', 0.85);
         } catch(e) {
             console.error(e);
-            if (pdf) await pdf.destroy(); // 💡 에러 발생 시에도 메모리 강제 소각
+            if (pdf) await pdf.destroy();
             resolve(null);
         }
       };
@@ -215,7 +213,6 @@ const MainApp = () => {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
-  // 💡 2. 체험기관 DB 조회 로직이 모두 제거되어 쾌적해졌습니다.
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
@@ -368,40 +365,6 @@ const MainApp = () => {
     }
   };
 
-  const handleRegenerateCover = async (issue: any) => {
-    if (!issue.articles || issue.articles.length === 0) {
-      alert("첨부된 PDF 파일이 없습니다.");
-      return;
-    }
-    
-    if (!confirm(`'Vol.${issue.vol}'호의 표지를 새로 추출하시겠습니까?\n(해당 PDF 1개 분량의 다운로드 트래픽이 발생합니다.)`)) return;
-    setIsMigrating(true);
-    try {
-      const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
-      const validUrl = getValidSupabaseUrl(fileUrl);
-      const response = await fetch(validUrl);
-      const blob = await response.blob();
-      const coverBlob = await extractPdfCover(blob);
-      if (coverBlob) {
-        const timestamp = Date.now();
-        const coverFn = `cover_regen_${issue.id}_${timestamp}.jpg`;
-        await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
-        const newCoverUrl = supabase!.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
-
-        await supabase!.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
-        setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, cover_url: newCoverUrl } : i));
-        alert("표지가 성공적으로 재생성되었습니다!");
-      } else {
-        alert("표지 추출에 실패했습니다. (CORS 또는 PDF 형식 오류)");
-      }
-    } catch (error: any) {
-      console.error(error);
-      alert("오류가 발생했습니다: " + error.message);
-    } finally {
-      setIsMigrating(false);
-    }
-  };
-
   const handleDeleteIssue = async (issue: any) => {
     if (confirm(`'Vol.${issue.vol}'호를 삭제하시겠습니까? 관련 PDF 및 표지 파일도 모두 삭제됩니다.`)) {
       try {
@@ -501,22 +464,6 @@ const MainApp = () => {
             <div className="w-full animate-in fade-in">
                <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
                  
-                 <div className="absolute top-10 right-10 xl:right-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
-                       <MapPin size={18} className="text-emerald-500 dark:text-emerald-400"/> 전북특별자치도 전주시
-                    </div>
-                    <div className="flex items-center justify-between gap-6">
-                       <div className="flex items-center gap-3">
-                          <CloudSun size={48} className="text-amber-500" strokeWidth={1.5} />
-                          <span className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">18<span className="text-2xl">°C</span></span>
-                       </div>
-                    </div>
-                    <div className="flex gap-2 text-xs font-black mt-1">
-                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">미세 <span className="text-blue-500 dark:text-blue-400">좋음</span></div>
-                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">초미세 <span className="text-emerald-500 dark:text-emerald-400">보통</span></div>
-                    </div>
-                 </div>
-
                  <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0 relative pb-16">
                    <div className="absolute top-0 right-1/4 text-sky-300 dark:text-sky-900/50 opacity-60 z-0 animate-pulse"><Sprout size={56}/></div>
                    <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Rabbit size={72} strokeWidth={1}/></div>
@@ -591,7 +538,7 @@ const MainApp = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 md:gap-8 pt-2 relative z-10 flex-1">
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} />
                         ))}
                       </div>
                    </div>
@@ -636,7 +583,6 @@ const MainApp = () => {
             </div>
           )}
 
-          {/* 💡 3. App.tsx가 가지고 있던 resources 관련 데이터 프롭스들을 모두 지웠습니다. */}
           {view === 'resource_map' && (
              <ResourceMap 
                 searchKeyword={searchKeyword} 
@@ -660,7 +606,6 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
-                    {/* 💡 4. 체험처 지도에 있던 '좌표 변환' 버튼은 삭제하고 본래 버튼들만 남겼습니다. */}
                     <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>
@@ -707,7 +652,7 @@ const MainApp = () => {
                   }
                   return sortDirection === 'desc' ? valB - valA : valA - valB;
                 }).map(issue => (
-                  <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
+                  <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} />
                 ))}
               </div>
             </div>

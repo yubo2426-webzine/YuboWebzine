@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Newspaper, Search, RefreshCw, Loader2, Eye, ArrowUpRight, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-// 💡 1. 독립적인 DB 연결 및 헬퍼 함수 탑재
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+import { supabase } from '../lib/supabase';
 
 const parseNewsData = (rawTitle: string) => {
   if (!rawTitle) return { title: '제목 없음', publisher: '뉴스' };
@@ -39,7 +34,6 @@ const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutr
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-// 💡 2. 데이터 타입 정의
 export interface NewsItem {
   id: number;
   title: string;
