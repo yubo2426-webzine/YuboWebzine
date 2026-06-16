@@ -3,11 +3,14 @@ import { ArrowLeft, ZoomOut, ZoomIn, Download, List as ListIcon, Loader2, Chevro
 import { supabase } from '../lib/supabase';
 
 const getValidSupabaseUrl = (url: string) => {
-  if (!url || !supabaseUrl) return url;
+  // 💡 사라진 supabaseUrl 변수 대신, 여기서 직접 환경변수를 불러오도록 수정했습니다.
+  const currentSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  
+  if (!url || !currentSupabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
   if (url.includes(marker)) {
     const filePath = url.substring(url.indexOf(marker) + marker.length);
-    const cleanBaseUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
+    const cleanBaseUrl = currentSupabaseUrl.endsWith('/') ? currentSupabaseUrl.slice(0, -1) : currentSupabaseUrl;
     return `${cleanBaseUrl}${marker}${filePath}`; 
   }
   return url;
