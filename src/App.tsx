@@ -6,7 +6,6 @@ import {
   Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
   ArrowDown, ArrowUp
 } from 'lucide-react';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 import UniversalUploadModal from './components/UniversalUploadModal';
 import IssueCard from './components/IssueCard';
@@ -16,6 +15,9 @@ import CustomPDFViewer from './components/CustomPDFViewer';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ResourceMap from './components/ResourceMap';
+
+// 💡 1. 싱글톤 패턴으로 분리해 둔 Supabase를 안전하게 불러옵니다.
+import { supabase } from './lib/supabase';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -44,16 +46,14 @@ const KRDSBadge: React.FC<KRDSBadgeProps> = ({ variant = 'neutral', children, cl
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
-
+// 💡 Supabase URL 변수가 지워졌으므로 함수 안에서 안전하게 환경변수를 바로 가져오도록 보완했습니다.
 const getValidSupabaseUrl = (url: string) => {
-  if (!url || !supabaseUrl) return url;
+  const currentSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  if (!url || !currentSupabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
   if (url.includes(marker)) {
     const filePath = url.substring(url.indexOf(marker) + marker.length);
-    const cleanBaseUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
+    const cleanBaseUrl = currentSupabaseUrl.endsWith('/') ? currentSupabaseUrl.slice(0, -1) : currentSupabaseUrl;
     return `${cleanBaseUrl}${marker}${filePath}`; 
   }
   return url;
@@ -156,7 +156,6 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
   });
 };
 
-// ✅ 실제 영역 데이터
 const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
 
 const MainApp = () => {
@@ -179,7 +178,6 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isMigrating, setIsMigrating] = useState<boolean>(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState<boolean>(false);
-  const [resources, setResources] = useState<any[]>([]);
   
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('전체');
@@ -214,6 +212,7 @@ const MainApp = () => {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
+  // 💡 2. 체험기관 DB 조회 로직이 모두 제거되어 쾌적해졌습니다.
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
@@ -221,29 +220,6 @@ const MainApp = () => {
       if (resIssues.data) {
         const sortedByDate = resIssues.data.sort((a, b) => Number(b.vol || b.id || 0) - Number(a.vol || a.id || 0));
         setIssues(sortedByDate);
-      }
-      
-      // ✅ 수정: 영유아체험기관 테이블 연결 + 필드 매핑
-      const resResources = await supabase
-        .from('영유아체험기관')
-        .select('*')
-        .not('기관시설', 'is', null);
-
-      if (resResources.data) {
-        const mapped = resResources.data.map((item: any) => ({
-          id: item.id,
-          name: item.기관시설,
-          region: item.시군구,
-          category: item.영역,
-          address: item.주소,
-          phone: item.연락처,
-          lat: item.위도 ?? 35.8242238,
-          lng: item.경도 ?? 127.1479532,
-          program: item.체험프로그램,
-          note: item.비고,
-          holiday: item.휴무일,
-        }));
-        setResources(mapped);
       }
       
       const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
@@ -335,39 +311,6 @@ const MainApp = () => {
     }
   };
 
-  // ✅ 추가: 주소 → 좌표 변환 함수
-  // ✅ 수정: Edge Function 호출 방식으로 교체
- const handleGeocodeAll = async () => {
-  if (!confirm("429개 주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
-  setIsMigrating(true);
-
-  try {
-    const res = await fetch(
-      'https://jsxhagxjrqpdbjjmgync.supabase.co/functions/v1/geocode-addresses',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
-    }
-
-    const result = await res.json();
-    alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
-    window.location.reload();
-
-  } catch (e: any) {
-    alert("오류: " + e.message);
-  } finally {
-    setIsMigrating(false);
-  }
-};
   const handleFixDatabaseUrls = async () => {
     if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
     setIsMigrating(true);
@@ -584,7 +527,6 @@ const MainApp = () => {
                            <option value="전체">= 지역 전체 =</option>
                            {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
                         </select>
-                        {/* ✅ 수정: 실제 영역 데이터로 교체 */}
                         <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 자원형태 전체 =</option>
                            {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -691,15 +633,16 @@ const MainApp = () => {
             </div>
           )}
 
+          {/* 💡 3. App.tsx가 가지고 있던 resources 관련 데이터 프롭스들을 모두 지웠습니다. */}
           {view === 'resource_map' && (
              <ResourceMap 
-                resources={resources} 
                 searchKeyword={searchKeyword} 
                 setSearchKeyword={setSearchKeyword} 
                 selectedRegion={selectedRegion} 
                 setSelectedRegion={setSelectedRegion} 
                 selectedType={selectedType} 
                 setSelectedType={setSelectedType} 
+                role={role}
              />
           )}
 
@@ -714,11 +657,7 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
-                    {/* ✅ 추가: 주소 → 좌표 변환 버튼 */}
-                    <button onClick={handleGeocodeAll} disabled={isMigrating} className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-emerald-600 transition-colors disabled:opacity-50">
-                      {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <MapPin size={20} />}
-                      <span className="hidden sm:inline">주소 → 좌표 변환</span>
-                    </button>
+                    {/* 💡 4. 체험처 지도에 있던 '좌표 변환' 버튼은 삭제하고 본래 버튼들만 남겼습니다. */}
                     <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>

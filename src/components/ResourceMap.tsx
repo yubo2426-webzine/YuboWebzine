@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Phone, X, CheckCircle2, Compass, Loader2, Rabbit } from 'lucide-react';
+import { MapPin, Search, Phone, X, CheckCircle2, Compass, Loader2, Rabbit, RefreshCw } from 'lucide-react';
+// 💡 싱글톤으로 만들어둔 supabase 인스턴스를 불러옵니다.
+import { supabase } from '../lib/supabase';
 
-// KRDSBadge 헬퍼 (지도 모달 전용)
 const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutral', children: React.ReactNode, className?: string }> = ({ variant = 'neutral', children, className }) => {
   const styles = {
     primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800',
@@ -12,7 +13,6 @@ const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutr
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className || ''}`}>{children}</span>;
 };
 
-// 💡 App.jsx에 있던 카카오맵 로더를 통째로 가져왔습니다.
 const useCustomKakaoLoader = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -46,29 +46,94 @@ const useCustomKakaoLoader = () => {
   return [loading, error];
 };
 
-// 💡 홈 화면과 검색 상태를 공유하기 위해 부모(App)로부터 프롭스를 받습니다.
+// 💡 resources 프롭스를 제거하고, 관리자 버튼 권한 제어를 위해 role 프롭스를 추가했습니다.
 interface ResourceMapProps {
-  resources: any[];
   searchKeyword: string;
   setSearchKeyword: (val: string) => void;
   selectedRegion: string;
   setSelectedRegion: (val: string) => void;
   selectedType: string;
   setSelectedType: (val: string) => void;
+  role: string; 
 }
 
 const ResourceMap: React.FC<ResourceMapProps> = ({ 
-  resources, searchKeyword, setSearchKeyword, 
+  searchKeyword, setSearchKeyword, 
   selectedRegion, setSelectedRegion, 
-  selectedType, setSelectedType 
+  selectedType, setSelectedType,
+  role
 }) => {
-  // 모달에 띄울 선택된 자원 상태는 이 컴포넌트 내부로 완전히 숨깁니다.
+  // 💡 컴포넌트 내부에서 데이터를 직접 관리합니다.
+  const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef<HTMLDivElement>(null);
 
   const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
+  const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
+
+  // 💡 마운트 시 영유아체험기관 데이터를 불러옵니다.
+  useEffect(() => {
+    const fetchResources = async () => {
+      const { data } = await supabase
+        .from('영유아체험기관')
+        .select('*')
+        .not('기관시설', 'is', null);
+
+      if (data) {
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          name: item.기관시설,
+          region: item.시군구,
+          category: item.영역,
+          address: item.주소,
+          phone: item.연락처,
+          lat: item.위도 ?? 35.8242238,
+          lng: item.경도 ?? 127.1479532,
+          program: item.체험프로그램,
+          note: item.비고,
+          holiday: item.휴무일,
+        }));
+        setResources(mapped);
+      }
+    };
+    fetchResources();
+  }, []);
+
+  // 💡 좌표 변환 로직을 App.tsx에서 이관했습니다.
+  const handleGeocodeAll = async () => {
+    if (!confirm("주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
+    setIsMigrating(true);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/geocode-addresses`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+
+      const result = await res.json();
+      alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
+      window.location.reload();
+    } catch (e: any) {
+      alert("오류: " + e.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   const filteredResources = resources.filter(res => {
     const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
@@ -115,9 +180,19 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
           <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
 
           <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-20 relative">
-             <div className="flex items-center gap-3 mb-6 relative z-10">
-               <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
-               <div><h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2></div>
+             {/* 💡 헤더 영역을 Flex로 나누어 관리자용 좌표 변환 버튼을 우측에 깔끔하게 배치했습니다. */}
+             <div className="flex items-center justify-between mb-6 relative z-10">
+               <div className="flex items-center gap-3">
+                 <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
+                 <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2>
+               </div>
+               
+               {role === 'admin' && (
+                 <button onClick={handleGeocodeAll} disabled={isMigrating} className="bg-emerald-500 text-white px-3 py-2 rounded-xl text-sm font-black shadow-sm flex items-center gap-1.5 hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                   {isMigrating ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                   <span className="hidden sm:inline">좌표 변환</span>
+                 </button>
+               )}
              </div>
 
              <div className="relative mb-4 z-10 flex gap-2">
@@ -127,7 +202,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                 </select>
                 <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
                   <option value="전체">= 형태 전체 =</option>
-                  {['형태 1', '형태 2', '형태 3', '형태 4', '형태 5', '형태 6', '형태 7'].map(t => <option key={t} value={t}>{t}</option>)}
+                  {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
              </div>
 

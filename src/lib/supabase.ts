@@ -4,7 +4,5 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
+// SQL 명령어는 삭제하고 순수 연결 객체만 내보냅니다.
 export const supabase = createClient(supabaseUrl, supabaseKey);
-alter table "전북 영유아체험기관"
-add column "위도" float8,
-add column "경도" float8;

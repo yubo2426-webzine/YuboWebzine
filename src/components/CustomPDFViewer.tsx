@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ZoomOut, ZoomIn, Download, List as ListIcon, Loader2, ChevronLeft, ChevronRight, BookOpen, Maximize } from 'lucide-react';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+import { supabase } from '../lib/supabase';
 
 const getValidSupabaseUrl = (url: string) => {
   if (!url || !supabaseUrl) return url;
