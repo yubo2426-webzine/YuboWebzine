@@ -3,9 +3,7 @@ import { ArrowLeft, ZoomOut, ZoomIn, Download, List as ListIcon, Loader2, Chevro
 import { supabase } from '../lib/supabase';
 
 const getValidSupabaseUrl = (url: string) => {
-  // 💡 사라진 supabaseUrl 변수 대신, 여기서 직접 환경변수를 불러오도록 수정했습니다.
   const currentSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  
   if (!url || !currentSupabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
   if (url.includes(marker)) {
@@ -64,21 +62,40 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pageImages, setPageImages] = useState<any>(null);
   
-  // 💡 한쪽 보기 / 양쪽 보기 토글 상태 (모바일은 기본 한쪽 보기)
-  const [viewMode, setViewMode] = useState<'single' | 'double'>(typeof window !== 'undefined' && window.innerWidth < 768 ? 'single' : 'double');
+  const [isLandscape, setIsLandscape] = useState(typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : true);
+  
+  const [viewMode, setViewMode] = useState<'single' | 'double'>(isLandscape ? 'double' : 'single');
+  const [isManualViewMode, setIsManualViewMode] = useState(false);
 
   const pageCache = useRef(new Map());
   const pageInfoCache = useRef(new Map()); 
+  const MAX_CACHE_SIZE = 5; // 💡 RAM 누수 방지: 최대 5페이지만 메모리에 캐싱
 
   const touchStartX = useRef(0);
   const pinchStartDist = useRef(0);
   const pinchStartScale = useRef(1);
   const isPinching = useRef(false);
-  
   const isSwiping = useRef(false);
   const swipeOffsetRef = useRef(0);
 
   useEffect(() => {
+    const handleResize = () => {
+        setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isManualViewMode) {
+        setViewMode(isLandscape ? 'double' : 'single');
+    }
+  }, [isLandscape, isManualViewMode]);
+
+  // 💡 메모리 누수 완벽 방어 로직 (PDF 객체 및 캐시 소각)
+  useEffect(() => {
+    let activeDoc: any = null;
+
     const loadPdf = async () => {
       try {
         await loadPdfScript(); 
@@ -92,11 +109,24 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
            disableAutoFetch: true
         }).promise;
 
+        activeDoc = doc;
         setPdfDoc(doc);
         incrementViewCount('articles', article.id, article.views);
       } catch (err) { console.error("PDF Error:", err); alert("문서 로드 실패"); }
     };
     loadPdf();
+
+    // 💡 Cleanup: 뷰어가 닫히거나 다른 글로 넘어갈 때 메모리 해제
+    return () => {
+      if (activeDoc) {
+        activeDoc.destroy(); // PDF 바이너리 메모리 해제
+      }
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel(); // 진행 중인 렌더링 중지
+      }
+      pageCache.current.clear(); // 캔버스 이미지 캐시 소각
+      pageInfoCache.current.clear();
+    };
   }, [article]);
 
   useEffect(() => {
@@ -150,6 +180,12 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
               cacheObj.right = rightCanvas.toDataURL('image/jpeg', 0.85);
            }
 
+           // 💡 캐시 폭발 방지: 최대 사이즈를 넘으면 가장 오래된 캐시 삭제 (LRU 알고리즘)
+           if (pageCache.current.size >= MAX_CACHE_SIZE) {
+             const oldestKey = pageCache.current.keys().next().value;
+             pageCache.current.delete(oldestKey);
+           }
+
            pageCache.current.set(physicalPage, cacheObj);
            setPageImages(cacheObj);
         }
@@ -164,15 +200,18 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
     return () => { isMounted = false; };
   }, [pdfDoc, physicalPage]);
 
-  // 💡 사용자가 뷰 모드를 바꾸거나 페이지를 넘길 때 올바른 파트(좌/우/전체)를 보여주도록 계산
   useEffect(() => {
+    if (!pageImages) return; 
+    
     const info = pageInfoCache.current.get(physicalPage);
     if (info?.isSpread && viewMode === 'single') {
         if (subPage === 'full') setSubPage('left');
     } else {
-        setSubPage('full');
+        if (!info?.isSpread || viewMode === 'double') {
+            setSubPage('full');
+        }
     }
-  }, [viewMode, physicalPage]);
+  }, [viewMode, physicalPage, pageImages]);
 
   const handleNext = () => {
      const info = pageInfoCache.current.get(physicalPage);
@@ -260,9 +299,11 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
             <h2 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[150px] md:max-w-md">{article.title}</h2>
           </div>
           <div className="flex items-center gap-1">
-             {/* 💡 사용자가 직접 한쪽/양쪽 보기를 전환할 수 있는 버튼 */}
              <button 
-                onClick={() => setViewMode(prev => prev === 'single' ? 'double' : 'single')} 
+                onClick={() => {
+                    setIsManualViewMode(true);
+                    setViewMode(prev => prev === 'single' ? 'double' : 'single');
+                }} 
                 className="p-2 mr-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full flex items-center gap-1.5 text-sm font-bold border border-slate-200 dark:border-slate-700"
              >
                 {viewMode === 'single' ? <><BookOpen size={16}/> 양쪽 보기</> : <><Maximize size={16}/> 한쪽 보기</>}
@@ -294,16 +335,14 @@ const CustomPDFViewer: React.FC<CustomPDFViewerProps> = ({ article, onBack }) =>
           <div className="flex-1 overflow-hidden bg-slate-200 dark:bg-slate-950 flex justify-center items-center p-0 md:p-4 relative" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
              {isSidebarOpen && <div className="absolute inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}/>}
              
-             {/* 💡 가로 화면에 맞추기 위해 overflow-y-auto(세로 스크롤 허용) 및 flex-start 정렬 사용 */}
-             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-y-auto overflow-x-hidden flex w-full h-full items-start justify-center">
+             <div ref={contentWrapperRef} className="shadow-2xl bg-white origin-center overflow-auto flex w-full h-full items-center justify-center">
                 {currentImageSrc ? (
                     <img 
                        src={currentImageSrc} 
                        style={{ 
                          transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)', 
-                         width: '100%', 
-                         height: 'auto', 
-                         maxHeight: 'none', // 💡 가로 꽉 차게 하기 위해 최대 높이 제한 해제
+                         height: isLandscape ? '100%' : 'auto', 
+                         width: isLandscape ? 'auto' : '100%', 
                          objectFit: 'contain', 
                          transform: `scale(${scale})` 
                        }} 
