@@ -46,7 +46,6 @@ const useCustomKakaoLoader = () => {
   return [loading, error];
 };
 
-// 💡 resources 프롭스를 제거하고, 관리자 버튼 권한 제어를 위해 role 프롭스를 추가했습니다.
 interface ResourceMapProps {
   searchKeyword: string;
   setSearchKeyword: (val: string) => void;
@@ -63,7 +62,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   selectedType, setSelectedType,
   role
 }) => {
-  // 💡 컴포넌트 내부에서 데이터를 직접 관리합니다.
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -74,7 +72,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   const jeonbukRegions = ['전주시', '익산시', '군산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'];
   const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
 
-  // 💡 마운트 시 영유아체험기관 데이터를 불러옵니다.
   useEffect(() => {
     const fetchResources = async () => {
       const { data } = await supabase
@@ -102,7 +99,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     fetchResources();
   }, []);
 
-  // 💡 좌표 변환 로직을 App.tsx에서 이관했습니다.
   const handleGeocodeAll = async () => {
     if (!confirm("주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
     setIsMigrating(true);
@@ -142,37 +138,55 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     return matchRegion && matchType && matchKeyword;
   });
 
-  const renderMap = (ref: React.RefObject<HTMLDivElement>) => {
-    if (!mapLoading && !mapError && ref.current && (window as any).kakao && (window as any).kakao.maps) {
-        ref.current.innerHTML = '';
-        let centerPos = new (window as any).kakao.maps.LatLng(35.8242238, 127.1479532);
-        let level = 10;
-        if (selectedResource) { centerPos = new (window as any).kakao.maps.LatLng(selectedResource.lat, selectedResource.lng); level = 4; }
-        const map = new (window as any).kakao.maps.Map(ref.current, { center: centerPos, level: level });
-        const bounds = new (window as any).kakao.maps.LatLngBounds();
-        let hasMarkers = false;
+  const mapInstance = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
 
-        const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
-        const imageSize = new (window as any).kakao.maps.Size(24, 35);
-        const markerImage = new (window as any).kakao.maps.MarkerImage(imageSrc, imageSize); 
-
-        filteredResources.forEach(res => {
-          const position = new (window as any).kakao.maps.LatLng(res.lat, res.lng);
-          const marker = new (window as any).kakao.maps.Marker({ position: position, image: markerImage });
-          marker.setMap(map);
-          bounds.extend(position);
-          hasMarkers = true;
-          (window as any).kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
-        });
-        setTimeout(() => {
-          if (map) { map.relayout(); if (!selectedResource && hasMarkers) map.setBounds(bounds); else if (selectedResource) map.setCenter(centerPos); }
-        }, 150);
-    }
-  };
-
+  // 💡 최적화 1단계: 지도는 컴포넌트가 켜질 때 딱 1번만 그립니다. (DOM 파괴 방지)
   useEffect(() => {
-    renderMap(mapContainerRefStandalone);
-  }, [mapLoading, mapError, filteredResources, selectedResource]);
+    if (!mapLoading && !mapError && mapContainerRefStandalone.current && !mapInstance.current) {
+        if (!(window as any).kakao || !(window as any).kakao.maps) return;
+        const centerPos = new (window as any).kakao.maps.LatLng(35.8242238, 127.1479532);
+        mapInstance.current = new (window as any).kakao.maps.Map(mapContainerRefStandalone.current, { center: centerPos, level: 10 });
+    }
+  }, [mapLoading, mapError]);
+
+  // 💡 최적화 2단계: 검색/필터링 조건이 바뀔 때만 '마커'를 새로 찍습니다. (지도는 그대로 둠)
+  useEffect(() => {
+    if (!mapInstance.current || !(window as any).kakao) return;
+
+    // 기존 마커 메모리에서 완전히 삭제
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+
+    const bounds = new (window as any).kakao.maps.LatLngBounds();
+    let hasMarkers = false;
+
+    const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
+    const imageSize = new (window as any).kakao.maps.Size(24, 35);
+    const markerImage = new (window as any).kakao.maps.MarkerImage(imageSrc, imageSize); 
+
+    filteredResources.forEach(res => {
+      const position = new (window as any).kakao.maps.LatLng(res.lat, res.lng);
+      const marker = new (window as any).kakao.maps.Marker({ position: position, image: markerImage });
+      marker.setMap(mapInstance.current);
+      markersRef.current.push(marker); // 메모리에 새 마커 등록
+      bounds.extend(position);
+      hasMarkers = true;
+      (window as any).kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
+    });
+
+    if (hasMarkers && !selectedResource) {
+       mapInstance.current.setBounds(bounds);
+    }
+  }, [filteredResources]); // selectedResource 변경 시에는 마커를 새로 안 찍음!
+
+  // 💡 최적화 3단계: 마커를 클릭하면 지도 부수지 않고 '카메라 시점'만 부드럽게 이동합니다.
+  useEffect(() => {
+    if (!mapInstance.current || !selectedResource || !(window as any).kakao) return;
+    const centerPos = new (window as any).kakao.maps.LatLng(selectedResource.lat, selectedResource.lng);
+    mapInstance.current.setCenter(centerPos);
+    mapInstance.current.setLevel(4);
+  }, [selectedResource]);
 
   return (
     <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100vh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
@@ -180,7 +194,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
           <div className="absolute top-4 right-10 text-emerald-100 dark:text-emerald-900/30 opacity-60"><Rabbit size={32} strokeWidth={1.5}/></div>
 
           <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-20 relative">
-             {/* 💡 헤더 영역을 Flex로 나누어 관리자용 좌표 변환 버튼을 우측에 깔끔하게 배치했습니다. */}
              <div className="flex items-center justify-between mb-6 relative z-10">
                <div className="flex items-center gap-3">
                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
