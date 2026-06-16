@@ -116,11 +116,12 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
 
       const fileReader = new FileReader();
       fileReader.onload = async function() {
+        let pdf: any = null; // 💡 램 누수 방지를 위한 변수 선언
         try {
           const typedarray = new Uint8Array(this.result as ArrayBuffer);
           const loadingTask = (window as any).pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
     
-          const pdf = await loadingTask.promise;
+          pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 0.6 });
 
@@ -140,11 +141,13 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
             finalCanvas.getContext('2d')?.drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
           }
 
-          finalCanvas.toBlob((blob) => {
+          finalCanvas.toBlob(async (blob) => {
+            if (pdf) await pdf.destroy(); // 💡 작업 완료 후 PDF 메모리 강제 소각 (누수 방지)
             resolve(blob);
           }, 'image/jpeg', 0.85);
         } catch(e) {
             console.error(e);
+            if (pdf) await pdf.destroy(); // 💡 에러 발생 시에도 메모리 강제 소각
             resolve(null);
         }
       };
