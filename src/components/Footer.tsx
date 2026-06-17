@@ -32,9 +32,14 @@ const SocialShare: React.FC = () => {
       script.async = true;
       script.onload = () => {
         if ((window as any).Kakao && !(window as any).Kakao.isInitialized()) {
-          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || 'ee00ac93b075fc1e56de1a0dc90ccaf3';
-          (window as any).Kakao.init(appKey);
-          setIsKakaoReady(true);
+          // 💡 하드코딩된 예전 키를 완벽히 덜어내고, 안전하게 환경 변수만 바라보도록 수정했습니다.
+          const appKey = import.meta.env.VITE_KAKAO_JS_KEY || '';
+          if (appKey) {
+            (window as any).Kakao.init(appKey);
+            setIsKakaoReady(true);
+          } else {
+            console.warn("⚠️ 카카오 JS 앱 키(VITE_KAKAO_JS_KEY)가 설정되지 않았습니다.");
+          }
         }
       };
       document.head.appendChild(script);
@@ -90,7 +95,7 @@ const SocialShare: React.FC = () => {
          <button onClick={shareBand} className={btnClass} title="네이버 밴드 공유">
            <img src={icons.band} alt="Band" className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform" />
          </button>
-         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="링크 복사하기">
+         <button onClick={handleCopyLink} className={`${btnClass} bg-slate-50 dark:bg-slate-700`} title="リンク 복사하기">
            <LinkIcon className="w-6 h-6 text-slate-600 dark:text-slate-300 group-hover:scale-110 transition-transform" />
          </button>
        </div>
