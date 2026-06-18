@@ -69,8 +69,9 @@ const parseNewsData = (rawTitle: string) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
+// 💡 안전장치 추가: id가 없으면 실행 중단
 const incrementViewCount = async (table: string, id: any, currentViews: number) => {
-  if (!supabase) return;
+  if (!supabase || !id) return; 
   const sessionKey = `viewed_${table}_${id}`;
   if (sessionStorage.getItem(sessionKey)) return;
   try { 
@@ -409,6 +410,7 @@ const MainApp = () => {
   };
 
   const handleIssueClick = (issue: any) => { 
+    if (!issue.id) return;
     incrementViewCount('issues', issue.id, issue.views);
     const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
     setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
@@ -564,10 +566,16 @@ const MainApp = () => {
                               </div>
                            </div>
                         ))}
+                        {/* 💡 홈 화면의 뉴스 클릭 이벤트에도 조회수 로직(incrementViewCount)이 적용되도록 수정되었습니다! */}
                         {activeHomeTab === 'news' && recentNews.map(n => {
                            const { title: cleanTitle } = parseNewsData(n.title);
                            return (
-                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                             <div key={n.id} onClick={() => { 
+                                if (!n.id) return;
+                                incrementViewCount('news', n.id, n.views);
+                                setRecentNews(prev => prev.map(item => item.id === n.id ? { ...item, views: (item.views || 0) + 1 } : item));
+                                if (n.link) window.open(n.link, '_blank'); 
+                             }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                                 <div className="flex items-center gap-3 md:gap-5 w-full">
                                    <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight pl-1 md:pl-2">{cleanTitle}</span>
                                    <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>

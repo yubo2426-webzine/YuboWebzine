@@ -14,8 +14,9 @@ const parseNewsData = (rawTitle: string) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
+// 💡 안전장치 추가: id가 없으면 실행 중단
 const incrementViewCount = async (table: string, id: number, currentViews: number) => {
-  if (!supabase) return;
+  if (!supabase || !id) return; 
   const sessionKey = `viewed_${table}_${id}`;
   if (sessionStorage.getItem(sessionKey)) return;
   try { 
@@ -97,6 +98,7 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ limit, isAdmin }) => {
   useEffect(() => { fetchNews(); }, [currentPage, debouncedKeyword, limit]);
 
   const handleNewsClick = (item: NewsItem) => {
+      if (!item.id) return; // 💡 방어 코드 추가 (전체 뉴스 조회수가 오르는 것을 방지)
       incrementViewCount('news', item.id, item.views);
       setNews(prev => prev.map(n => n.id === item.id ? {...n, views: (n.views || 0) + 1} : n));
       if (item.link) window.open(item.link, '_blank');
