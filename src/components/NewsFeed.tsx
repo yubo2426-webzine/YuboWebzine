@@ -14,13 +14,13 @@ const parseNewsData = (rawTitle: string) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
-// 💡 안전장치 추가: id가 없으면 실행 중단
-const incrementViewCount = async (table: string, id: number, currentViews: number) => {
-  if (!supabase || !id) return; 
-  const sessionKey = `viewed_${table}_${id}`;
+// 💡 타겟 컬럼명(column)을 동적으로 받아서, id 대신 link를 조건으로 쓸 수 있도록 개선
+const incrementViewCount = async (table: string, identifier: any, currentViews: number, column: string = 'id') => {
+  if (!supabase || !identifier) return; 
+  const sessionKey = `viewed_${table}_${identifier}`;
   if (sessionStorage.getItem(sessionKey)) return;
   try { 
-    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
+    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq(column, identifier); 
     sessionStorage.setItem(sessionKey, 'true');
   } catch (e) { console.error(e); }
 };
@@ -35,8 +35,9 @@ const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutr
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
+// 💡 id가 선택적(?)으로 들어올 수 있도록 타입 수정
 export interface NewsItem {
-  id: number;
+  id?: number;
   title: string;
   link: string;
   pub_date: string;
@@ -97,16 +98,24 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ limit, isAdmin }) => {
 
   useEffect(() => { fetchNews(); }, [currentPage, debouncedKeyword, limit]);
 
+  // 💡 방어 코드를 걷어내고, id가 없으면 무조건 link를 고유 기준으로 쓰도록 변경!
   const handleNewsClick = (item: NewsItem) => {
-      if (!item.id) return; // 💡 방어 코드 추가 (전체 뉴스 조회수가 오르는 것을 방지)
-      incrementViewCount('news', item.id, item.views);
-      setNews(prev => prev.map(n => n.id === item.id ? {...n, views: (n.views || 0) + 1} : n));
+      const uniqueVal = item.id || item.link;
+      const uniqueCol = item.id ? 'id' : 'link';
+
+      if (uniqueVal) {
+          incrementViewCount('news', uniqueVal, item.views, uniqueCol);
+          setNews(prev => prev.map(n => (n.id || n.link) === uniqueVal ? {...n, views: (n.views || 0) + 1} : n));
+      }
+      // 새 창 열기는 어떠한 조건에도 막히지 않고 즉시 실행됩니다!
       if (item.link) window.open(item.link, '_blank');
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (item: NewsItem) => {
     if(confirm('이 뉴스를 삭제하시겠습니까?')) {
-        await supabase!.from('news').delete().eq('id', id);
+        const uniqueVal = item.id || item.link;
+        const uniqueCol = item.id ? 'id' : 'link';
+        await supabase!.from('news').delete().eq(uniqueCol, uniqueVal);
         fetchNews(); 
     }
   };
@@ -155,7 +164,7 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ limit, isAdmin }) => {
            news.map((item, idx) => {
               const { title: cleanTitle, publisher } = parseNewsData(item.title);
               return (
-                <div key={item.id || idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
+                <div key={item.id || item.link || idx} onClick={() => handleNewsClick(item)} className="group cursor-pointer flex flex-col md:flex-row gap-4 p-6 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-500/50 transition-all relative">
                    <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                          <KRDSBadge variant="primary">{publisher}</KRDSBadge>
@@ -166,7 +175,8 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ limit, isAdmin }) => {
                    </div>
                    <div className="flex items-center justify-end gap-2">
                        {!limit && <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/40 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors"><ArrowUpRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-500 dark:group-hover:text-rose-400"/></div>}
-                       {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item.id)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
+                       {/* 💡 관리자 삭제 버튼도 link 기준으로 처리되도록 item을 통째로 넘겨줍니다. */}
+                       {isAdmin && <button onClick={(e) => {e.stopPropagation(); handleDelete(item)}} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm"><Trash2 size={16}/></button>}
                    </div>
                 </div>
               );

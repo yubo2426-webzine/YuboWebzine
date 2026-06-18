@@ -69,13 +69,13 @@ const parseNewsData = (rawTitle: string) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
-// 💡 안전장치 추가: id가 없으면 실행 중단
-const incrementViewCount = async (table: string, id: any, currentViews: number) => {
-  if (!supabase || !id) return; 
-  const sessionKey = `viewed_${table}_${id}`;
+// 💡 DB에 id가 없는 경우를 완벽 대비! 타겟 컬럼명(column)을 동적으로 받도록 개선
+const incrementViewCount = async (table: string, identifier: any, currentViews: number, column: string = 'id') => {
+  if (!supabase || !identifier) return; 
+  const sessionKey = `viewed_${table}_${identifier}`;
   if (sessionStorage.getItem(sessionKey)) return;
   try { 
-    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
+    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq(column, identifier); 
     sessionStorage.setItem(sessionKey, 'true');
   } catch (e) { console.error(e); }
 };
@@ -410,13 +410,17 @@ const MainApp = () => {
   };
 
   const handleIssueClick = (issue: any) => { 
-    if (!issue.id) return;
-    incrementViewCount('issues', issue.id, issue.views);
-    const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
-    setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
-    setCurrentIssue(updatedIssue);
-    if (updatedIssue.articles && updatedIssue.articles.length > 0) {
-      setCurrentArticle(updatedIssue.articles[0]);
+    if (issue.id) {
+      incrementViewCount('issues', issue.id, issue.views, 'id');
+      const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
+      setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
+      setCurrentIssue(updatedIssue);
+    } else {
+      setCurrentIssue(issue);
+    }
+
+    if (issue.articles && issue.articles.length > 0) {
+      setCurrentArticle(issue.articles[0]);
       setView('article_view');
     } else {
       alert("등록된 PDF 자료가 없습니다. (관리자 모드에서 + 버튼을 눌러 PDF 추가)");
@@ -566,14 +570,17 @@ const MainApp = () => {
                               </div>
                            </div>
                         ))}
-                        {/* 💡 홈 화면의 뉴스 클릭 이벤트에도 조회수 로직(incrementViewCount)이 적용되도록 수정되었습니다! */}
+                        {/* 💡 방어 코드를 우회하고, 고유키를 link 기준으로 완벽하게 복원했습니다! */}
                         {activeHomeTab === 'news' && recentNews.map(n => {
                            const { title: cleanTitle } = parseNewsData(n.title);
                            return (
-                             <div key={n.id} onClick={() => { 
-                                if (!n.id) return;
-                                incrementViewCount('news', n.id, n.views);
-                                setRecentNews(prev => prev.map(item => item.id === n.id ? { ...item, views: (item.views || 0) + 1 } : item));
+                             <div key={n.id || n.link || Math.random()} onClick={() => { 
+                                const uniqueVal = n.id || n.link;
+                                const uniqueCol = n.id ? 'id' : 'link';
+                                if (uniqueVal) {
+                                   incrementViewCount('news', uniqueVal, n.views, uniqueCol);
+                                   setRecentNews(prev => prev.map(item => (item.id || item.link) === uniqueVal ? { ...item, views: (item.views || 0) + 1 } : item));
+                                }
                                 if (n.link) window.open(n.link, '_blank'); 
                              }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                                 <div className="flex items-center gap-3 md:gap-5 w-full">
