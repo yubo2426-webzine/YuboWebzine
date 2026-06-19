@@ -223,50 +223,63 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 
     setRouteState({ loading: true, error: null, distance: null, duration: null });
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-          const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const onSuccess = async (pos: GeolocationPosition) => {
+      const { latitude, longitude } = pos.coords;
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-          const res = await fetch(`${supabaseUrl}/functions/v1/directions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseKey}`,
-            },
-            body: JSON.stringify({
-              originLat: latitude,
-              originLng: longitude,
-              destLat: selectedResource.lat,
-              destLng: selectedResource.lng,
-            }),
-          });
+        const res = await fetch(`${supabaseUrl}/functions/v1/directions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            originLat: latitude,
+            originLng: longitude,
+            destLat: selectedResource.lat,
+            destLng: selectedResource.lng,
+          }),
+        });
 
-          if (!res.ok) {
-            const errBody = await res.json().catch(() => null);
-            throw new Error(errBody?.error || '경로를 찾을 수 없습니다.');
-          }
-
-          const data = await res.json();
-          drawRoute(latitude, longitude, data.path || []);
-          setUserLocation({ lat: latitude, lng: longitude });
-          setRouteState({ loading: false, error: null, distance: data.distance, duration: data.duration });
-          // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
-          mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } catch (e: any) {
-          setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null);
+          throw new Error(errBody?.error || '경로를 찾을 수 없습니다.');
         }
-      },
-      (err) => {
-        const message =
-          err.code === err.PERMISSION_DENIED
-            ? '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 접근을 허용해주세요.'
-            : '현재 위치를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.';
-        setRouteState({ loading: false, error: message, distance: null, duration: null });
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+
+        const data = await res.json();
+        drawRoute(latitude, longitude, data.path || []);
+        setUserLocation({ lat: latitude, lng: longitude });
+        setRouteState({ loading: false, error: null, distance: data.distance, duration: data.duration });
+        // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
+        mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e: any) {
+        setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
+      }
+    };
+
+    const onError = (err: GeolocationPositionError, isRetry = false) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        setRouteState({ loading: false, error: '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 접근을 허용해주세요.', distance: null, duration: null });
+      } else if (err.code === err.TIMEOUT && !isRetry) {
+        // 💡 GPS 타임아웃 시 Wi-Fi/기지국(낮은 정확도)으로 재시도
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          (err2) => onError(err2, true),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+      } else {
+        const msg = err.code === err.TIMEOUT
+          ? '위치를 가져오는 데 시간이 너무 걸립니다. 잠시 후 다시 시도해주세요.'
+          : '현재 위치를 가져올 수 없습니다. GPS 또는 위치 서비스가 켜져 있는지 확인해주세요.';
+        setRouteState({ loading: false, error: msg, distance: null, duration: null });
+      }
+    };
+
+    // 💡 1차 시도: GPS(고정밀), 15초 타임아웃 / 실패하면 onError에서 Wi-Fi로 재시도
+    navigator.geolocation.getCurrentPosition(onSuccess, onError,
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
