@@ -235,6 +235,30 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     if (!kakao || !mapInstance.current) return { ok: false, isFallback: false };
 
     let validPoints = (rawPath || []).map(normalizeLatLng).filter((p): p is { lat: number; lng: number } => p !== null);
+
+    // 💡 country-wide 필터(위도 30~40)만으로는 못 거르는 미세 이상치가 있었습니다
+    //    (예: 위도 26도대 좌표 1개가 섞여 들어와 bounds 전체가 망가지는 경우).
+    //    출발지·목적지를 기준으로 한 합리적인 범위(직선 거리 + 충분한 여유)를 벗어나는
+    //    점은 추가로 제외해서, 경로 중간의 깨진 좌표 하나가 전체 줌을 망치지 않게 합니다.
+    const destForBbox = selectedResource ? normalizeLatLng({ lat: selectedResource.lat, lng: selectedResource.lng }) : null;
+    const userForBbox = normalizeLatLng({ lat: userLat, lng: userLng });
+    if (userForBbox) {
+      let latMin = userForBbox.lat, latMax = userForBbox.lat;
+      let lngMin = userForBbox.lng, lngMax = userForBbox.lng;
+      if (destForBbox) {
+        latMin = Math.min(latMin, destForBbox.lat); latMax = Math.max(latMax, destForBbox.lat);
+        lngMin = Math.min(lngMin, destForBbox.lng); lngMax = Math.max(lngMax, destForBbox.lng);
+      }
+      // 직선 구간 크기만큼, 최소 0.3도(약 33km) 여유를 둬서 도로가 우회하는 정도는 넉넉히 허용합니다.
+      const pad = Math.max(0.3, latMax - latMin, lngMax - lngMin);
+      latMin -= pad; latMax += pad; lngMin -= pad; lngMax += pad;
+      const before = validPoints.length;
+      validPoints = validPoints.filter(p => p.lat >= latMin && p.lat <= latMax && p.lng >= lngMin && p.lng <= lngMax);
+      if (validPoints.length !== before) {
+        console.error(`[길찾기] 출발지/목적지 범위를 벗어난 이상치 좌표 ${before - validPoints.length}개를 걸러냈습니다.`);
+      }
+    }
+
     let isFallbackStraightLine = false;
 
     if (validPoints.length < 2) {
