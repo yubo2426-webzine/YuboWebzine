@@ -254,11 +254,13 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 
   // 💡 카카오맵 위에 경로선(Polyline) + 현재 위치 마커를 그리고, 두 지점이 모두 보이도록 화면을 맞춥니다.
   //    경로 좌표가 비정상이면 사용자↔목적지 직선으로 대체해서라도 항상 무언가 보여줍니다.
-  const drawRoute = (userLat: number, userLng: number, rawPath: any[]): { ok: boolean; isFallback: boolean } => {
+  const drawRoute = (userLat: number, userLng: number, rawPath: any[]): { ok: boolean; isFallback: boolean; debugInfo: string } => {
     const kakao = (window as any).kakao;
-    if (!kakao || !mapInstance.current) return { ok: false, isFallback: false };
+    let debugInfo = '';
+    if (!kakao || !mapInstance.current) return { ok: false, isFallback: false, debugInfo: 'no-map' };
 
     let validPoints = (rawPath || []).map(normalizeLatLng).filter((p): p is { lat: number; lng: number } => p !== null);
+    const afterCountryFilter = validPoints.length;
 
     // 💡 country-wide 필터(위도 30~40)만으로는 못 거르는 미세 이상치가 있었습니다
     //    (예: 위도 26도대 좌표 1개가 섞여 들어와 bounds 전체가 망가지는 경우).
@@ -276,11 +278,16 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
       // 직선 구간 크기만큼, 최소 0.3도(약 33km) 여유를 둬서 도로가 우회하는 정도는 넉넉히 허용합니다.
       const pad = Math.max(0.3, latMax - latMin, lngMax - lngMin);
       latMin -= pad; latMax += pad; lngMin -= pad; lngMax += pad;
-      const before = validPoints.length;
+      const removed = validPoints.filter(p => !(p.lat >= latMin && p.lat <= latMax && p.lng >= lngMin && p.lng <= lngMax));
       validPoints = validPoints.filter(p => p.lat >= latMin && p.lat <= latMax && p.lng >= lngMin && p.lng <= lngMax);
-      if (validPoints.length !== before) {
-        console.error(`[길찾기] 출발지/목적지 범위를 벗어난 이상치 좌표 ${before - validPoints.length}개를 걸러냈습니다.`);
+      if (removed.length > 0) {
+        console.error(`[길찾기] 출발지/목적지 범위를 벗어난 이상치 좌표 ${removed.length}개를 걸러냈습니다.`, removed.slice(0, 3));
+        debugInfo = `bbox:[${latMin.toFixed(2)},${latMax.toFixed(2)}]x[${lngMin.toFixed(2)},${lngMax.toFixed(2)}] 제거:${removed.length}개 예:${JSON.stringify(removed[0])}`;
+      } else {
+        debugInfo = `bbox:[${latMin.toFixed(2)},${latMax.toFixed(2)}]x[${lngMin.toFixed(2)},${lngMax.toFixed(2)}] 제거:0개 (국가필터통과:${afterCountryFilter})`;
       }
+    } else {
+      debugInfo = `userForBbox 없음(GPS좌표 자체가 한국범위밖?) lat:${userLat} lng:${userLng}`;
     }
 
     let isFallbackStraightLine = false;
@@ -291,7 +298,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
       //    최소한 둘을 잇는 직선이라도 그려서 "경로가 아예 안 보이는" 상황을 막습니다.
       const destPos = selectedResource ? normalizeLatLng({ lat: selectedResource.lat, lng: selectedResource.lng }) : null;
       const userPosValid = normalizeLatLng({ lat: userLat, lng: userLng });
-      if (!destPos || !userPosValid) return { ok: false, isFallback: false };
+      if (!destPos || !userPosValid) return { ok: false, isFallback: false, debugInfo };
       validPoints = [userPosValid, destPos];
       isFallbackStraightLine = true;
     }
@@ -331,7 +338,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     // 💡 컨테이너가 화면에 실제로 자리잡혀 크기가 잡힌 뒤에만 relayout + setBounds를 실행합니다.
     //    (크기가 0일 때 relayout을 호출하면 지도 타일 자체가 깨져서 안 보이는 문제가 있었습니다.)
     fitRouteBounds(bounds);
-    return { ok: true, isFallback: isFallbackStraightLine };
+    return { ok: true, isFallback: isFallbackStraightLine, debugInfo };
   };
 
   // 💡 길찾기 버튼 클릭: 브라우저 위치 권한 요청 → Supabase Edge Function(directions) 호출 → 경로 표시
@@ -391,7 +398,8 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         setRouteDebug(
           `path:${pArr.length}개 첫점:${JSON.stringify(sample)} dist:${data.distance} dur:${data.duration} 컨테이너:${cw}x${ch}`
         );
-        const { ok: drawOk, isFallback } = drawRoute(latitude, longitude, data.path || []);
+        const { ok: drawOk, isFallback, debugInfo } = drawRoute(latitude, longitude, data.path || []);
+        setRouteDebug(prev => `${prev ?? ''} | ${debugInfo}`);
         setUserLocation({ lat: latitude, lng: longitude });
         setRouteState({
           loading: false,
