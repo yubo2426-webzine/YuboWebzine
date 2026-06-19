@@ -117,7 +117,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   }>({ loading: false, error: null, distance: null, duration: null });
   const routePolylineRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
-  const lastRouteBoundsRef = useRef<any>(null);
   // 💡 카카오맵 앱 딥링크용: 경로 찾기 성공 시 현재 위치 저장
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   // 💡 임시 진단용: 경로 응답이 실제로 어떤 모양인지 화면에 바로 보여줍니다 (콘솔 접근 없이도 캡처 가능하게).
@@ -216,26 +215,15 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
   }, [selectedResource?.id]);
 
-  // 💡 컨테이너가 실제로 화면에 자리잡혀 크기(offsetWidth/Height)가 잡힌 뒤에만
-  //    relayout + setBounds를 실행합니다. 크기가 0일 때 relayout을 호출하면
-  //    지도 타일 자체가 깨져서 안 보이는 문제가 있어, 최대 20프레임(~300ms)까지 재시도합니다.
-  const fitRouteBounds = (bounds: any, attempt = 0) => {
+  // 💡 단순화: 컨테이너 크기가 잡혀 있으면 relayout + setBounds를 딱 한 번만 호출합니다.
+  //    (재시도 루프, panBy 흔들기, 0.5초 뒤 재보정 등 여러 겹의 보정 로직이 서로 타이밍이
+  //    꼬이면서 오히려 '이어도 128km'로 깨지는 원인이 된 것으로 확인되어 모두 제거했습니다.)
+  const fitRouteBounds = (bounds: any) => {
     const container = mapContainerRefStandalone.current;
     const map = mapInstance.current;
-    if (!map || !container) return;
-    if ((container.offsetWidth === 0 || container.offsetHeight === 0) && attempt < 20) {
-      requestAnimationFrame(() => fitRouteBounds(bounds, attempt + 1));
-      return;
-    }
+    if (!map || !container || container.offsetWidth === 0 || container.offsetHeight === 0) return;
     map.relayout();
     map.setBounds(bounds, 60, 60, 320, 60);
-    // 💡 setBounds로 좌표/줌은 바로 바뀌지만, 카카오맵 타일이 실제로 다시 그려지지(repaint)
-    //    않고 사용자가 직접 움직여야만 갱신되는 경우가 있습니다. 1px만 살짝 이동했다가
-    //    바로 원위치시켜서, 진짜 사용자 조작처럼 타일 리렌더를 강제로 트리거합니다.
-    requestAnimationFrame(() => {
-      map.panBy(1, 0);
-      requestAnimationFrame(() => map.panBy(-1, 0));
-    });
   };
 
   // 💡 Edge Function이 반환하는 path 좌표의 필드명이 다르거나(lat/lng, latitude/longitude, x/y 등)
@@ -334,7 +322,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     const bounds = new kakao.maps.LatLngBounds();
     linePath.forEach(p => bounds.extend(p));
     bounds.extend(userPos);
-    lastRouteBoundsRef.current = bounds;
     // 💡 컨테이너가 화면에 실제로 자리잡혀 크기가 잡힌 뒤에만 relayout + setBounds를 실행합니다.
     //    (크기가 0일 때 relayout을 호출하면 지도 타일 자체가 깨져서 안 보이는 문제가 있었습니다.)
     fitRouteBounds(bounds);
@@ -417,15 +404,13 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         if (drawOk) {
           // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
           mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          // 💡 스크롤 애니메이션(약 300~500ms)이 끝난 뒤 레이아웃이 안정된 상태에서
-          //    한 번 더 (가드가 적용된) fitRouteBounds로 맞춰 줌아웃 오류를 방지합니다.
+          // 💡 진단용: 스크롤 후 실제 지도 상태를 읽기만 합니다(추가로 setBounds를 다시
+          //    호출하지 않습니다 — 이 중복 재보정 호출 자체가 줌을 깨뜨리는 원인이었습니다).
           setTimeout(() => {
-            if (lastRouteBoundsRef.current) fitRouteBounds(lastRouteBoundsRef.current);
-            // 💡 진단용: 보정 직후 실제 지도 레벨/중심을 추가로 기록합니다.
             const m = mapInstance.current;
             if (m) {
               const c = m.getCenter();
-              setRouteDebug(prev => `${prev ?? ''} | 보정후 level:${m.getLevel()} center:${c.getLat().toFixed(3)},${c.getLng().toFixed(3)}`);
+              setRouteDebug(prev => `${prev ?? ''} | 0.5초후(보정없음) level:${m.getLevel()} center:${c.getLat().toFixed(3)},${c.getLng().toFixed(3)}`);
             }
           }, 500);
         }
