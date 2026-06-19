@@ -262,8 +262,8 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     const onError = (err: GeolocationPositionError, isRetry = false) => {
       if (err.code === err.PERMISSION_DENIED) {
         setRouteState({ loading: false, error: '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 접근을 허용해주세요.', distance: null, duration: null });
-      } else if (err.code === err.TIMEOUT && !isRetry) {
-        // 💡 GPS 타임아웃 시 Wi-Fi/기지국(낮은 정확도)으로 재시도
+      } else if (!isRetry) {
+        // 💡 GPS(고정밀) 실패(타임아웃 또는 위치 가져오기 실패) 시, Wi-Fi/기지국(저정밀)으로 한 번 더 재시도
         navigator.geolocation.getCurrentPosition(
           onSuccess,
           (err2) => onError(err2, true),
@@ -499,11 +499,19 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     </div>
                   )}
 
-                  {/* 위치 오류 안내 */}
+                  {/* 위치 오류 안내 + 다시 시도 버튼 */}
                   {routeState.error && (
-                    <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">
-                      위치 오류: {routeState.error}
-                    </p>
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
+                        위치 오류: {routeState.error}
+                      </p>
+                      <button
+                        onClick={handleFindRoute}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                      >
+                        <RefreshCw size={12}/> 다시 시도
+                      </button>
+                    </div>
                   )}
                </div>
              )}
