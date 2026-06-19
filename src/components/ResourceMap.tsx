@@ -93,6 +93,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   }>({ loading: false, error: null, distance: null, duration: null });
   const routePolylineRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
+  const lastRouteBoundsRef = useRef<any>(null);
   // 💡 카카오맵 앱 딥링크용: 경로 찾기 성공 시 현재 위치 저장
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
@@ -223,8 +224,20 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     const bounds = new kakao.maps.LatLngBounds();
     linePath.forEach(p => bounds.extend(p));
     bounds.extend(userPos);
+    lastRouteBoundsRef.current = bounds;
+    // 💡 카카오맵은 지도가 그려진 후 화면(하단 시트 등)이 바뀌면 내부적으로 컨테이너 크기를
+    //    다시 계산하지 못해 fitBounds가 엉뚱한 위치로 줌아웃되는 경우가 있습니다.
+    //    relayout()으로 먼저 현재 컨테이너 크기를 다시 인식시킨 뒤 bounds를 맞춥니다.
+    mapInstance.current.relayout();
     // 하단 팝업 시트에 경로가 가리지 않도록 아래쪽 여백을 더 줍니다.
     mapInstance.current.setBounds(bounds, 60, 60, 320, 60);
+
+    // 💡 relayout 직후 1프레임 뒤에 한 번 더 맞춰줘서, 스크롤 애니메이션 등으로
+    //    레이아웃이 한 박자 늦게 안정되는 경우까지 안전하게 커버합니다.
+    requestAnimationFrame(() => {
+      mapInstance.current?.relayout();
+      mapInstance.current?.setBounds(bounds, 60, 60, 320, 60);
+    });
   };
 
   // 💡 길찾기 버튼 클릭: 브라우저 위치 권한 요청 → Supabase Edge Function(directions) 호출 → 경로 표시
@@ -281,6 +294,14 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         setRouteState({ loading: false, error: null, distance: data.distance, duration: data.duration });
         // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
         mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 💡 스크롤 애니메이션(약 300~500ms)이 끝난 뒤 레이아웃이 안정된 상태에서
+        //    한 번 더 relayout + bounds를 맞춰 줌아웃 오류를 방지합니다.
+        setTimeout(() => {
+          if (mapInstance.current && lastRouteBoundsRef.current) {
+            mapInstance.current.relayout();
+            mapInstance.current.setBounds(lastRouteBoundsRef.current, 60, 60, 320, 60);
+          }
+        }, 500);
       } catch (e: any) {
         setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
       }
