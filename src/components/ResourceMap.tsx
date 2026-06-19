@@ -443,14 +443,39 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     </p>
                   )}
 
-                  {/* 💡 지도에 경로 그리기 버튼 */}
+                  {/* 💡 카카오맵 앱 길찾기 (메인 버튼 - 모바일 위치 권한 없어도 동작) */}
+                  <button
+                    onClick={() => {
+                      const ep = `${selectedResource.lat},${selectedResource.lng}`;
+                      const appUrl = userLocation
+                        ? `kakaomap://route?sp=${userLocation.lat},${userLocation.lng}&ep=${ep}&by=CAR`
+                        : `kakaomap://look?p=${ep}`;
+                      const webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(selectedResource.name)},${selectedResource.lat},${selectedResource.lng}`;
+                      const now = Date.now();
+                      window.location.href = appUrl;
+                      setTimeout(() => {
+                        if (Date.now() - now < 2000) window.open(webUrl, '_blank');
+                      }, 1500);
+                    }}
+                    className="mt-4 w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-black text-lg bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-slate-900 transition-colors shadow-md"
+                  >
+                    <img
+                      src="https://t1.kakaocdn.net/kakaocorp/kakaocorp/admin/5f39e7c7017800001.png"
+                      alt=""
+                      className="w-6 h-6 rounded"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    카카오맵 앱으로 길찾기
+                  </button>
+
+                  {/* 💡 지도에서 경로 보기 (보조 버튼 - 브라우저 위치 권한 필요) */}
                   <button
                     onClick={handleFindRoute}
                     disabled={routeState.loading}
-                    className="mt-4 w-full bg-sky-500 dark:bg-sky-600 text-white py-4 rounded-2xl font-black text-lg shadow-md flex justify-center items-center gap-3 hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                    className="mt-2 w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-3 rounded-2xl font-bold text-sm flex justify-center items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-60 disabled:cursor-wait"
                   >
-                    {routeState.loading ? <Loader2 size={22} className="animate-spin"/> : <Navigation size={22}/>}
-                    {routeState.loading ? '내 위치에서 경로 찾는 중...' : '지도에서 경로 보기'}
+                    {routeState.loading ? <Loader2 size={16} className="animate-spin"/> : <Navigation size={16}/>}
+                    {routeState.loading ? '경로 찾는 중...' : '지도에서 경로 보기'}
                   </button>
 
                   {/* 경로 성공: 거리/시간 + 경로 지우기 */}
@@ -476,37 +501,10 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 
                   {/* 위치 오류 안내 */}
                   {routeState.error && (
-                    <div className="mt-2 bg-rose-50 dark:bg-rose-900/20 rounded-2xl px-4 py-3 text-center">
-                      <p className="text-xs text-rose-500 dark:text-rose-400 font-bold">{routeState.error}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">아래 카카오맵 앱으로 길찾기를 이용해 주세요</p>
-                    </div>
+                    <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">
+                      위치 오류: {routeState.error}
+                    </p>
                   )}
-
-                  {/* 💡 카카오맵 앱 길찾기: 항상 표시 (앱이 자체적으로 현재 위치를 처리) */}
-                  <button
-                    onClick={() => {
-                      const ep = `${selectedResource.lat},${selectedResource.lng}`;
-                      // 출발지가 있으면 포함, 없으면 목적지만 (앱이 현재위치 자동 설정)
-                      const appUrl = userLocation
-                        ? `kakaomap://route?sp=${userLocation.lat},${userLocation.lng}&ep=${ep}&by=CAR`
-                        : `kakaomap://look?p=${ep}`;
-                      const webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(selectedResource.name)},${selectedResource.lat},${selectedResource.lng}`;
-                      const now = Date.now();
-                      window.location.href = appUrl;
-                      setTimeout(() => {
-                        if (Date.now() - now < 2000) window.open(webUrl, '_blank');
-                      }, 1500);
-                    }}
-                    className="mt-3 w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-black text-base bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-slate-900 transition-colors shadow-sm"
-                  >
-                    <img
-                      src="https://t1.kakaocdn.net/kakaocorp/kakaocorp/admin/5f39e7c7017800001.png"
-                      alt="카카오맵"
-                      className="w-5 h-5 rounded"
-                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                    카카오맵 앱으로 길찾기
-                  </button>
                </div>
              )}
           </div>
