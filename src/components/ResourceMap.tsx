@@ -189,6 +189,21 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
   }, [selectedResource?.id]);
 
+  // 💡 컨테이너가 실제로 화면에 자리잡혀 크기(offsetWidth/Height)가 잡힌 뒤에만
+  //    relayout + setBounds를 실행합니다. 크기가 0일 때 relayout을 호출하면
+  //    지도 타일 자체가 깨져서 안 보이는 문제가 있어, 최대 20프레임(~300ms)까지 재시도합니다.
+  const fitRouteBounds = (bounds: any, attempt = 0) => {
+    const container = mapContainerRefStandalone.current;
+    const map = mapInstance.current;
+    if (!map || !container) return;
+    if ((container.offsetWidth === 0 || container.offsetHeight === 0) && attempt < 20) {
+      requestAnimationFrame(() => fitRouteBounds(bounds, attempt + 1));
+      return;
+    }
+    map.relayout();
+    map.setBounds(bounds, 60, 60, 320, 60);
+  };
+
   // 💡 카카오맵 위에 경로선(Polyline) + 현재 위치 마커를 그리고, 두 지점이 모두 보이도록 화면을 맞춥니다.
   const drawRoute = (userLat: number, userLng: number, path: { lat: number; lng: number }[]) => {
     const kakao = (window as any).kakao;
@@ -225,19 +240,9 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     linePath.forEach(p => bounds.extend(p));
     bounds.extend(userPos);
     lastRouteBoundsRef.current = bounds;
-    // 💡 카카오맵은 지도가 그려진 후 화면(하단 시트 등)이 바뀌면 내부적으로 컨테이너 크기를
-    //    다시 계산하지 못해 fitBounds가 엉뚱한 위치로 줌아웃되는 경우가 있습니다.
-    //    relayout()으로 먼저 현재 컨테이너 크기를 다시 인식시킨 뒤 bounds를 맞춥니다.
-    mapInstance.current.relayout();
-    // 하단 팝업 시트에 경로가 가리지 않도록 아래쪽 여백을 더 줍니다.
-    mapInstance.current.setBounds(bounds, 60, 60, 320, 60);
-
-    // 💡 relayout 직후 1프레임 뒤에 한 번 더 맞춰줘서, 스크롤 애니메이션 등으로
-    //    레이아웃이 한 박자 늦게 안정되는 경우까지 안전하게 커버합니다.
-    requestAnimationFrame(() => {
-      mapInstance.current?.relayout();
-      mapInstance.current?.setBounds(bounds, 60, 60, 320, 60);
-    });
+    // 💡 컨테이너가 화면에 실제로 자리잡혀 크기가 잡힌 뒤에만 relayout + setBounds를 실행합니다.
+    //    (크기가 0일 때 relayout을 호출하면 지도 타일 자체가 깨져서 안 보이는 문제가 있었습니다.)
+    fitRouteBounds(bounds);
   };
 
   // 💡 길찾기 버튼 클릭: 브라우저 위치 권한 요청 → Supabase Edge Function(directions) 호출 → 경로 표시
@@ -295,12 +300,9 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
         mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         // 💡 스크롤 애니메이션(약 300~500ms)이 끝난 뒤 레이아웃이 안정된 상태에서
-        //    한 번 더 relayout + bounds를 맞춰 줌아웃 오류를 방지합니다.
+        //    한 번 더 (가드가 적용된) fitRouteBounds로 맞춰 줌아웃 오류를 방지합니다.
         setTimeout(() => {
-          if (mapInstance.current && lastRouteBoundsRef.current) {
-            mapInstance.current.relayout();
-            mapInstance.current.setBounds(lastRouteBoundsRef.current, 60, 60, 320, 60);
-          }
+          if (lastRouteBoundsRef.current) fitRouteBounds(lastRouteBoundsRef.current);
         }, 500);
       } catch (e: any) {
         setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
