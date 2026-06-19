@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Phone, X, CheckCircle2, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw } from 'lucide-react';
+import { MapPin, Search, Phone, X, CheckCircle2, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw, ExternalLink, BookOpen } from 'lucide-react';
 // 💡 싱글톤으로 만들어둔 supabase 인스턴스를 불러옵니다.
 import { supabase } from '../lib/supabase';
 
@@ -65,6 +65,9 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
   const [isMigrating, setIsMigrating] = useState(false);
+
+  // 💡 프로그램 내용 모달
+  const [programModalOpen, setProgramModalOpen] = useState(false);
 
   // 💡 길찾기 상태: 탐색 중 여부, 에러 메시지, 결과(거리/소요시간)
   const [routeState, setRouteState] = useState<{
@@ -375,7 +378,19 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                   <div className="flex gap-2 mb-5"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
                   <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight leading-tight pr-12">{selectedResource.name}</h3>
                   <p className="text-slate-500 dark:text-slate-400 font-bold text-base md:text-lg flex items-center gap-2 mb-8"><MapPin size={20} className="text-emerald-500 dark:text-emerald-400"/> {selectedResource.address}</p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
+                     {/* 💡 프로그램 보기: 체험프로그램 컬럼 내용을 모달로 표시 */}
+                     <button
+                       onClick={() => {
+                         if (!selectedResource.program) return;
+                         setProgramModalOpen(true);
+                       }}
+                       disabled={!selectedResource.program}
+                       className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-base md:text-lg shadow-md flex justify-center items-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500 dark:disabled:hover:bg-emerald-600"
+                     >
+                       <BookOpen size={20}/> 프로그램 보기
+                     </button>
+                     {/* 💡 사이트 연결: 비고 컬럼 URL로 새 탭 열기 */}
                      <button
                        onClick={() => {
                          if (!selectedResource.note) return;
@@ -383,28 +398,29 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                          window.open(url, '_blank', 'noopener,noreferrer');
                        }}
                        disabled={!selectedResource.note}
-                       className="bg-emerald-500 dark:bg-emerald-600 text-white py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-md flex justify-center items-center gap-3 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500 dark:disabled:hover:bg-emerald-600"
+                       className="bg-sky-500 dark:bg-sky-600 text-white py-4 md:py-5 rounded-2xl font-black text-base md:text-lg shadow-md flex justify-center items-center gap-2 hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-sky-500 dark:disabled:hover:bg-sky-600"
                      >
-                       <CheckCircle2 size={24}/> 프로그램 보기
+                       <ExternalLink size={20}/> 사이트 연결
                      </button>
+                     {/* 💡 전화 연결 */}
                      <button
                        onClick={() => {
                          if (!selectedResource.phone) return;
                          window.location.href = `tel:${selectedResource.phone}`;
                        }}
                        disabled={!selectedResource.phone}
-                       className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl flex justify-center items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-700"
+                       className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg flex justify-center items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-700"
                      >
-                       <Phone size={24}/> 전화 연결
+                       <Phone size={20}/> 전화 연결
                      </button>
                   </div>
-                  {(!selectedResource.note || !selectedResource.phone) && (
+                  {(!selectedResource.program || !selectedResource.note || !selectedResource.phone) && (
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 text-center font-bold">
-                      {!selectedResource.note && !selectedResource.phone
-                        ? '프로그램 링크와 연락처 정보가 등록되지 않은 기관입니다'
-                        : !selectedResource.note
-                        ? '프로그램 상세 페이지 정보가 등록되지 않은 기관입니다'
-                        : '연락처 정보가 등록되지 않은 기관입니다'}
+                      {[
+                        !selectedResource.program && '프로그램 정보',
+                        !selectedResource.note && '사이트 링크',
+                        !selectedResource.phone && '연락처',
+                      ].filter(Boolean).join(' · ')} 정보가 없는 기관입니다
                     </p>
                   )}
 
@@ -443,6 +459,38 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
              )}
           </div>
        </div>
+
+       {/* 💡 체험프로그램 내용 모달 */}
+       {programModalOpen && selectedResource && (
+         <div
+           className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+           onClick={() => setProgramModalOpen(false)}
+         >
+           <div
+             className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-8 relative"
+             onClick={e => e.stopPropagation()}
+           >
+             <button
+               onClick={() => setProgramModalOpen(false)}
+               className="absolute top-5 right-5 p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+             >
+               <X size={20}/>
+             </button>
+             <div className="flex items-center gap-3 mb-5">
+               <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl flex items-center justify-center">
+                 <BookOpen size={20} className="text-emerald-600 dark:text-emerald-400"/>
+               </div>
+               <div>
+                 <p className="text-xs font-black text-emerald-500 dark:text-emerald-400 tracking-widest mb-0.5">체험 프로그램</p>
+                 <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight">{selectedResource.name}</h4>
+               </div>
+             </div>
+             <p className="text-slate-700 dark:text-slate-200 text-base leading-relaxed whitespace-pre-line font-medium">
+               {selectedResource.program}
+             </p>
+           </div>
+         </div>
+       )}
     </div>
   );
 };
