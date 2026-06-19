@@ -3,6 +3,19 @@ import { MapPin, Search, Phone, X, CheckCircle2, Compass, Loader2, Rabbit, Refre
 // 💡 싱글톤으로 만들어둔 supabase 인스턴스를 불러옵니다.
 import { supabase } from '../lib/supabase';
 
+// 💡 카카오톡/네이버/인스타그램 등 인앱 브라우저는 Geolocation API를 차단하거나 제한하는 경우가 많아
+//    시스템 GPS가 켜져 있어도 위치를 가져올 수 없습니다. User-Agent로 감지해서 안내 메시지를 다르게 보여줍니다.
+const detectInAppBrowser = (): string | null => {
+  if (typeof navigator === 'undefined') return null;
+  const ua = navigator.userAgent || '';
+  if (/KAKAOTALK/i.test(ua)) return '카카오톡';
+  if (/NAVER\(/i.test(ua)) return '네이버 앱';
+  if (/Instagram/i.test(ua)) return '인스타그램';
+  if (/FBAN|FBAV/i.test(ua)) return '페이스북';
+  if (/Line\//i.test(ua)) return '라인';
+  return null;
+};
+
 const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutral', children: React.ReactNode, className?: string }> = ({ variant = 'neutral', children, className }) => {
   const styles = {
     primary: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800',
@@ -65,6 +78,8 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
   const [isMigrating, setIsMigrating] = useState(false);
+  // 💡 카카오톡 등 인앱 브라우저 여부 (앱 이름, 없으면 null)
+  const [inAppBrowser] = useState<string | null>(() => detectInAppBrowser());
 
   // 💡 프로그램 내용 모달
   const [programModalOpen, setProgramModalOpen] = useState(false);
@@ -218,6 +233,18 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 
     if (!('geolocation' in navigator)) {
       setRouteState({ loading: false, error: '이 브라우저는 위치 정보 기능을 지원하지 않습니다.', distance: null, duration: null });
+      return;
+    }
+
+    // 💡 카카오톡 등 인앱 브라우저는 위치 정보 자체를 막는 경우가 많아 GPS 시도가 항상 실패합니다.
+    //    바로 정확한 안내를 보여줍니다 (불필요한 GPS 대기 시간 없이).
+    if (inAppBrowser) {
+      setRouteState({
+        loading: false,
+        error: `${inAppBrowser} 안에서는 위치 정보가 제한되어 지도 경로를 볼 수 없습니다. 아래 '기본 브라우저로 열기'를 눌러주세요.`,
+        distance: null,
+        duration: null,
+      });
       return;
     }
 
@@ -499,18 +526,38 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     </div>
                   )}
 
-                  {/* 위치 오류 안내 + 다시 시도 버튼 */}
+                  {/* 위치 오류 안내 + 다시 시도 / 기본 브라우저로 열기 버튼 */}
                   {routeState.error && (
-                    <div className="mt-2 flex items-center justify-center gap-2">
-                      <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-                        위치 오류: {routeState.error}
+                    <div className="mt-2">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 text-center px-2">
+                        {routeState.error}
                       </p>
-                      <button
-                        onClick={handleFindRoute}
-                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
-                      >
-                        <RefreshCw size={12}/> 다시 시도
-                      </button>
+                      <div className="flex justify-center mt-1.5">
+                        {inAppBrowser ? (
+                          <button
+                            onClick={() => {
+                              const isAndroid = /Android/i.test(navigator.userAgent);
+                              if (isAndroid) {
+                                const target = window.location.href.replace(/^https?:\/\//, '');
+                                window.location.href = `intent://${target}#Intent;scheme=https;package=com.android.chrome;end`;
+                              } else {
+                                navigator.clipboard?.writeText(window.location.href).catch(() => {});
+                                alert("주소가 복사되었어요!\n화면 하단(또는 우측 상단) '공유' 또는 '⋯' 버튼을 눌러 'Safari로 열기'를 선택해주세요.");
+                              }
+                            }}
+                            className="flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                          >
+                            <ExternalLink size={12}/> 기본 브라우저로 열기
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleFindRoute}
+                            className="flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                          >
+                            <RefreshCw size={12}/> 다시 시도
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                </div>
