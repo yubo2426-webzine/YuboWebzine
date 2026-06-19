@@ -204,22 +204,52 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     map.setBounds(bounds, 60, 60, 320, 60);
   };
 
+  // 💡 Edge Function이 반환하는 path 좌표의 필드명이 다르거나(lat/lng, latitude/longitude, x/y 등)
+  //    값이 비정상(NaN, 한국 영역을 벗어난 값)인 경우를 걸러냅니다.
+  //    이게 걸러지지 않으면 카카오맵 bounds 계산이 깨져서 '이어도 128km' 같은 고정된
+  //    기본 화면으로 떨어지고 경로선도 보이지 않게 됩니다.
+  const normalizeLatLng = (p: any): { lat: number; lng: number } | null => {
+    if (!p) return null;
+    const lat = Number(p.lat ?? p.latitude ?? p.Lat ?? p.y);
+    const lng = Number(p.lng ?? p.lon ?? p.longitude ?? p.Lng ?? p.x);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    // 대한민국 영역(대략 위도 30~40, 경도 122~134)을 벗어나면 비정상 값으로 간주합니다.
+    if (lat < 30 || lat > 40 || lng < 122 || lng > 134) return null;
+    return { lat, lng };
+  };
+
   // 💡 카카오맵 위에 경로선(Polyline) + 현재 위치 마커를 그리고, 두 지점이 모두 보이도록 화면을 맞춥니다.
-  const drawRoute = (userLat: number, userLng: number, path: { lat: number; lng: number }[]) => {
+  //    경로 좌표가 비정상이면 사용자↔목적지 직선으로 대체해서라도 항상 무언가 보여줍니다.
+  const drawRoute = (userLat: number, userLng: number, rawPath: any[]): { ok: boolean; isFallback: boolean } => {
     const kakao = (window as any).kakao;
-    if (!kakao || !mapInstance.current || path.length === 0) return;
+    if (!kakao || !mapInstance.current) return { ok: false, isFallback: false };
+
+    let validPoints = (rawPath || []).map(normalizeLatLng).filter((p): p is { lat: number; lng: number } => p !== null);
+    let isFallbackStraightLine = false;
+
+    if (validPoints.length < 2) {
+      console.error('[길찾기] 경로 좌표가 비정상이거나 부족합니다. 원본 path 데이터:', rawPath);
+      // 💡 상세 경로 좌표가 깨졌어도, 사용자 위치와 목적지 좌표는 신뢰할 수 있으니
+      //    최소한 둘을 잇는 직선이라도 그려서 "경로가 아예 안 보이는" 상황을 막습니다.
+      const destPos = selectedResource ? normalizeLatLng({ lat: selectedResource.lat, lng: selectedResource.lng }) : null;
+      const userPosValid = normalizeLatLng({ lat: userLat, lng: userLng });
+      if (!destPos || !userPosValid) return { ok: false, isFallback: false };
+      validPoints = [userPosValid, destPos];
+      isFallbackStraightLine = true;
+    }
 
     if (routePolylineRef.current) routePolylineRef.current.setMap(null);
     if (userMarkerRef.current) userMarkerRef.current.setMap(null);
 
-    const linePath = path.map(p => new kakao.maps.LatLng(p.lat, p.lng));
+    const linePath = validPoints.map(p => new kakao.maps.LatLng(p.lat, p.lng));
 
     routePolylineRef.current = new kakao.maps.Polyline({
       path: linePath,
       strokeWeight: 6,
       strokeColor: '#0ea5e9',
       strokeOpacity: 0.9,
-      strokeStyle: 'solid',
+      // 💡 상세 도로 경로가 아닌 직선 폴백일 땐 점선으로 구분해서 보여줍니다.
+      strokeStyle: isFallbackStraightLine ? 'shortdash' : 'solid',
     });
     routePolylineRef.current.setMap(mapInstance.current);
 
@@ -243,6 +273,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     // 💡 컨테이너가 화면에 실제로 자리잡혀 크기가 잡힌 뒤에만 relayout + setBounds를 실행합니다.
     //    (크기가 0일 때 relayout을 호출하면 지도 타일 자체가 깨져서 안 보이는 문제가 있었습니다.)
     fitRouteBounds(bounds);
+    return { ok: true, isFallback: isFallbackStraightLine };
   };
 
   // 💡 길찾기 버튼 클릭: 브라우저 위치 권한 요청 → Supabase Edge Function(directions) 호출 → 경로 표시
@@ -294,16 +325,30 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         }
 
         const data = await res.json();
-        drawRoute(latitude, longitude, data.path || []);
+        const { ok: drawOk, isFallback } = drawRoute(latitude, longitude, data.path || []);
         setUserLocation({ lat: latitude, lng: longitude });
-        setRouteState({ loading: false, error: null, distance: data.distance, duration: data.duration });
-        // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
-        mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // 💡 스크롤 애니메이션(약 300~500ms)이 끝난 뒤 레이아웃이 안정된 상태에서
-        //    한 번 더 (가드가 적용된) fitRouteBounds로 맞춰 줌아웃 오류를 방지합니다.
-        setTimeout(() => {
-          if (lastRouteBoundsRef.current) fitRouteBounds(lastRouteBoundsRef.current);
-        }, 500);
+        setRouteState({
+          loading: false,
+          // 💡 거리/시간은 path와 별개로 정상 계산된 값이라 항상 표시합니다.
+          //    상세 도로 경로 대신 직선으로 대체된 경우엔 그 사실만 부드럽게 안내하고,
+          //    아예 그릴 수 없었던 경우(매우 드묾)에만 진짜 에러로 안내합니다.
+          error: !drawOk
+            ? '경로 좌표에 문제가 있어 지도에 경로를 표시하지 못했어요. 아래 카카오맵 앱으로 길찾기를 이용해주세요.'
+            : isFallback
+            ? '상세 도로 경로 대신 목적지까지의 직선 거리로 표시했어요.'
+            : null,
+          distance: data.distance,
+          duration: data.duration,
+        });
+        if (drawOk) {
+          // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
+          mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // 💡 스크롤 애니메이션(약 300~500ms)이 끝난 뒤 레이아웃이 안정된 상태에서
+          //    한 번 더 (가드가 적용된) fitRouteBounds로 맞춰 줌아웃 오류를 방지합니다.
+          setTimeout(() => {
+            if (lastRouteBoundsRef.current) fitRouteBounds(lastRouteBoundsRef.current);
+          }, 500);
+        }
       } catch (e: any) {
         setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
       }
@@ -349,12 +394,18 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     const markerImage = new (window as any).kakao.maps.MarkerImage(imageSrc, imageSize); 
 
     filteredResources.forEach(res => {
+      // 💡 CSV에 위도/경도가 비어있거나 한국 영역을 벗어난 비정상 좌표는
+      //    bounds 계산에서 제외합니다. (포함되면 전체 지도가 '이어도 128km'처럼
+      //    엉뚱하게 줌아웃되어 버립니다.)
+      const validPos = normalizeLatLng({ lat: res.lat, lng: res.lng });
       const position = new (window as any).kakao.maps.LatLng(res.lat, res.lng);
       const marker = new (window as any).kakao.maps.Marker({ position: position, image: markerImage });
       marker.setMap(mapInstance.current);
       markersRef.current.push(marker); // 메모리에 새 마커 등록
-      bounds.extend(position);
-      hasMarkers = true;
+      if (validPos) {
+        bounds.extend(position);
+        hasMarkers = true;
+      }
       (window as any).kakao.maps.event.addListener(marker, 'click', () => setSelectedResource(res));
     });
 
@@ -549,8 +600,16 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     </div>
                   )}
 
-                  {/* 위치 오류 안내 + 다시 시도 / 기본 브라우저로 열기 버튼 */}
-                  {routeState.error && (
+                  {/* 💡 직선 폴백 안내: 거리/시간은 정상 계산됐지만 상세 경로 대신 직선으로 표시된 경우.
+                      재시도/브라우저 전환 버튼 없이 가볍게 안내만 합니다. */}
+                  {routeState.error && routeState.distance !== null && (
+                    <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 text-center px-2">
+                      ⓘ {routeState.error}
+                    </p>
+                  )}
+
+                  {/* 위치 오류 안내 + 다시 시도 / 기본 브라우저로 열기 버튼 (거리조차 못 구한 진짜 실패) */}
+                  {routeState.error && routeState.distance === null && (
                     <div className="mt-2">
                       <p className="text-xs text-slate-400 dark:text-slate-500 text-center px-2">
                         {routeState.error}
