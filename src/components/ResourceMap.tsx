@@ -26,34 +26,58 @@ const KRDSBadge: React.FC<{ variant?: 'primary' | 'success' | 'warning' | 'neutr
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className || ''}`}>{children}</span>;
 };
 
+// 💡 카카오맵 스크립트를 앱 전체에서 '딱 한 번만' 로드하고, 그 결과(Promise)를 모든
+//    컴포넌트 인스턴스가 공유합니다. 기존엔 컴포넌트가 두 번 이상 마운트되면(예: 데스크톱/
+//    모바일 레이아웃이 동시에 존재) 두 번째 인스턴스가 'load' 이벤트를 영영 못 받아
+//    로딩이 멈춰버리는 문제가 있었습니다(이벤트는 한 번 지나가면 재생되지 않음).
+//    Promise는 이미 resolve된 뒤에 .then()을 걸어도 즉시 값을 돌려주므로 이 문제가 사라집니다.
+let kakaoLoadPromise: Promise<void> | null = null;
+const loadKakaoMapsOnce = (): Promise<void> => {
+  if (kakaoLoadPromise) return kakaoLoadPromise;
+
+  kakaoLoadPromise = new Promise((resolve, reject) => {
+    const w = window as any;
+    if (w.kakao && w.kakao.maps && w.kakao.maps.LatLng) {
+      resolve();
+      return;
+    }
+
+    const scriptId = 'kakao-map-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    const onLoad = () => w.kakao.maps.load(() => resolve());
+    const onError = () => reject(new Error('카카오맵 API 로드 실패'));
+
+    if (script) {
+      // 이미 다른 곳에서 스크립트를 추가해둔 경우: 혹시 그새 로드가 끝났을 수도 있으니 먼저 확인
+      if (w.kakao && w.kakao.maps) { onLoad(); return; }
+      script.addEventListener('load', onLoad);
+      script.addEventListener('error', onError);
+      return;
+    }
+
+    script = document.createElement('script');
+    script.id = scriptId;
+    const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY || '';
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
+    script.async = true;
+    script.addEventListener('load', onLoad);
+    script.addEventListener('error', onError);
+    document.head.appendChild(script);
+  });
+
+  return kakaoLoadPromise;
+};
+
 const useCustomKakaoLoader = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if ((window as any).kakao && (window as any).kakao.maps) { setLoading(false); return; }
-    const scriptId = 'kakao-map-script';
-    let script = document.getElementById(scriptId) as HTMLScriptElement;
-
-    if (!script) {
-      script = document.createElement('script');
-      script.id = scriptId;
-      const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY || '';
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    const handleLoad = () => (window as any).kakao.maps.load(() => setLoading(false));
-    const handleError = () => { console.error("카카오맵 API 로드 실패"); setError(true); };
-
-    script.addEventListener('load', handleLoad);
-    script.addEventListener('error', handleError);
-
-    return () => {
-      script.removeEventListener('load', handleLoad);
-      script.removeEventListener('error', handleError);
-    };
+    let cancelled = false;
+    loadKakaoMapsOnce()
+      .then(() => { if (!cancelled) setLoading(false); })
+      .catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
   }, []);
 
   return [loading, error];
