@@ -78,6 +78,8 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   }>({ loading: false, error: null, distance: null, duration: null });
   const routePolylineRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
+  // 💡 카카오맵 앱 딥링크용: 경로 찾기 성공 시 현재 위치 저장
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef<HTMLDivElement>(null);
@@ -166,6 +168,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   // 💡 길찾기: 선택된 기관이 바뀌거나 팝업이 닫히면 기존 경로선/현위치 마커를 정리합니다.
   useEffect(() => {
     setRouteState({ loading: false, error: null, distance: null, duration: null });
+    setUserLocation(null);
     if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
   }, [selectedResource?.id]);
@@ -248,7 +251,10 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 
           const data = await res.json();
           drawRoute(latitude, longitude, data.path || []);
+          setUserLocation({ lat: latitude, lng: longitude });
           setRouteState({ loading: false, error: null, distance: data.distance, duration: data.duration });
+          // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
+          mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e: any) {
           setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
         }
@@ -438,21 +444,51 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                   )}
 
                   {routeState.distance !== null && routeState.duration !== null && (
-                    <div className="mt-3 flex items-center justify-center gap-2">
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 rounded-full">
-                        자동차 기준 약 {(routeState.distance / 1000).toFixed(1)}km · {Math.round(routeState.duration / 60)}분
-                      </span>
-                      <button
-                        onClick={() => {
-                          setRouteState({ loading: false, error: null, distance: null, duration: null });
-                          if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
-                          if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
-                        }}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        title="경로 지우기"
-                      >
-                        <RotateCcw size={16}/>
-                      </button>
+                    <div className="mt-3 space-y-2">
+                      {/* 거리/시간 + 경로 지우기 */}
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-sm font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 rounded-full">
+                          자동차 기준 약 {(routeState.distance / 1000).toFixed(1)}km · {Math.round(routeState.duration / 60)}분
+                        </span>
+                        <button
+                          onClick={() => {
+                            setRouteState({ loading: false, error: null, distance: null, duration: null });
+                            setUserLocation(null);
+                            if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
+                            if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
+                          }}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          title="경로 지우기"
+                        >
+                          <RotateCcw size={16}/>
+                        </button>
+                      </div>
+                      {/* 💡 카카오맵 앱으로 길찾기 연동 버튼 */}
+                      {userLocation && selectedResource && (
+                        <button
+                          onClick={() => {
+                            const sp = `${userLocation.lat},${userLocation.lng}`;
+                            const ep = `${selectedResource.lat},${selectedResource.lng}`;
+                            const appUrl = `kakaomap://route?sp=${sp}&ep=${ep}&by=CAR`;
+                            const webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(selectedResource.name)},${selectedResource.lat},${selectedResource.lng}`;
+                            // 앱 딥링크 시도 → 실패하면 웹으로 fallback
+                            const now = Date.now();
+                            window.location.href = appUrl;
+                            setTimeout(() => {
+                              if (Date.now() - now < 2000) window.open(webUrl, '_blank');
+                            }, 1500);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-base bg-yellow-400 hover:bg-yellow-500 text-slate-900 transition-colors shadow-sm"
+                        >
+                          <img
+                            src="https://developers.kakao.com/assets/img/about/logos/kakaomaplink/kakaomap_logo.png"
+                            alt="카카오맵"
+                            className="w-5 h-5 rounded"
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          카카오맵 앱으로 길찾기
+                        </button>
+                      )}
                     </div>
                   )}
                </div>
