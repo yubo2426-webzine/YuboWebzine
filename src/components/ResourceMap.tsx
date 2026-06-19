@@ -223,7 +223,17 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     const map = mapInstance.current;
     if (!map || !container || container.offsetWidth === 0 || container.offsetHeight === 0) return;
     map.relayout();
-    map.setBounds(bounds, 60, 60, 320, 60);
+    // 💡 패딩을 고정값(특히 하단 320px)으로 주면, 모바일처럼 지도 높이가 작을 때
+    //    (예: 301px) 패딩 합이 컨테이너 높이를 넘어서 버려 사용 가능한 공간이 음수가 되고,
+    //    카카오맵이 줌 계산에 실패해 최대 축소(level 14, '이어도')로 떨어졌습니다.
+    //    컨테이너 실제 크기에 비례하도록 캡을 씌워 항상 양수 공간이 남게 합니다.
+    const h = container.offsetHeight;
+    const w = container.offsetWidth;
+    const padTop = Math.min(60, h * 0.15);
+    const padBottom = Math.min(320, h * 0.35); // 하단 시트 여백, 단 컨테이너 높이의 35%를 넘지 않음
+    const padLeft = Math.min(60, w * 0.15);
+    const padRight = Math.min(60, w * 0.15);
+    map.setBounds(bounds, padTop, padRight, padBottom, padLeft);
   };
 
   // 💡 Edge Function이 반환하는 path 좌표의 필드명이 다르거나(lat/lng, latitude/longitude, x/y 등)
