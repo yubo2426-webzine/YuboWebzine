@@ -96,6 +96,8 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   const lastRouteBoundsRef = useRef<any>(null);
   // 💡 카카오맵 앱 딥링크용: 경로 찾기 성공 시 현재 위치 저장
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // 💡 임시 진단용: 경로 응답이 실제로 어떤 모양인지 화면에 바로 보여줍니다 (콘솔 접근 없이도 캡처 가능하게).
+  const [routeDebug, setRouteDebug] = useState<string | null>(null);
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef<HTMLDivElement>(null);
@@ -185,6 +187,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   useEffect(() => {
     setRouteState({ loading: false, error: null, distance: null, duration: null });
     setUserLocation(null);
+    setRouteDebug(null);
     if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
   }, [selectedResource?.id]);
@@ -202,6 +205,13 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     }
     map.relayout();
     map.setBounds(bounds, 60, 60, 320, 60);
+    // 💡 setBounds로 좌표/줌은 바로 바뀌지만, 카카오맵 타일이 실제로 다시 그려지지(repaint)
+    //    않고 사용자가 직접 움직여야만 갱신되는 경우가 있습니다. 1px만 살짝 이동했다가
+    //    바로 원위치시켜서, 진짜 사용자 조작처럼 타일 리렌더를 강제로 트리거합니다.
+    requestAnimationFrame(() => {
+      map.panBy(1, 0);
+      requestAnimationFrame(() => map.panBy(-1, 0));
+    });
   };
 
   // 💡 Edge Function이 반환하는 path 좌표의 필드명이 다르거나(lat/lng, latitude/longitude, x/y 등)
@@ -325,6 +335,14 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         }
 
         const data = await res.json();
+        // 💡 진단용: 실제 응답이 어떤 모양인지 화면에 남깁니다 (다음 캡처로 정확한 원인 확인용).
+        const pArr = Array.isArray(data.path) ? data.path : [];
+        const sample = pArr[0] ?? null;
+        const cw = mapContainerRefStandalone.current?.offsetWidth ?? -1;
+        const ch = mapContainerRefStandalone.current?.offsetHeight ?? -1;
+        setRouteDebug(
+          `path:${pArr.length}개 첫점:${JSON.stringify(sample)} dist:${data.distance} dur:${data.duration} 컨테이너:${cw}x${ch}`
+        );
         const { ok: drawOk, isFallback } = drawRoute(latitude, longitude, data.path || []);
         setUserLocation({ lat: latitude, lng: longitude });
         setRouteState({
@@ -347,6 +365,12 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
           //    한 번 더 (가드가 적용된) fitRouteBounds로 맞춰 줌아웃 오류를 방지합니다.
           setTimeout(() => {
             if (lastRouteBoundsRef.current) fitRouteBounds(lastRouteBoundsRef.current);
+            // 💡 진단용: 보정 직후 실제 지도 레벨/중심을 추가로 기록합니다.
+            const m = mapInstance.current;
+            if (m) {
+              const c = m.getCenter();
+              setRouteDebug(prev => `${prev ?? ''} | 보정후 level:${m.getLevel()} center:${c.getLat().toFixed(3)},${c.getLng().toFixed(3)}`);
+            }
           }, 500);
         }
       } catch (e: any) {
@@ -578,6 +602,13 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     {routeState.loading ? <Loader2 size={16} className="animate-spin"/> : <Navigation size={16}/>}
                     {routeState.loading ? '경로 찾는 중...' : '지도에서 경로 보기'}
                   </button>
+
+                  {/* 💡 임시 진단용: 경로 응답 원본 데이터를 화면에 작게 표시 (문제 추적용, 확인 후 제거 예정) */}
+                  {routeDebug && (
+                    <p className="mt-2 text-[10px] leading-relaxed text-slate-300 dark:text-slate-600 text-center break-all px-2 select-all">
+                      🔍 {routeDebug}
+                    </p>
+                  )}
 
                   {/* 경로 성공: 거리/시간 + 경로 지우기 */}
                   {routeState.distance !== null && routeState.duration !== null && (
