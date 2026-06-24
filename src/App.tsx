@@ -159,6 +159,14 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
 // ✅ 실제 영역 데이터
 const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
 
+// 🎲 청첩장 팝업 랜덤 텍스트
+const randomTexts = [
+  "서로 다른 자리에서 자라온 유치원과 어린이집이 이제 전북 영유아의 행복이라는 한곳을 바라보며 걸어가려 합니다.",
+  "더 나은 영유아 미래를 위해 유치원과 어린이집이 평생의 동반자가 되었습니다. 서로 아끼고 배려하며 함께 나아가겠습니다.",
+  "참 좋은 두 교육·보육 공동체가 만났습니다. 곁에 있을 때 서로가 더 빛나는 파트너가 되어 전북의 아이들을 따뜻하게 안아주겠습니다.",
+  "숲체험원부터 도서관까지, 우리 동네 모든 영유아 자원을 함께 나누며 알콩달콩 재미있게 살겠습니다. 저희의 새로운 시작을 응원해주세요."
+];
+
 const MainApp = () => {
   const [role, setRole] = useState<string>(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
   const [view, setView] = useHistoryState('home');
@@ -203,6 +211,20 @@ const MainApp = () => {
     return false;
   });
 
+  // 🎊 청첩장 팝업 관련 State
+  const [selectedRandomIndex, setSelectedRandomIndex] = useState<number>(() => {
+    return Math.floor(Math.random() * randomTexts.length);
+  });
+
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const today = new Date().toISOString().split('T')[0];
+      const lastHiddenDate = localStorage.getItem('welcomeModalHiddenDate');
+      return lastHiddenDate !== today;
+    }
+    return true;
+  });
+
   useEffect(() => {
     document.title = '함께누리웹진';
   }, []);
@@ -213,6 +235,13 @@ const MainApp = () => {
   }, [isDarkMode]);
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
+
+  // 🎯 팝업 닫기 함수
+  const handleCloseWelcomeModal = () => {
+    setIsWelcomeModalOpen(false);
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('welcomeModalHiddenDate', today);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -533,6 +562,132 @@ const MainApp = () => {
     <>
     <style>{globalStyles}</style>
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
+       
+       {/* 🎊 청첩장 스타일 팝업 시작 */}
+       {isWelcomeModalOpen && (
+         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+           {/* 배경 어두움 */}
+           <div 
+             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+             onClick={handleCloseWelcomeModal}
+           />
+           
+           {/* 팝업 창 - 청첍장 스타일 */}
+           <div className="relative bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 rounded-none shadow-2xl border-2 border-amber-200 dark:border-amber-900/50 max-w-2xl w-full p-12 md:p-16 animate-in fade-in zoom-in max-h-[90vh] overflow-y-auto"
+                style={{
+                  boxShadow: '0 20px 60px rgba(120, 53, 15, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
+                }}>
+             
+             {/* 상단 장식 */}
+             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent dark:via-amber-700"></div>
+             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 text-amber-400 dark:text-amber-600 opacity-60">
+               ✦ ✧ ✦
+             </div>
+
+             {/* 닫기 버튼 */}
+             <button
+               onClick={handleCloseWelcomeModal}
+               className="absolute top-8 right-8 p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-amber-700 dark:text-amber-400 z-10"
+             >
+               <X size={24} />
+             </button>
+
+             {/* 제목 - 청첍장 스타일 */}
+             <div className="text-center mb-10 mt-6">
+               <p className="text-amber-700 dark:text-amber-400 font-semibold tracking-widest text-sm mb-4">
+                 함께누리웹진에서 초대합니다
+               </p>
+               <h2 className="text-4xl md:text-5xl font-serif text-amber-900 dark:text-amber-100 mb-4 leading-relaxed tracking-tight">
+                 교육청의 유치원 ♡ 지자체의 어린이집
+               </h2>
+               <div className="w-12 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent dark:via-amber-600 mx-auto mb-4"></div>
+               <p className="text-amber-700 dark:text-amber-300 font-light italic text-sm">
+                 유보통합 서약 안내서
+               </p>
+             </div>
+
+             {/* 🎯 랜덤 텍스트 - 청첍장 스타일 */}
+             <div className="my-10 px-8 py-8 bg-white/50 dark:bg-slate-900/50 rounded-sm border border-amber-200 dark:border-amber-900/30"
+                  style={{
+                    borderLeft: '4px solid rgb(180, 83, 9)'
+                  }}>
+               <p className="text-lg font-serif text-amber-950 dark:text-amber-100 leading-relaxed text-center">
+                 "{randomTexts[selectedRandomIndex]}"
+               </p>
+             </div>
+
+             {/* 기본 서약문 */}
+             <div className="space-y-6 mb-10 text-amber-950 dark:text-amber-100 font-serif text-base leading-relaxed">
+               <div className="text-center text-amber-700 dark:text-amber-400 italic font-light mb-8">
+                 <p className="mb-3">본 서약은 전북특별자치도 내 산재한 영유아 체험 자원을</p>
+                 <p className="mb-3">투명하게 발굴하고, 아이들의 보편적 교육 기회를</p>
+                 <p className="mb-3">확대하기 위한 공익적 목적으로 준비했습니다.</p>
+                 <p>안정성과 교육 가치라는 기준을 바탕으로 시작된</p>
+                 <p>이 동행이, 앞으로 도내 모든 우수한 체험처들과</p>
+                 <p>어떻게 상생하며 발전해 나갈지 그 다짐을</p>
+                 <p>담은 서약서를 낭독하겠습니다.</p>
+               </div>
+
+               <div className="space-y-5 bg-amber-50/50 dark:bg-amber-900/10 p-8 rounded-sm border border-amber-100 dark:border-amber-900/30">
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 <span className="font-semibold text-amber-900 dark:text-amber-100">'아이들의 안전과 교육적 가치'</span>를 최우선 기준으로 삼겠습니다.
+                   설립 주체나 운영 형태를 떠나, 오직 우리 아이들이 안심하고 배울 수 있는 우수한 프로그램과 공간인지를 확인하고 투명하게 공유하겠습니다.
+                 </p>
+
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 <span className="font-semibold text-amber-900 dark:text-amber-100">'문이 활짝 열린 지도'</span>를 함께 만들어 가겠습니다.
+                   이번 첫걸음에 마처 담기지 못한 도내의 숨은 자원들을 발굴하기 위해 상시 소통 창구를 열어둘 것이며, 기준을 충족하는 우수한 체험처라면 언제든 참여하고 함께할 수 있도록 지속해서 보완‧확충해 나갈 것을 약속합니다.
+                 </p>
+
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 아이들의 행복한 성장을 위해 끝까지 함께 나아가겠습니다.
+                   이 자산이 현장의 교직원과 보호자들에게 실질적인 도움이 되도록 끊임없이 가꾸어 나가며, 상호 신뢰와 배려를 바탕으로 전북형 유보통합의 모범을 만들어 가겠습니다.
+                 </p>
+               </div>
+
+               <p className="text-xs text-amber-700 dark:text-amber-400 pt-4 text-center font-light">
+                 ※ 본 안내 지도는 공익적 정보 제공 목적의 1차 발굴 자료이며,<br/>향후 기준 요건을 갖춘 도내 체험처들을 지속적으로 추가 보완할 예정입니다.
+               </p>
+             </div>
+
+             {/* 하단 장식 */}
+             <div className="text-center my-8 text-amber-300 dark:text-amber-700 opacity-40">
+               ✦ ✧ ✦
+             </div>
+
+             {/* 버튼들 */}
+             <div className="flex gap-3 mt-10">
+               <button
+                 onClick={handleCloseWelcomeModal}
+                 className="flex-1 py-3 px-4 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold rounded-sm transition-colors border border-amber-300 dark:border-amber-800"
+               >
+                 닫기
+               </button>
+               <button
+                 onClick={() => {
+                   handleCloseWelcomeModal();
+                   setView('resource_map');
+                 }}
+                 className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold rounded-sm transition-all shadow-lg hover:shadow-xl dark:from-amber-700 dark:to-amber-800 dark:hover:from-amber-600 dark:hover:to-amber-700"
+               >
+                 체험자원 둘러보기
+               </button>
+             </div>
+
+             {/* 오늘 하루 안 보기 */}
+             <button
+               onClick={handleCloseWelcomeModal}
+               className="w-full mt-6 py-2 text-amber-700 dark:text-amber-400 font-light text-sm hover:text-amber-900 dark:hover:text-amber-300 transition-colors"
+             >
+               오늘 하루 안 보기
+             </button>
+
+             {/* 하단 장식 라인 */}
+             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent dark:via-amber-700"></div>
+           </div>
+         </div>
+       )}
+       {/* 🎊 청첍장 스타일 팝업 끝 */}
        
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
