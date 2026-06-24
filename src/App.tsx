@@ -3,9 +3,10 @@ import {
   Book, ChevronRight, X, Newspaper, Calendar as CalendarIcon, 
   MapPin, RefreshCw, ArrowUpRight, Loader2, Home, Search, 
   Eye, Map as MapIcon, Phone, CheckCircle2, Sparkles, LayoutGrid,
-  Compass, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
+  Compass, CloudSun, Wind, Sprout, Flower2, Heart, Rabbit, Plus,
   ArrowDown, ArrowUp
 } from 'lucide-react';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 import UniversalUploadModal from './components/UniversalUploadModal';
 import IssueCard from './components/IssueCard';
@@ -15,8 +16,6 @@ import CustomPDFViewer from './components/CustomPDFViewer';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ResourceMap from './components/ResourceMap';
-
-import { supabase } from './lib/supabase';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -45,13 +44,16 @@ const KRDSBadge: React.FC<KRDSBadgeProps> = ({ variant = 'neutral', children, cl
   return <span className={`inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wide ${styles[variant]} ${className}`}>{children}</span>;
 };
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
 const getValidSupabaseUrl = (url: string) => {
-  const currentSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  if (!url || !currentSupabaseUrl) return url;
+  if (!url || !supabaseUrl) return url;
   const marker = '/storage/v1/object/public/';
   if (url.includes(marker)) {
     const filePath = url.substring(url.indexOf(marker) + marker.length);
-    const cleanBaseUrl = currentSupabaseUrl.endsWith('/') ? currentSupabaseUrl.slice(0, -1) : currentSupabaseUrl;
+    const cleanBaseUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
     return `${cleanBaseUrl}${marker}${filePath}`; 
   }
   return url;
@@ -69,13 +71,12 @@ const parseNewsData = (rawTitle: string) => {
   return { title: rawTitle, publisher: '뉴스' };
 };
 
-// 💡 DB에 id가 없는 경우를 완벽 대비! 타겟 컬럼명(column)을 동적으로 받도록 개선
-const incrementViewCount = async (table: string, identifier: any, currentViews: number, column: string = 'id') => {
-  if (!supabase || !identifier) return; 
-  const sessionKey = `viewed_${table}_${identifier}`;
+const incrementViewCount = async (table: string, id: any, currentViews: number) => {
+  if (!supabase) return;
+  const sessionKey = `viewed_${table}_${id}`;
   if (sessionStorage.getItem(sessionKey)) return;
   try { 
-    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq(column, identifier); 
+    await supabase.from(table).update({ views: (currentViews || 0) + 1 }).eq('id', id); 
     sessionStorage.setItem(sessionKey, 'true');
   } catch (e) { console.error(e); }
 };
@@ -115,12 +116,11 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
 
       const fileReader = new FileReader();
       fileReader.onload = async function() {
-        let pdf: any = null;
         try {
           const typedarray = new Uint8Array(this.result as ArrayBuffer);
           const loadingTask = (window as any).pdfjsLib.getDocument({ data: typedarray, disableAutoFetch: true });
     
-          pdf = await loadingTask.promise;
+          const pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 0.6 });
 
@@ -140,13 +140,11 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
             finalCanvas.getContext('2d')?.drawImage(canvas, halfWidth, 0, halfWidth, fullHeight, 0, 0, halfWidth, fullHeight);
           }
 
-          finalCanvas.toBlob(async (blob) => {
-            if (pdf) await pdf.destroy();
+          finalCanvas.toBlob((blob) => {
             resolve(blob);
           }, 'image/jpeg', 0.85);
         } catch(e) {
             console.error(e);
-            if (pdf) await pdf.destroy();
             resolve(null);
         }
       };
@@ -158,7 +156,16 @@ const extractPdfCover = async (fileOrBlob: File | Blob): Promise<Blob | null> =>
   });
 };
 
+// ✅ 실제 영역 데이터
 const RESOURCE_TYPES = ['놀이·생활', '건강·안전', '창의·융합', '역사·문화', '자연·환경', '인문·독서'];
+
+// 🎲 청첩장 팝업 랜덤 텍스트
+const randomTexts = [
+  "서로 다른 자리에서 자라온 유치원과 어린이집이 이제 전북 영유아의 행복이라는 한곳을 바라보며 걸어가려 합니다.",
+  "더 나은 영유아 미래를 위해 유치원과 어린이집이 평생의 동반자가 되었습니다. 서로 아끼고 배려하며 함께 나아가겠습니다.",
+  "참 좋은 두 교육·보육 공동체가 만났습니다. 곁에 있을 때 서로가 더 빛나는 파트너가 되어 전북의 아이들을 따뜻하게 안아주겠습니다.",
+  "숲체험원부터 도서관까지, 우리 동네 모든 영유아 자원을 함께 나누며 알콩달콩 재미있게 살겠습니다. 저희의 새로운 시작을 응원해주세요."
+];
 
 const MainApp = () => {
   const [role, setRole] = useState<string>(() => typeof window !== 'undefined' ? sessionStorage.getItem('userRole') || 'guest' : 'guest');
@@ -180,6 +187,7 @@ const MainApp = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isMigrating, setIsMigrating] = useState<boolean>(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState<boolean>(false);
+  const [resources, setResources] = useState<any[]>([]);
   
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('전체');
@@ -203,6 +211,20 @@ const MainApp = () => {
     return false;
   });
 
+  // 🎊 청첩장 팝업 관련 State
+  const [selectedRandomIndex, setSelectedRandomIndex] = useState<number>(() => {
+    return Math.floor(Math.random() * randomTexts.length);
+  });
+
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const today = new Date().toISOString().split('T')[0];
+      const lastHiddenDate = localStorage.getItem('welcomeModalHiddenDate');
+      return lastHiddenDate !== today;
+    }
+    return true;
+  });
+
   useEffect(() => {
     document.title = '함께누리웹진';
   }, []);
@@ -214,6 +236,13 @@ const MainApp = () => {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
+  // 🎯 팝업 닫기 함수
+  const handleCloseWelcomeModal = () => {
+    setIsWelcomeModalOpen(false);
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('welcomeModalHiddenDate', today);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if(!supabase) return;
@@ -221,6 +250,29 @@ const MainApp = () => {
       if (resIssues.data) {
         const sortedByDate = resIssues.data.sort((a, b) => Number(b.vol || b.id || 0) - Number(a.vol || a.id || 0));
         setIssues(sortedByDate);
+      }
+      
+      // ✅ 수정: 영유아체험기관 테이블 연결 + 필드 매핑
+      const resResources = await supabase
+        .from('영유아체험기관')
+        .select('*')
+        .not('기관시설', 'is', null);
+
+      if (resResources.data) {
+        const mapped = resResources.data.map((item: any) => ({
+          id: item.id,
+          name: item.기관시설,
+          region: item.시군구,
+          category: item.영역,
+          address: item.주소,
+          phone: item.연락처,
+          lat: item.위도 ?? 35.8242238,
+          lng: item.경도 ?? 127.1479532,
+          program: item.체험프로그램,
+          note: item.비고,
+          holiday: item.휴무일,
+        }));
+        setResources(mapped);
       }
       
       const resNotices = await supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(4);
@@ -312,6 +364,56 @@ const MainApp = () => {
     }
   };
 
+  // ✅ 추가: 주소 → 좌표 변환 함수
+  const handleGeocodeAll = async () => {
+    if (!confirm("429개 주소를 카카오 API로 좌표 변환합니다. 시간이 걸릴 수 있어요.")) return;
+    setIsMigrating(true);
+
+    try {
+      const kakaoKey = import.meta.env.VITE_KAKAO_REST_API_KEY || '';
+      const { data: places } = await supabase!
+        .from('영유아체험기관')
+        .select('id, 주소, 위도, 경도')
+        .not('주소', 'is', null);
+
+      if (!places) { alert("데이터 없음"); return; }
+
+      const targets = places.filter((p: any) => !p.위도 || !p.경도);
+      let successCount = 0;
+
+      for (const place of targets) {
+        try {
+          const res = await fetch(
+            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(place.주소)}`,
+            { headers: { Authorization: `KakaoAK ${kakaoKey}` } }
+          );
+          const json = await res.json();
+          const doc = json.documents?.[0];
+
+          if (doc) {
+            await supabase!
+              .from('영유아체험기관')
+              .update({ 위도: parseFloat(doc.y), 경도: parseFloat(doc.x) })
+              .eq('id', place.id);
+            successCount++;
+          }
+
+          await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+          console.error(`변환 실패: ${place.주소}`, e);
+        }
+      }
+
+      alert(`✅ 완료! ${successCount}/${targets.length}개 좌표 변환 성공`);
+      window.location.reload();
+
+    } catch (e: any) {
+      alert("오류: " + e.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const handleFixDatabaseUrls = async () => {
     if (!confirm("DB의 모든 예전 주소를 새 주소로 영구 변환하시겠습니까?")) return;
     setIsMigrating(true);
@@ -366,6 +468,40 @@ const MainApp = () => {
     }
   };
 
+  const handleRegenerateCover = async (issue: any) => {
+    if (!issue.articles || issue.articles.length === 0) {
+      alert("첨부된 PDF 파일이 없습니다.");
+      return;
+    }
+    
+    if (!confirm(`'Vol.${issue.vol}'호의 표지를 새로 추출하시겠습니까?\n(해당 PDF 1개 분량의 다운로드 트래픽이 발생합니다.)`)) return;
+    setIsMigrating(true);
+    try {
+      const fileUrl = issue.articles[0].fileUrl || issue.articles[0].file_url;
+      const validUrl = getValidSupabaseUrl(fileUrl);
+      const response = await fetch(validUrl);
+      const blob = await response.blob();
+      const coverBlob = await extractPdfCover(blob);
+      if (coverBlob) {
+        const timestamp = Date.now();
+        const coverFn = `cover_regen_${issue.id}_${timestamp}.jpg`;
+        await supabase!.storage.from('files').upload(coverFn, coverBlob, { contentType: 'image/jpeg', upsert: true });
+        const newCoverUrl = supabase!.storage.from('files').getPublicUrl(coverFn).data.publicUrl;
+
+        await supabase!.from('issues').update({ cover_url: newCoverUrl }).eq('id', issue.id);
+        setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, cover_url: newCoverUrl } : i));
+        alert("표지가 성공적으로 재생성되었습니다!");
+      } else {
+        alert("표지 추출에 실패했습니다. (CORS 또는 PDF 형식 오류)");
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert("오류가 발생했습니다: " + error.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const handleDeleteIssue = async (issue: any) => {
     if (confirm(`'Vol.${issue.vol}'호를 삭제하시겠습니까? 관련 PDF 및 표지 파일도 모두 삭제됩니다.`)) {
       try {
@@ -410,17 +546,12 @@ const MainApp = () => {
   };
 
   const handleIssueClick = (issue: any) => { 
-    if (issue.id) {
-      incrementViewCount('issues', issue.id, issue.views, 'id');
-      const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
-      setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
-      setCurrentIssue(updatedIssue);
-    } else {
-      setCurrentIssue(issue);
-    }
-
-    if (issue.articles && issue.articles.length > 0) {
-      setCurrentArticle(issue.articles[0]);
+    incrementViewCount('issues', issue.id, issue.views);
+    const updatedIssue = { ...issue, views: (issue.views || 0) + 1 };
+    setIssues(prev => prev.map(i => i.id === issue.id ? updatedIssue : i)); 
+    setCurrentIssue(updatedIssue);
+    if (updatedIssue.articles && updatedIssue.articles.length > 0) {
+      setCurrentArticle(updatedIssue.articles[0]);
       setView('article_view');
     } else {
       alert("등록된 PDF 자료가 없습니다. (관리자 모드에서 + 버튼을 눌러 PDF 추가)");
@@ -431,6 +562,132 @@ const MainApp = () => {
     <>
     <style>{globalStyles}</style>
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
+       
+       {/* 🎊 청첩장 스타일 팝업 시작 */}
+       {isWelcomeModalOpen && (
+         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+           {/* 배경 어두움 */}
+           <div 
+             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+             onClick={handleCloseWelcomeModal}
+           />
+           
+           {/* 팝업 창 - 청첍장 스타일 */}
+           <div className="relative bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 rounded-none shadow-2xl border-2 border-amber-200 dark:border-amber-900/50 max-w-2xl w-full p-12 md:p-16 animate-in fade-in zoom-in max-h-[90vh] overflow-y-auto"
+                style={{
+                  boxShadow: '0 20px 60px rgba(120, 53, 15, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
+                }}>
+             
+             {/* 상단 장식 */}
+             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent dark:via-amber-700"></div>
+             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 text-amber-400 dark:text-amber-600 opacity-60">
+               ✦ ✧ ✦
+             </div>
+
+             {/* 닫기 버튼 */}
+             <button
+               onClick={handleCloseWelcomeModal}
+               className="absolute top-8 right-8 p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-amber-700 dark:text-amber-400 z-10"
+             >
+               <X size={24} />
+             </button>
+
+             {/* 제목 - 청첍장 스타일 */}
+             <div className="text-center mb-10 mt-6">
+               <p className="text-amber-700 dark:text-amber-400 font-semibold tracking-widest text-sm mb-4">
+                 함께누리웹진에서 초대합니다
+               </p>
+               <h2 className="text-4xl md:text-5xl font-serif text-amber-900 dark:text-amber-100 mb-4 leading-relaxed tracking-tight">
+                 교육청의 유치원 ♡ 지자체의 어린이집
+               </h2>
+               <div className="w-12 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent dark:via-amber-600 mx-auto mb-4"></div>
+               <p className="text-amber-700 dark:text-amber-300 font-light italic text-sm">
+                 유보통합 서약 안내서
+               </p>
+             </div>
+
+             {/* 🎯 랜덤 텍스트 - 청첍장 스타일 */}
+             <div className="my-10 px-8 py-8 bg-white/50 dark:bg-slate-900/50 rounded-sm border border-amber-200 dark:border-amber-900/30"
+                  style={{
+                    borderLeft: '4px solid rgb(180, 83, 9)'
+                  }}>
+               <p className="text-lg font-serif text-amber-950 dark:text-amber-100 leading-relaxed text-center">
+                 "{randomTexts[selectedRandomIndex]}"
+               </p>
+             </div>
+
+             {/* 기본 서약문 */}
+             <div className="space-y-6 mb-10 text-amber-950 dark:text-amber-100 font-serif text-base leading-relaxed">
+               <div className="text-center text-amber-700 dark:text-amber-400 italic font-light mb-8">
+                 <p className="mb-3">본 서약은 전북특별자치도 내 산재한 영유아 체험 자원을</p>
+                 <p className="mb-3">투명하게 발굴하고, 아이들의 보편적 교육 기회를</p>
+                 <p className="mb-3">확대하기 위한 공익적 목적으로 준비했습니다.</p>
+                 <p>안정성과 교육 가치라는 기준을 바탕으로 시작된</p>
+                 <p>이 동행이, 앞으로 도내 모든 우수한 체험처들과</p>
+                 <p>어떻게 상생하며 발전해 나갈지 그 다짐을</p>
+                 <p>담은 서약서를 낭독하겠습니다.</p>
+               </div>
+
+               <div className="space-y-5 bg-amber-50/50 dark:bg-amber-900/10 p-8 rounded-sm border border-amber-100 dark:border-amber-900/30">
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 <span className="font-semibold text-amber-900 dark:text-amber-100">'아이들의 안전과 교육적 가치'</span>를 최우선 기준으로 삼겠습니다.
+                   설립 주체나 운영 형태를 떠나, 오직 우리 아이들이 안심하고 배울 수 있는 우수한 프로그램과 공간인지를 확인하고 투명하게 공유하겠습니다.
+                 </p>
+
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 <span className="font-semibold text-amber-900 dark:text-amber-100">'문이 활짝 열린 지도'</span>를 함께 만들어 가겠습니다.
+                   이번 첫걸음에 마처 담기지 못한 도내의 숨은 자원들을 발굴하기 위해 상시 소통 창구를 열어둘 것이며, 기준을 충족하는 우수한 체험처라면 언제든 참여하고 함께할 수 있도록 지속해서 보완‧확충해 나갈 것을 약속합니다.
+                 </p>
+
+                 <p className="leading-relaxed">
+                   <span className="font-bold text-amber-900 dark:text-amber-200 text-lg">하나,</span> 우리는 아이들의 행복한 성장을 위해 끝까지 함께 나아가겠습니다.
+                   이 자산이 현장의 교직원과 보호자들에게 실질적인 도움이 되도록 끊임없이 가꾸어 나가며, 상호 신뢰와 배려를 바탕으로 전북형 유보통합의 모범을 만들어 가겠습니다.
+                 </p>
+               </div>
+
+               <p className="text-xs text-amber-700 dark:text-amber-400 pt-4 text-center font-light">
+                 ※ 본 안내 지도는 공익적 정보 제공 목적의 1차 발굴 자료이며,<br/>향후 기준 요건을 갖춘 도내 체험처들을 지속적으로 추가 보완할 예정입니다.
+               </p>
+             </div>
+
+             {/* 하단 장식 */}
+             <div className="text-center my-8 text-amber-300 dark:text-amber-700 opacity-40">
+               ✦ ✧ ✦
+             </div>
+
+             {/* 버튼들 */}
+             <div className="flex gap-3 mt-10">
+               <button
+                 onClick={handleCloseWelcomeModal}
+                 className="flex-1 py-3 px-4 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold rounded-sm transition-colors border border-amber-300 dark:border-amber-800"
+               >
+                 닫기
+               </button>
+               <button
+                 onClick={() => {
+                   handleCloseWelcomeModal();
+                   setView('resource_map');
+                 }}
+                 className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold rounded-sm transition-all shadow-lg hover:shadow-xl dark:from-amber-700 dark:to-amber-800 dark:hover:from-amber-600 dark:hover:to-amber-700"
+               >
+                 체험자원 둘러보기
+               </button>
+             </div>
+
+             {/* 오늘 하루 안 보기 */}
+             <button
+               onClick={handleCloseWelcomeModal}
+               className="w-full mt-6 py-2 text-amber-700 dark:text-amber-400 font-light text-sm hover:text-amber-900 dark:hover:text-amber-300 transition-colors"
+             >
+               오늘 하루 안 보기
+             </button>
+
+             {/* 하단 장식 라인 */}
+             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent dark:via-amber-700"></div>
+           </div>
+         </div>
+       )}
+       {/* 🎊 청첍장 스타일 팝업 끝 */}
        
        {isSideMenuOpen && (
          <div className="fixed inset-0 z-[100] flex justify-end">
@@ -470,6 +727,22 @@ const MainApp = () => {
             <div className="w-full animate-in fade-in">
                <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
                  
+                 <div className="absolute top-10 right-10 xl:right-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
+                       <MapPin size={18} className="text-emerald-500 dark:text-emerald-400"/> 전북특별자치도 전주시
+                    </div>
+                    <div className="flex items-center justify-between gap-6">
+                       <div className="flex items-center gap-3">
+                          <CloudSun size={48} className="text-amber-500" strokeWidth={1.5} />
+                          <span className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">18<span className="text-2xl">°C</span></span>
+                       </div>
+                    </div>
+                    <div className="flex gap-2 text-xs font-black mt-1">
+                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">미세 <span className="text-blue-500 dark:text-blue-400">좋음</span></div>
+                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">초미세 <span className="text-emerald-500 dark:text-emerald-400">보통</span></div>
+                    </div>
+                 </div>
+
                  <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0 relative pb-16">
                    <div className="absolute top-0 right-1/4 text-sky-300 dark:text-sky-900/50 opacity-60 z-0 animate-pulse"><Sprout size={56}/></div>
                    <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Rabbit size={72} strokeWidth={1}/></div>
@@ -483,6 +756,7 @@ const MainApp = () => {
                            <option value="전체">= 지역 전체 =</option>
                            {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
                         </select>
+                        {/* ✅ 수정: 실제 영역 데이터로 교체 */}
                         <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                            <option value="전체">= 자원형태 전체 =</option>
                            {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -544,7 +818,7 @@ const MainApp = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 md:gap-8 pt-2 relative z-10 flex-1">
                         {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} />
+                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
                         ))}
                       </div>
                    </div>
@@ -570,19 +844,10 @@ const MainApp = () => {
                               </div>
                            </div>
                         ))}
-                        {/* 💡 방어 코드를 우회하고, 고유키를 link 기준으로 완벽하게 복원했습니다! */}
                         {activeHomeTab === 'news' && recentNews.map(n => {
                            const { title: cleanTitle } = parseNewsData(n.title);
                            return (
-                             <div key={n.id || n.link || Math.random()} onClick={() => { 
-                                const uniqueVal = n.id || n.link;
-                                const uniqueCol = n.id ? 'id' : 'link';
-                                if (uniqueVal) {
-                                   incrementViewCount('news', uniqueVal, n.views, uniqueCol);
-                                   setRecentNews(prev => prev.map(item => (item.id || item.link) === uniqueVal ? { ...item, views: (item.views || 0) + 1 } : item));
-                                }
-                                if (n.link) window.open(n.link, '_blank'); 
-                             }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
+                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
                                 <div className="flex items-center gap-3 md:gap-5 w-full">
                                    <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight pl-1 md:pl-2">{cleanTitle}</span>
                                    <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
@@ -600,13 +865,13 @@ const MainApp = () => {
 
           {view === 'resource_map' && (
              <ResourceMap 
+                resources={resources} 
                 searchKeyword={searchKeyword} 
                 setSearchKeyword={setSearchKeyword} 
                 selectedRegion={selectedRegion} 
                 setSelectedRegion={setSelectedRegion} 
                 selectedType={selectedType} 
                 setSelectedType={setSelectedType} 
-                role={role}
              />
           )}
 
@@ -621,6 +886,11 @@ const MainApp = () => {
                 
                 {role === 'admin' && (
                   <div className="flex gap-2 relative z-10">
+                    {/* ✅ 추가: 주소 → 좌표 변환 버튼 */}
+                    <button onClick={handleGeocodeAll} disabled={isMigrating} className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                      {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <MapPin size={20} />}
+                      <span className="hidden sm:inline">주소 → 좌표 변환</span>
+                    </button>
                     <button onClick={handleFixDatabaseUrls} disabled={isMigrating} className="bg-rose-500 text-white px-5 py-3.5 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-rose-600 transition-colors disabled:opacity-50">
                       {isMigrating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                       <span className="hidden sm:inline">DB 주소 영구 변환</span>
@@ -667,7 +937,7 @@ const MainApp = () => {
                   }
                   return sortDirection === 'desc' ? valB - valA : valA - valB;
                 }).map(issue => (
-                  <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} />
+                  <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
                 ))}
               </div>
             </div>
