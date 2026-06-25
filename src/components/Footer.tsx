@@ -138,7 +138,7 @@ const Footer: React.FC<FooterProps> = ({ onSecretAdminUnlock }) => {
            <SocialShare />
          </div>
          <p onClick={handleSecretClick} className="text-sm text-gray-400 dark:text-slate-500 font-medium cursor-default select-none">
-           © 2026 함께누리웹진. All rights reserved.<br/>Contact: help@korea-kids-platform.kr
+           © 2026 함께누리웹진. All rights reserved.<br/>Contact: yubo2426@gmail.com
          </p>
       </div>
     </footer>
