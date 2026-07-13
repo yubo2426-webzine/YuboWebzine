@@ -16,6 +16,11 @@ import CustomPDFViewer from './components/CustomPDFViewer';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ResourceMap from './components/ResourceMap';
+import CareApply from './components/CareApply';
+import FaqBoard from './components/FaqBoard';
+import InquiryBoard from './components/InquiryBoard';
+import CareAdmin from './components/CareAdmin';
+import HomeFolder from './components/HomeFolder';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -666,11 +671,11 @@ const MainApp = () => {
                <button
                  onClick={() => {
                    handleCloseWelcomeModal();
-                   setView('resource_map');
+                   setView('care_apply');
                  }}
                  className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold rounded-sm transition-all shadow-lg hover:shadow-xl dark:from-amber-700 dark:to-amber-800 dark:hover:from-amber-600 dark:hover:to-amber-700"
                >
-                 체험자원 둘러보기
+                 돌봄 신청 바로가기
                </button>
              </div>
 
@@ -702,10 +707,13 @@ const MainApp = () => {
                <ul className="flex flex-col gap-3">
                  {[
                    { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈' },
-                   { id: 'resource_map', icon: <MapIcon size={24} className="text-emerald-500 dark:text-emerald-400" />, label: '체험자원 지도' },
+                   { id: 'care_apply', icon: <MapIcon size={24} className="text-sky-500 dark:text-sky-400" />, label: '거점형·연계형 돌봄 신청' },
                    { id: 'issue_list', icon: <Book size={24} className="text-teal-500 dark:text-teal-400"/>, label: '자료실' },
                    { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500 dark:text-amber-400"/>, label: '소식' },
-                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '뉴스' }
+                   { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '뉴스' },
+                   { id: 'faq', icon: <Sparkles size={24} className="text-emerald-500 dark:text-emerald-400"/>, label: 'FAQ' },
+                   { id: 'inquiry', icon: <Heart size={24} className="text-indigo-500 dark:text-indigo-400"/>, label: '문의하기' },
+                   { id: 'care_admin', icon: <Eye size={24} className="text-slate-500 dark:text-slate-400"/>, label: '기관·관리자 로그인' }
                  ].map((item) => (
                    <li key={item.id}>
                      <button onClick={() => { setView(item.id); setIsSideMenuOpen(false); }} className="w-full flex items-center justify-between p-5 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all text-left font-black text-lg text-slate-700 dark:text-slate-200">
@@ -725,84 +733,17 @@ const MainApp = () => {
           
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
-               <section className="relative w-full py-28 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 flex flex-col items-center justify-center px-4 overflow-hidden relative transition-colors">
-                 
-                 <div className="absolute top-10 right-10 xl:right-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] hidden lg:flex flex-col gap-4 z-20">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
-                       <MapPin size={18} className="text-emerald-500 dark:text-emerald-400"/> 전북특별자치도 전주시
-                    </div>
-                    <div className="flex items-center justify-between gap-6">
-                       <div className="flex items-center gap-3">
-                          <CloudSun size={48} className="text-amber-500" strokeWidth={1.5} />
-                          <span className="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">18<span className="text-2xl">°C</span></span>
-                       </div>
-                    </div>
-                    <div className="flex gap-2 text-xs font-black mt-1">
-                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">미세 <span className="text-blue-500 dark:text-blue-400">좋음</span></div>
-                       <div className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700">초미세 <span className="text-emerald-500 dark:text-emerald-400">보통</span></div>
-                    </div>
-                 </div>
-
-                 <div className="z-10 relative flex flex-col items-center text-center w-full max-w-4xl mt-10 lg:mt-0 relative pb-16">
-                   <div className="absolute top-0 right-1/4 text-sky-300 dark:text-sky-900/50 opacity-60 z-0 animate-pulse"><Sprout size={56}/></div>
-                   <div className="absolute bottom-5 left-1/4 text-emerald-300 dark:text-emerald-900/50 opacity-60 z-0 animate-bounce"><Rabbit size={72} strokeWidth={1}/></div>
-
-                   <span className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-400 font-black px-6 py-2.5 rounded-full text-sm shadow-sm mb-8 inline-flex items-center gap-2 border border-white dark:border-slate-700"><Sparkles size={18}/> 우리 아이들의 행복한 체험활동</span>
-                   <h2 className="text-5xl md:text-6xl font-black text-emerald-600 dark:text-emerald-400 leading-[1.3] mb-10 tracking-tight">함께누리웹진</h2>
-                   
-                   <div className="w-full max-w-2xl relative shadow-[0_20px_60px_rgba(0,0,0,0.08)] rounded-[2.5rem] mb-8 z-20 bg-white dark:bg-slate-800 border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden">
-                     <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-                        <select value={selectedRegion} onChange={(e)=>setSelectedRegion(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center border-r border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                           <option value="전체">= 지역 전체 =</option>
-                           {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
-                        </select>
-                        {/* ✅ 수정: 실제 영역 데이터로 교체 */}
-                        <select value={selectedType} onChange={(e)=>setSelectedType(e.target.value)} className="flex-1 h-14 bg-transparent px-6 font-bold text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer appearance-none text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                           <option value="전체">= 자원형태 전체 =</option>
-                           {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                     </div>
-                     <div className="relative">
-                        <input 
-                          type="text" placeholder="검색어를 입력해주세요." 
-                          className="w-full h-20 pl-8 pr-24 text-lg font-black text-slate-800 dark:text-white bg-transparent focus:outline-none shadow-inner"
-                          value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearchSubmit(); }}
-                        />
-                        <button onClick={handleSearchSubmit} className="absolute right-3 top-3 bottom-3 w-14 md:w-16 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-md">
-                          <Compass size={28} strokeWidth={2.5}/>
-                        </button>
-                     </div>
-                   </div>
-
-                   <div className="flex gap-2.5 justify-center flex-wrap relative z-20 max-w-2xl">
-                     {recentTags.map(tag => (
-                        <button key={tag} onClick={() => { setSelectedRegion(tag); handleSearchSubmit(); }} className="px-5 py-2 bg-white/70 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-full shadow-sm text-[13px] transition-all border border-white dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400">#{tag}</button>
-                     ))}
-                   </div>
-                 </div>
-                 
-                 <div className="absolute right-[5%] bottom-[10%] opacity-20 dark:opacity-10 select-none pointer-events-none animate-float">
-                    <Compass size={380} className="text-sky-600 dark:text-sky-400" strokeWidth={1} />
-                 </div>
-                 <div className="absolute left-[5%] top-[15%] opacity-10 dark:opacity-5 select-none pointer-events-none transform -rotate-12">
-                    <Wind size={250} className="text-emerald-500 dark:text-emerald-400" strokeWidth={1} />
-                 </div>
-               </section>
-
-               <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-28">
-                 <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] py-10 px-8 flex justify-around items-center gap-4 border border-slate-50/50 dark:border-slate-700">
-                   {[
-                      { id: 'map', title: '체험자원 지도', icon: <MapPin size={36}/>, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 group-hover:bg-emerald-500 dark:group-hover:bg-emerald-500 group-hover:text-white', decorators: [<Flower2 key="f1" size={20} className="text-emerald-300 dark:text-emerald-500/50 absolute -top-1 -right-1"/>, <Heart key="h1" size={12} className="text-emerald-200 dark:text-emerald-500/50 absolute bottom-1 -left-1"/>] },
-                      { id: 'issue_list', title: '자료실', icon: <Book size={36}/>, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400 group-hover:bg-teal-500 dark:group-hover:bg-teal-500 group-hover:text-white' },
-                      { id: 'notice', title: '소식', icon: <CalendarIcon size={36}/>, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 group-hover:bg-amber-500 dark:group-hover:bg-amber-500 group-hover:text-white', decorators: [<Sprout key="s1" size={20} className="text-amber-300 dark:text-amber-500/50 absolute -top-1 -left-1"/>, <Flower2 key="f2" size={12} className="text-amber-200 dark:text-amber-500/50 absolute bottom-1 -right-1"/>] },
-                      { id: 'news', title: '뉴스', icon: <Newspaper size={36}/>, color: 'text-rose-500 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 group-hover:bg-rose-500 dark:group-hover:bg-rose-500 group-hover:text-white' }
-                   ].map(menu => (
-                      <div key={menu.id} onClick={() => setView(menu.id === 'map' ? 'resource_map' : menu.id)} className="flex flex-col items-center gap-4 cursor-pointer group relative">
-                         <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all shadow-inner group-hover:shadow-[0_15px_30px_rgba(0,0,0,0.1)] group-hover:-translate-y-2 relative border border-transparent dark:border-slate-700 group-hover:border-transparent ${menu.color}`}>{menu.icon}{menu.decorators}</div>
-                         <span className="font-black text-slate-700 dark:text-slate-300 text-base md:text-lg">{menu.title}</span>
-                      </div>
-                   ))}
-                 </div>
+               <section className="relative w-full py-10 md:py-14 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 px-4 transition-colors">
+                 <HomeFolder
+                   setView={setView}
+                   role={role}
+                   resourceMapProps={{
+                     resources,
+                     searchKeyword, setSearchKeyword,
+                     selectedRegion, setSelectedRegion,
+                     selectedType, setSelectedType,
+                   }}
+                 />
                </section>
 
                <section className="max-w-7xl mx-auto px-4 pb-28">
@@ -876,6 +817,10 @@ const MainApp = () => {
           )}
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
+          {view === 'care_apply' && <CareApply />}
+          {view === 'faq' && <FaqBoard />}
+          {view === 'inquiry' && <InquiryBoard />}
+          {view === 'care_admin' && <CareAdmin />}
           {view === 'notice' && <NoticeBoard userRole={role} onWriteClick={(t: string) => { setUploadType(t); setIsUploadOpen(true);}}/>}
           
           {view === 'issue_list' && (
