@@ -11,22 +11,18 @@ import CareApply from './CareApply';
 // 5개 사업주제 인덱스 (폴더 탭)
 // ─────────────────────────────────────────────
 const TOPICS = [
-  { key: '체험자원', index: '오늘 어디가지?', sub: '체험자원', icon: Compass,        color: 'emerald' },
-  { key: '거점돌봄', index: '돌봄이 필요할 때', sub: '거점형 돌봄', icon: HeartHandshake, color: 'sky' },
+  { key: '체험자원', index: '오늘 어디가지?', sub: '체험자원', icon: Compass,        color: 'amber' },
+  { key: '거점돌봄', index: '돌봄이 필요할 때', sub: '거점형 돌봄', icon: HeartHandshake, color: 'amber' },
   { key: '유아발달', index: '우리아이 잘 크고 있을까?', sub: '유아발달지원사업', icon: Baby,    color: 'amber' },
-  { key: '정서심리', index: '우리아이 마음이 궁금해', sub: '유아정서심리발달', icon: Sparkles,  color: 'rose' },
-  { key: '이음교육', index: '이음교육이 뭐예요?', sub: '유초이음교육', icon: School,   color: 'violet' },
+  { key: '정서심리', index: '우리아이 마음이 궁금해', sub: '유아정서심리발달', icon: Sparkles,  color: 'amber' },
+  { key: '이음교육', index: '이음교육이 뭐예요?', sub: '5세이음교육', icon: School,   color: 'amber' },
 ] as const;
 
 const TAB_ACTIVE: Record<string, string> = {
-  emerald: 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700',
-  sky:     'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-700',
-  amber:   'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700',
-  rose:    'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-700',
-  violet:  'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-700',
+  amber: 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 border-amber-400 dark:border-amber-600',
 };
 const DOT: Record<string, string> = {
-  emerald: 'bg-emerald-400', sky: 'bg-sky-400', amber: 'bg-amber-400', rose: 'bg-rose-400', violet: 'bg-violet-400',
+  amber: 'bg-amber-500',
 };
 
 interface HomeFolderProps {
@@ -37,6 +33,7 @@ interface HomeFolderProps {
 
 const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps }) => {
   const [active, setActive] = useState<string>('체험자원');
+  const [showCareApply, setShowCareApply] = useState(false);
   const topic = TOPICS.find(t => t.key === active)!;
 
   const sideTabs = [
@@ -57,16 +54,16 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
             const isActive = t.key === active;
             return (
               <button key={t.key} role="tab" aria-selected={isActive} onClick={() => setActive(t.key)}
-                className={`rounded-t-3xl border border-b-0 px-3 md:px-4 pt-4 md:pt-5 pb-5 md:pb-6 transition-all text-center relative flex flex-col items-center justify-center
+                className={`rounded-t-3xl border border-b-0 px-3 md:px-4 pt-5 md:pt-6 pb-6 md:pb-8 transition-all text-center relative flex flex-col items-center justify-center
                   ${isActive
-                    ? `${TAB_ACTIVE[t.color]} shadow-[0_-10px_25px_rgba(0,0,0,0.08)] z-10 -mb-px`
-                    : 'bg-slate-100/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-1'}`}>
-                <Icon size={22} className="mb-2 shrink-0"/>
-                <span className="font-black text-sm md:text-base leading-tight">
+                    ? `${TAB_ACTIVE[t.color]} shadow-[0_-12px_30px_rgba(245,158,11,0.2)] z-10 -mb-px`
+                    : 'bg-amber-50/80 dark:bg-amber-950/30 text-slate-600 dark:text-slate-400 border-amber-200 dark:border-amber-900 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:-translate-y-1.5'}`}>
+                <Icon size={26} className="mb-3 shrink-0 text-amber-600 dark:text-amber-500"/>
+                <span className="font-black text-base md:text-xl leading-tight text-slate-800 dark:text-white">
                   {t.index}
                 </span>
-                <span className="block text-[11px] md:text-xs font-bold opacity-70 mt-1.5 leading-snug flex items-center gap-1 justify-center whitespace-pre-wrap">
-                  <i className={`w-1.5 h-1.5 rounded-full inline-block shrink-0 ${DOT[t.color]}`}/>{t.sub}
+                <span className="block text-xs md:text-sm font-bold text-amber-700 dark:text-amber-500 mt-2 leading-snug flex items-center gap-1.5 justify-center whitespace-pre-wrap">
+                  <i className={`w-2 h-2 rounded-full inline-block shrink-0 ${DOT[t.color]}`}/>{t.sub}
                 </span>
               </button>
             );
@@ -82,7 +79,11 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
           )}
           {active === '거점돌봄' && (
             <div className="h-[740px] overflow-y-auto">
-              <CareApply/>
+              {!showCareApply ? (
+                <CareIntroduction onApply={() => setShowCareApply(true)}/>
+              ) : (
+                <CareApply/>
+              )}
             </div>
           )}
           {active !== '체험자원' && active !== '거점돌봄' && (
@@ -92,14 +93,14 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
       </div>
 
       {/* ── 우측 세로 탭 (자료실 / 뉴스 / FAQ / 문의하기) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 lg:w-72 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-5 lg:w-80 shrink-0">
         {sideTabs.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => setView(t.id)}
-              className="flex-1 min-h-[110px] lg:min-h-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center gap-3 font-black text-slate-700 dark:text-slate-200 hover:-translate-x-0 lg:hover:-translate-x-2 hover:-translate-y-1.5 lg:hover:translate-y-0 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-xl transition-all group px-5 py-8 text-center">
-              <Icon size={32} className={`${t.color} group-hover:scale-125 transition-transform`}/>
-              <span className="text-base md:text-lg leading-tight font-black">{t.label}</span>
+              className="flex-1 min-h-[130px] lg:min-h-40 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900 rounded-3xl shadow-[0_25px_60px_rgba(245,158,11,0.12)] flex flex-col items-center justify-center gap-4 font-black text-slate-700 dark:text-slate-200 hover:-translate-x-0 lg:hover:-translate-x-3 hover:-translate-y-2 lg:hover:translate-y-0 hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-2xl hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all group px-6 py-8 text-center">
+              <Icon size={44} className={`${t.color} group-hover:scale-130 transition-transform`}/>
+              <span className="text-lg md:text-xl lg:text-2xl leading-tight font-black">{t.label}</span>
             </button>
           );
         })}
@@ -166,5 +167,51 @@ const TopicFolder: React.FC<{ topicKey: string; title: string }> = ({ topicKey, 
     </div>
   );
 };
+
+// ─────────────────────────────────────────────
+// 거점형 돌봄 설명 및 신청 시작 화면
+// ─────────────────────────────────────────────
+const CareIntroduction: React.FC<{ onApply: () => void }> = ({ onApply }) => (
+  <div className="h-full flex items-center justify-center p-8 md:p-12 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-slate-900">
+    <div className="max-w-2xl text-center">
+      <div className="mb-8">
+        <HeartHandshake size={80} className="text-amber-600 dark:text-amber-500 mx-auto mb-6"/>
+        <h2 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-4">
+          거점형 돌봄이란?
+        </h2>
+      </div>
+      <p className="text-lg md:text-2xl font-bold text-slate-700 dark:text-slate-200 leading-relaxed mb-8">
+        전북특별자치도교육청에서 운영하는 <span className="text-amber-600 dark:text-amber-400">거점형 돌봄기관</span>은 유아의 안전하고 건강한 성장을 지원합니다.
+      </p>
+      <div className="space-y-4 mb-10 text-left bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-10 border border-amber-200 dark:border-amber-800">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">1</div>
+          <div>
+            <p className="font-black text-lg text-slate-800 dark:text-white">오전 돌봄 (아침 시간 지원)</p>
+            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">등원 전 아침 시간에 아이를 안전하게 돌봐드립니다.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">2</div>
+          <div>
+            <p className="font-black text-lg text-slate-800 dark:text-white">저녁 돌봄 (방과 후 시간 지원)</p>
+            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">방과 후 저녁 시간에 아이를 안전하게 돌봐드립니다.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">3</div>
+          <div>
+            <p className="font-black text-lg text-slate-800 dark:text-white">휴일·방학 돌봄</p>
+            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">휴일과 방학 기간 중에도 안정적인 돌봄을 제공합니다.</p>
+          </div>
+        </div>
+      </div>
+      <button onClick={onApply}
+        className="w-full h-16 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xl md:text-2xl flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl">
+        <HeartHandshake size={28}/> 거점형 돌봄 신청하기
+      </button>
+    </div>
+  </div>
+);
 
 export default HomeFolder;

@@ -71,7 +71,7 @@ const PRIVACY_COLLECT = `[개인정보 수집·이용 동의]
 - 동의를 거부할 권리가 있으며, 거부 시 온라인 신청이 제한됩니다. (해당 기관 전화 신청 가능)`;
 
 const PRIVACY_PROVIDE = `[개인정보 제3자 제공 동의]
-- 제공받는 자: 신청하신 거점형·연계형 돌봄기관
+- 제공받는 자: 신청하신 거점형 돌봄기관
 - 제공 항목: 보호자 성명·휴대전화번호, 아동 성명·인원수, 이용 일시
 - 제공 목적: 돌봄 이용 신청 확인 및 돌봄 서비스 제공
 - 보유·이용 기간: 이용일로부터 1년`;
@@ -99,6 +99,7 @@ const CareApply: React.FC = () => {
         .from('care_centers')
         .select('id, seq, center_type, name, address, phone, care_hours, lat, lng, is_bookable')
         .eq('is_active', true)
+        .eq('center_type', '거점')
         .order('seq');
       if (!error && data) setCenters(data as CareCenter[]);
       setLoading(false);
