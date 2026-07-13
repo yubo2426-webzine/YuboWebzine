@@ -12,7 +12,7 @@ import CareApply from './CareApply';
 // ─────────────────────────────────────────────
 const TOPICS = [
   { key: '체험자원', index: '오늘 어디가지?', sub: '체험자원', icon: Compass,        color: 'emerald' },
-  { key: '거점돌봄', index: '돌봄이 필요할 때', sub: '거점형·연계형 돌봄', icon: HeartHandshake, color: 'sky' },
+  { key: '거점돌봄', index: '돌봄이 필요할 때', sub: '거점형 돌봄', icon: HeartHandshake, color: 'sky' },
   { key: '유아발달', index: '우리아이 잘 크고 있을까?', sub: '유아발달지원사업', icon: Baby,    color: 'amber' },
   { key: '정서심리', index: '우리아이 마음이 궁금해', sub: '유아정서심리발달', icon: Sparkles,  color: 'rose' },
   { key: '이음교육', index: '이음교육이 뭐예요?', sub: '유초이음교육', icon: School,   color: 'violet' },
@@ -50,22 +50,23 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
     <div className="max-w-[1400px] mx-auto w-full flex flex-col lg:flex-row gap-6 items-stretch">
       {/* ── 아코디언 폴더 ── */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* 인덱스 탭 */}
-        <div className="flex items-end gap-1.5 overflow-x-auto pb-0 px-2 scrollbar-none" role="tablist">
+        {/* 인덱스 탭 — 5개 균등분할 */}
+        <div className="grid grid-cols-5 gap-0 pb-0 px-0" role="tablist">
           {TOPICS.map(t => {
             const Icon = t.icon;
             const isActive = t.key === active;
             return (
               <button key={t.key} role="tab" aria-selected={isActive} onClick={() => setActive(t.key)}
-                className={`shrink-0 rounded-t-2xl border border-b-0 px-4 md:px-5 pt-3 transition-all text-left relative
+                className={`rounded-t-3xl border border-b-0 px-3 md:px-4 pt-4 md:pt-5 pb-5 md:pb-6 transition-all text-center relative flex flex-col items-center justify-center
                   ${isActive
-                    ? `${TAB_ACTIVE[t.color]} pb-4 -mb-px shadow-[0_-8px_20px_rgba(0,0,0,0.05)] z-10`
-                    : 'bg-slate-100/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 pb-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-0.5'}`}>
-                <span className="flex items-center gap-1.5 font-black text-[13px] md:text-sm whitespace-nowrap">
-                  <Icon size={15} className="shrink-0"/>{t.index}
+                    ? `${TAB_ACTIVE[t.color]} shadow-[0_-10px_25px_rgba(0,0,0,0.08)] z-10 -mb-px`
+                    : 'bg-slate-100/80 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-1'}`}>
+                <Icon size={22} className="mb-2 shrink-0"/>
+                <span className="font-black text-sm md:text-base leading-tight">
+                  {t.index}
                 </span>
-                <span className="block text-[10px] md:text-[11px] font-bold opacity-70 mt-0.5 whitespace-nowrap flex items-center gap-1">
-                  <i className={`w-1.5 h-1.5 rounded-full inline-block ${DOT[t.color]}`}/>{t.sub}
+                <span className="block text-[11px] md:text-xs font-bold opacity-70 mt-1.5 leading-snug flex items-center gap-1 justify-center whitespace-pre-wrap">
+                  <i className={`w-1.5 h-1.5 rounded-full inline-block shrink-0 ${DOT[t.color]}`}/>{t.sub}
                 </span>
               </button>
             );
@@ -73,14 +74,14 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
         </div>
 
         {/* 폴더 본문 */}
-        <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-[2rem] rounded-tr-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.08)] overflow-hidden relative z-0">
+        <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-[2.5rem] rounded-tr-[2.5rem] shadow-[0_30px_80px_rgba(0,0,0,0.1)] overflow-hidden relative z-0">
           {active === '체험자원' && (
-            <div className="h-[620px] [&>div]:!h-full">
+            <div className="h-[740px] [&>div]:!h-full">
               <ResourceMap {...resourceMapProps} role={role}/>
             </div>
           )}
           {active === '거점돌봄' && (
-            <div className="h-[620px] overflow-y-auto">
+            <div className="h-[740px] overflow-y-auto">
               <CareApply/>
             </div>
           )}
@@ -91,14 +92,14 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
       </div>
 
       {/* ── 우측 세로 탭 (자료실 / 뉴스 / FAQ / 문의하기) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-3 lg:w-60 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 lg:w-72 shrink-0">
         {sideTabs.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => setView(t.id)}
-              className="flex-1 min-h-[90px] lg:min-h-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.06)] flex flex-col items-center justify-center gap-2.5 font-black text-slate-700 dark:text-slate-200 hover:-translate-x-0 lg:hover:-translate-x-1.5 hover:-translate-y-1 lg:hover:translate-y-0 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg transition-all group px-4 py-6 text-center">
-              <Icon size={26} className={`${t.color} group-hover:scale-110 transition-transform`}/>
-              <span className="text-sm md:text-base leading-tight">{t.label}</span>
+              className="flex-1 min-h-[110px] lg:min-h-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center gap-3 font-black text-slate-700 dark:text-slate-200 hover:-translate-x-0 lg:hover:-translate-x-2 hover:-translate-y-1.5 lg:hover:translate-y-0 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-xl transition-all group px-5 py-8 text-center">
+              <Icon size={32} className={`${t.color} group-hover:scale-125 transition-transform`}/>
+              <span className="text-base md:text-lg leading-tight font-black">{t.label}</span>
             </button>
           );
         })}
@@ -129,33 +130,33 @@ const TopicFolder: React.FC<{ topicKey: string; title: string }> = ({ topicKey, 
   }, [topicKey]);
 
   return (
-    <div className="h-[620px] overflow-y-auto p-6 md:p-10">
-      <h3 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3 mb-6">
-        <FolderOpen className="text-amber-500" size={26}/> {title}
+    <div className="h-[740px] overflow-y-auto p-8 md:p-12">
+      <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 mb-8">
+        <FolderOpen className="text-amber-500" size={32}/> {title}
       </h3>
       {loading ? (
-        <div className="flex justify-center py-24"><Loader2 className="animate-spin text-slate-400" size={32}/></div>
+        <div className="flex justify-center py-24"><Loader2 className="animate-spin text-slate-400" size={40}/></div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <FolderOpen size={56} className="text-slate-200 dark:text-slate-600 mb-4"/>
-          <p className="font-black text-slate-400">콘텐츠를 준비 중입니다.</p>
-          <p className="font-bold text-sm text-slate-300 dark:text-slate-500 mt-1.5">곧 알찬 내용으로 찾아뵐게요!</p>
+          <FolderOpen size={72} className="text-slate-200 dark:text-slate-600 mb-5"/>
+          <p className="font-black text-slate-400 text-lg">콘텐츠를 준비 중입니다.</p>
+          <p className="font-bold text-base text-slate-300 dark:text-slate-500 mt-2">곧 알찬 내용으로 찾아뵐게요!</p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {items.map(it => (
-            <div key={it.id} className="bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-700 p-6 md:p-8">
-              <h4 className="font-black text-lg md:text-xl text-slate-800 dark:text-white mb-3">{it.title}</h4>
+            <div key={it.id} className="bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-700 p-7 md:p-10">
+              <h4 className="font-black text-xl md:text-2xl text-slate-800 dark:text-white mb-4">{it.title}</h4>
               {it.image_url && (
-                <img src={it.image_url} alt={it.title} className="w-full rounded-2xl mb-4 border border-slate-100 dark:border-slate-700" loading="lazy"/>
+                <img src={it.image_url} alt={it.title} className="w-full rounded-3xl mb-5 border border-slate-100 dark:border-slate-700" loading="lazy"/>
               )}
               {it.content && (
-                <p className="font-bold text-[15px] leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line">{it.content}</p>
+                <p className="font-bold text-base md:text-lg leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line">{it.content}</p>
               )}
               {it.link_url && (
                 <a href={it.link_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-4 px-5 h-11 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black text-sm hover:bg-slate-700 transition-colors">
-                  {it.link_label || '자세히 보기'} <ExternalLink size={14}/>
+                  className="inline-flex items-center gap-2 mt-5 px-6 h-12 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black text-base hover:bg-slate-700 transition-colors">
+                  {it.link_label || '자세히 보기'} <ExternalLink size={16}/>
                 </a>
               )}
             </div>
