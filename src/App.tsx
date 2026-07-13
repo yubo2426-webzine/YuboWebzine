@@ -746,61 +746,6 @@ const MainApp = () => {
                  />
                </section>
 
-               <section className="max-w-7xl mx-auto px-4 pb-28">
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                   
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col h-full min-h-[380px]">
-                      <div className="absolute top-10 right-10 text-sky-100 dark:text-sky-900/30 opacity-60 z-0"><Flower2 size={64}/></div>
-                      <div className="absolute bottom-10 left-10 text-emerald-100 dark:text-emerald-900/30 opacity-60 z-0 animate-pulse"><Sprout size={64}/></div>
-
-                      <div className="flex justify-between items-center mb-6 md:mb-8 border-b border-slate-800 dark:border-slate-600 pb-4 md:pb-6 relative z-10 shrink-0">
-                         <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-3 md:gap-4 tracking-tight">최신 자료실 <Flower2 className="text-sky-500 dark:text-sky-400 w-7 h-7 md:w-9 md:h-9" strokeWidth={2}/></h3>
-                         <button onClick={() => setView('issue_list')} className="text-sm md:text-base font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1 md:gap-2 group">더보기 <ChevronRight size={20} className="text-teal-400 group-hover:translate-x-1.5 transition-transform"/></button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 md:gap-8 pt-2 relative z-10 flex-1">
-                        {issues.slice(0, 2).map(issue => (
-                           <IssueCard key={issue.id} issue={issue} onClick={handleIssueClick} isAdmin={role === 'admin'} onDelete={handleDeleteIssue} onAddArticle={openArticleUploadForIssue} onEdit={handleEditIssue} onRegenerateCover={handleRegenerateCover}/>
-                        ))}
-                      </div>
-                   </div>
-
-                   <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-slate-100 dark:border-slate-700 relative overflow-hidden flex flex-col min-h-[380px]">
-                      <div className="absolute -top-4 -left-4 text-indigo-100 dark:text-indigo-900/30 opacity-60 z-0"><Rabbit size={80} strokeWidth={1}/></div>
-
-                      <div className="flex justify-between items-center mb-6 md:mb-8 border-b border-slate-800 dark:border-slate-600 pb-4 md:pb-6 relative z-10">
-                         <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-700 shadow-inner">
-                            <button onClick={() => setActiveHomeTab('notice')} className={`px-4 sm:px-5 md:px-7 py-2 md:py-2.5 rounded-full text-sm sm:text-base md:text-lg font-black transition-all ${activeHomeTab === 'notice' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 소식</button>
-                            <button onClick={() => setActiveHomeTab('news')} className={`px-4 sm:px-5 md:px-7 py-2 md:py-2.5 rounded-full text-sm sm:text-base md:text-lg font-black transition-all ${activeHomeTab === 'news' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>최근 뉴스</button>
-                         </div>
-                         <button onClick={() => setView(activeHomeTab === 'notice' ? 'notice' : 'news')} className="text-sm md:text-base font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group shrink-0">더보기 <ChevronRight size={18} className="text-indigo-400 group-hover:translate-x-1.5 transition-transform"/></button>
-                      </div>
-
-                      <div className="flex flex-col relative z-10 pl-1 md:pl-2">
-                        {activeHomeTab === 'notice' && recentNotices.map(n => (
-                           <div key={n.id} onClick={() => {setView('notice');}} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                              <div className="flex items-center gap-3 md:gap-5 w-full">
-                                 <span className={`text-[11px] md:text-[13px] font-black px-3 md:px-4 py-1.5 rounded-full border shrink-0 ${n.category === 'event' ? 'bg-amber-100 text-amber-600 border-amber-200/50 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800' : 'bg-gray-100 text-gray-500 border-gray-200/50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{n.category === 'event' ? '행사' : '공지'}</span>
-                                 <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight">{n.title}</span>
-                                 <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.created_at).toLocaleDateString()}</span>
-                              </div>
-                           </div>
-                        ))}
-                        {activeHomeTab === 'news' && recentNews.map(n => {
-                           const { title: cleanTitle } = parseNewsData(n.title);
-                           return (
-                             <div key={n.id} onClick={() => { if (n.link) window.open(n.link, '_blank'); }} className="py-4 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between group px-2">
-                                <div className="flex items-center gap-3 md:gap-5 w-full">
-                                   <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1 text-base md:text-lg flex-1 tracking-tight pl-1 md:pl-2">{cleanTitle}</span>
-                                   <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:block shrink-0">{new Date(n.pub_date).toLocaleDateString()}</span>
-                                </div>
-                             </div>
-                           );
-                        })}
-                      </div>
-                   </div>
-
-                 </div>
-               </section>
             </div>
           )}
 
