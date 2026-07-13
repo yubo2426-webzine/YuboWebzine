@@ -50,20 +50,18 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
         {/* 인덱스 탭 — 5개 균등분할 */}
         <div className="grid grid-cols-5 gap-0 pb-0 px-0" role="tablist">
           {TOPICS.map(t => {
-            const Icon = t.icon;
             const isActive = t.key === active;
             return (
               <button key={t.key} role="tab" aria-selected={isActive} onClick={() => setActive(t.key)}
-                className={`rounded-t-3xl border border-b-0 px-3 md:px-4 pt-5 md:pt-6 pb-6 md:pb-8 transition-all text-center relative flex flex-col items-center justify-center
+                className={`rounded-t-3xl border border-b-0 px-2 md:px-3 pt-6 md:pt-8 pb-7 md:pb-9 transition-all text-center relative flex flex-col items-center justify-center
                   ${isActive
-                    ? `${TAB_ACTIVE[t.color]} shadow-[0_-12px_30px_rgba(245,158,11,0.2)] z-10 -mb-px`
-                    : 'bg-amber-50/80 dark:bg-amber-950/30 text-slate-600 dark:text-slate-400 border-amber-200 dark:border-amber-900 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:-translate-y-1.5'}`}>
-                <Icon size={26} className="mb-3 shrink-0 text-amber-600 dark:text-amber-500"/>
-                <span className="font-black text-base md:text-xl leading-tight text-slate-800 dark:text-white">
+                    ? `bg-white dark:bg-slate-800 text-slate-800 dark:text-white border-amber-400 dark:border-amber-600 shadow-[0_-12px_30px_rgba(245,158,11,0.2)] z-10 -mb-px`
+                    : 'bg-amber-100 dark:bg-amber-950/40 text-slate-700 dark:text-slate-300 border-amber-200 dark:border-amber-900 hover:bg-amber-200 dark:hover:bg-amber-900/60 hover:-translate-y-2'}`}>
+                <span className="font-black text-xl md:text-2xl lg:text-3xl leading-tight text-center">
                   {t.index}
                 </span>
-                <span className="block text-xs md:text-sm font-bold text-amber-700 dark:text-amber-500 mt-2 leading-snug flex items-center gap-1.5 justify-center whitespace-pre-wrap">
-                  <i className={`w-2 h-2 rounded-full inline-block shrink-0 ${DOT[t.color]}`}/>{t.sub}
+                <span className="block text-xs md:text-sm font-bold text-amber-700 dark:text-amber-600 mt-2.5 leading-snug text-center whitespace-pre-wrap">
+                  {t.sub}
                 </span>
               </button>
             );
