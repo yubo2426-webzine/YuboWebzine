@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
-import { MessageCircleQuestion, Send, Search, Loader2, CheckCircle2, ShieldCheck, X } from 'lucide-react';
+import { MessageCircleQuestion, Send, Search, Loader2, CheckCircle2, ShieldCheck, X, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const inputCls = "w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all";
 const labelCls = "block text-sm font-black text-slate-600 dark:text-slate-300 mb-1.5";
 
-const PRIVACY_TEXT = `문의 처리를 위해 성명·연락처를 수집하며, 답변 완료 후 1년간 보관 후 파기합니다.
-동의하지 않을 경우 문의 등록이 제한됩니다.`;
+// 개인정보 수집·이용 동의 전문 (담당부서 검토 후 문구 확정 필요)
+const PRIVACY_TEXT = `[개인정보 수집·이용 동의]
+
+1. 수집 항목
+   - 필수: 성명, 문의 제목·내용, 비밀번호(암호화 저장)
+   - 선택: 연락처(휴대전화번호)
+
+2. 수집·이용 목적
+   - 문의 접수 및 답변 처리
+   - 답변 완료 안내 연락 (연락처 기재 시)
+
+3. 보유·이용 기간
+   - 답변 완료 후 1년간 보관 후 지체 없이 파기
+
+4. 동의 거부 권리
+   - 동의를 거부할 수 있으며, 거부 시 온라인 문의 등록이
+     제한됩니다. (전화 문의: 전북특별자치도교육청 유보통합팀)
+
+※ 비밀번호는 복호화할 수 없는 방식(bcrypt)으로 암호화되어
+   저장되며, 관리자도 원문을 확인할 수 없습니다.`;
 
 const InquiryBoard: React.FC = () => {
   const [tab, setTab] = useState<'write' | 'lookup'>('write');
@@ -67,6 +85,7 @@ const WriteForm: React.FC = () => {
       <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3">문의가 등록되었습니다</h3>
       <p className="text-slate-500 dark:text-slate-400 font-bold mb-6">아래 문의번호와 등록 시 입력한 비밀번호로<br/>[내 문의 확인]에서 답변을 확인할 수 있습니다.</p>
       <div className="inline-block bg-indigo-50 dark:bg-indigo-900/30 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-2xl py-4 px-10 text-3xl font-black text-indigo-600 dark:text-indigo-300">문의번호 {doneId}번</div>
+      <p className="mt-5 text-sm text-slate-400 font-bold">※ 문의번호를 잊으면 답변을 확인할 수 없으니 꼭 메모해 주세요.</p>
     </div>
   );
 
@@ -82,7 +101,11 @@ const WriteForm: React.FC = () => {
         <input className={inputCls} value={f.title} onChange={e => set('title', e.target.value)} placeholder="문의 제목을 입력해 주세요"/></div>
       <div className="mt-4"><label className={labelCls}>내용 *</label>
         <textarea value={f.content} onChange={e => set('content', e.target.value)} rows={6}
-          className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" placeholder="문의하실 내용을 자세히 적어주세요."/></div>
+          className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" placeholder="문의하실 내용을 자세히 적어주세요."/>
+        <p className="mt-2 text-xs font-bold text-slate-400 dark:text-slate-500 flex items-start gap-1.5">
+          <Info size={13} className="mt-0.5 shrink-0"/>
+          문의 내용에는 주민등록번호, 주소, 아동 정보 등 불필요한 개인정보를 기재하지 말아 주세요.
+        </p></div>
       <div className="mt-4 md:w-1/2"><label className={labelCls}>비밀번호 * <span className="text-slate-400 font-bold">(답변 확인용, 4자리 이상)</span></label>
         <input type="password" className={inputCls} value={f.password} onChange={e => set('password', e.target.value)} placeholder="••••"/></div>
 
