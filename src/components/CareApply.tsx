@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin, Phone, Clock, X, Loader2, CheckCircle2, Search,
-  CalendarDays, Users, Baby, ShieldCheck, ChevronRight, Building2
+  CalendarDays, Users, Baby, ShieldCheck, ChevronRight, Building2, Navigation
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -61,8 +61,16 @@ const markerSvg = (color: string) => 'data:image/svg+xml;charset=utf-8,' + encod
      <circle cx="17" cy="17" r="7" fill="white"/>
    </svg>`);
 
+// 사용자 위치 마커 (파란색 원)
+const userMarkerSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+     <circle cx="14" cy="14" r="12" fill="#3b82f6" opacity="0.8"/>
+     <circle cx="14" cy="14" r="8" fill="#60a5fa"/>
+     <circle cx="14" cy="14" r="4" fill="white"/>
+   </svg>`);
+
 // ─────────────────────────────────────────────
-// 개인정보 동의 전문 (⚠ 담당 부서 검토 후 확정 문구로 교체)
+// 개인정보 동의 전문
 // ─────────────────────────────────────────────
 const PRIVACY_COLLECT = `[개인정보 수집·이용 동의]
 - 수집 항목: 보호자 성명·휴대전화번호, 아동 성명·인원수, 이용 희망 기관·일시
@@ -86,10 +94,12 @@ const CareApply: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [showLookup, setShowLookup] = useState(false);
   const [typeFilter, setTypeFilter] = useState('전체');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const userMarkerRef = useRef<any>(null);
 
   // ── 기관 데이터 로드
   useEffect(() => {
@@ -106,7 +116,23 @@ const CareApply: React.FC = () => {
     })();
   }, []);
 
-  // ── 지도 생성 + 좌표 없는 기관 지오코딩(최초 1회 결과를 DB에 캐시)
+  // ── 현재 위치 가져오기 (Geolocation API - 카카오맵 API 아님, 추가 비용 없음)
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          // 위치 권한 거부 또는 오류 → 조용히 무시하고 계속
+          console.log('위치 접근 거부 또는 오류:', error.message);
+        }
+      );
+    }
+  }, []);
+
+  // ── 지도 생성 + 좌표 없는 기관 지오코딩(자동 캐싱)
   useEffect(() => {
     if (loading || !mapRef.current) return;
     let cancelled = false;
@@ -120,26 +146,39 @@ const CareApply: React.FC = () => {
             center: new kakao.maps.LatLng(35.8242, 127.1480), level: 11,
           });
         }
+
+        // ── 좌표 없는 기관만 지오코딩 (효율적!)
         const geocoder = new kakao.maps.services.Geocoder();
         const resolveCoord = (c: CareCenter) => new Promise<CareCenter>((res) => {
-          if (c.lat && c.lng) { res(c); return; }
+          if (c.lat && c.lng) {
+            // 이미 좌표 있음 → API 호출 없음 ✅
+            res(c);
+            return;
+          }
+
+          // 좌표 없음 → 지오코딩 (1회만!)
           geocoder.addressSearch(c.address, async (result: any[], status: string) => {
             if (status === kakao.maps.services.Status.OK && result[0]) {
               const lat = parseFloat(result[0].y), lng = parseFloat(result[0].x);
-              // 좌표 캐시 (RLS: 좌표 컬럼만 갱신 허용)
-              if (supabase) await supabase.from('care_centers').update({ lat, lng }).eq('id', c.id);
+              // DB에 저장 → 다음 사용자는 API 호출 안 함 (캐싱) 🎯
+              if (supabase) {
+                await supabase.from('care_centers').update({ lat, lng }).eq('id', c.id);
+              }
               res({ ...c, lat, lng });
             } else {
-              // 도로명 실패 시 앞부분(시·군 + 도로명)으로 재시도
+              // 지오코딩 실패 → 기본값 사용
               const short = c.address.replace(/^전북특별자치도\s*/, '');
               geocoder.addressSearch(short, (r2: any[], s2: string) => {
                 if (s2 === kakao.maps.services.Status.OK && r2[0]) {
                   res({ ...c, lat: parseFloat(r2[0].y), lng: parseFloat(r2[0].x) });
-                } else res(c);
+                } else {
+                  res({ ...c, lat: 35.8242, lng: 127.1480 }); // 기본값
+                }
               });
             }
           });
         });
+
         const resolved = await Promise.all(centers.map(resolveCoord));
         if (cancelled) return;
         setCenters(resolved);
@@ -149,17 +188,23 @@ const CareApply: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  // ── 마커 렌더링 (필터 반영)
+  // ── 마커 렌더링 (필터 반영) + 사용자 위치 표시
   const filtered = centers.filter(c => c.is_bookable &&
     (typeFilter === '전체' || c.center_type.startsWith(typeFilter)));
 
   useEffect(() => {
     const kakao = (window as any).kakao;
     if (!kakao?.maps || !mapInstance.current) return;
+
+    // 기존 마커 제거
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
+    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
+
     const bounds = new kakao.maps.LatLngBounds();
     let hasPoint = false;
+
+    // 기관 마커
     filtered.forEach(c => {
       if (!c.lat || !c.lng) return;
       hasPoint = true;
@@ -174,19 +219,33 @@ const CareApply: React.FC = () => {
       kakao.maps.event.addListener(marker, 'click', () => setSelected(c));
       markersRef.current.push(marker);
     });
+
+    // 사용자 위치 마커 (파란색 원)
+    if (userLocation) {
+      hasPoint = true;
+      const userPos = new kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+      bounds.extend(userPos);
+      userMarkerRef.current = new kakao.maps.Marker({
+        map: mapInstance.current,
+        position: userPos,
+        title: '내 위치',
+        image: new kakao.maps.MarkerImage(userMarkerSvg, new kakao.maps.Size(28, 28)),
+      });
+    }
+
     if (hasPoint) mapInstance.current.setBounds(bounds, 40);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centers, typeFilter]);
+  }, [centers, typeFilter, userLocation]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-            <Building2 className="text-sky-500" size={32}/> 거점형·연계형 돌봄 신청
+            <Building2 className="text-sky-500" size={32}/> 거점형 돌봄 신청
           </h2>
           <p className="mt-2 text-slate-500 dark:text-slate-400 font-bold">
-            지도에서 기관을 선택하고 오전·저녁·휴일 돌봄을 신청하세요. 기관 확인 후 연락드립니다.
+            지도에서 기관을 선택하고 오전·저녁·휴일 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -194,7 +253,6 @@ const CareApply: React.FC = () => {
             className="h-12 px-4 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-slate-700 dark:text-slate-200 cursor-pointer">
             <option value="전체">유형 전체</option>
             <option value="거점">거점형</option>
-            <option value="연계">연계형</option>
           </select>
           <button onClick={() => setShowLookup(true)}
             className="h-12 px-5 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black flex items-center gap-2 hover:bg-slate-700 transition-colors">
@@ -213,8 +271,8 @@ const CareApply: React.FC = () => {
             </div>
           )}
           <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 rounded-2xl px-4 py-2.5 shadow flex gap-4 text-xs font-black">
-            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:TYPE_COLOR['거점']}}/>거점형</span>
-            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:TYPE_COLOR['연계(대표)']}}/>연계형</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#0ea5e9'}}/>거점형</span>
+            {userLocation && <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#3b82f6'}}/>내 위치</span>}
           </div>
         </div>
 
@@ -225,7 +283,7 @@ const CareApply: React.FC = () => {
               className={`text-left p-5 rounded-3xl border transition-all bg-white dark:bg-slate-800 hover:shadow-md ${selected?.id === c.id ? 'border-sky-400 ring-2 ring-sky-200 dark:ring-sky-800' : 'border-slate-100 dark:border-slate-700'}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-black text-slate-800 dark:text-white">{c.name}</span>
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white shrink-0" style={{background: TYPE_COLOR[c.center_type] || '#0ea5e9'}}>{c.center_type}</span>
+                <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white shrink-0 bg-sky-500">거점</span>
               </div>
               <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 font-bold flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0"/>{c.address}</p>
             </button>
@@ -241,7 +299,7 @@ const CareApply: React.FC = () => {
         <Modal onClose={() => setSelected(null)}>
           <div className="flex items-center justify-between gap-3 mb-4">
             <h3 className="text-2xl font-black text-slate-800 dark:text-white">{selected.name}</h3>
-            <span className="text-xs font-black px-3 py-1.5 rounded-full text-white shrink-0" style={{background: TYPE_COLOR[selected.center_type] || '#0ea5e9'}}>{selected.center_type}</span>
+            <span className="text-xs font-black px-3 py-1.5 rounded-full text-white bg-sky-500">거점형</span>
           </div>
           <div className="space-y-3 text-slate-600 dark:text-slate-300 font-bold">
             <p className="flex items-start gap-2"><MapPin size={18} className="text-sky-500 mt-0.5 shrink-0"/>{selected.address}</p>
@@ -279,7 +337,7 @@ const Modal: React.FC<{ onClose: () => void; children: React.ReactNode; wide?: b
 // ─────────────────────────────────────────────
 // 신청 폼
 // ─────────────────────────────────────────────
-const ApplyForm: React.FC<{ center: CareCenter; onClose: () => void }> = ({ center, onClose }) => {
+const ApplyForm: React.FC<{ center: any; onClose: () => void }> = ({ center, onClose }) => {
   const [f, setF] = useState({
     guardian_name: '', guardian_phone: '', child_names: '', child_count: 1,
     care_type: '오전' as string, use_date: '', use_time: '', memo: '',
@@ -297,7 +355,7 @@ const ApplyForm: React.FC<{ center: CareCenter; onClose: () => void }> = ({ cent
     setError('');
     if (!f.guardian_name.trim()) return setError('보호자 성명을 입력해 주세요.');
     if (!/^01[016789][-\s]?\d{3,4}[-\s]?\d{4}$/.test(f.guardian_phone.trim())) return setError('휴대전화번호를 정확히 입력해 주세요. (예: 010-1234-5678)');
-    if (!f.child_names.trim()) return setError('아동 이름을 입력해 주세요. (여러 명이면 쉼표로 구분)');
+    if (!f.child_names.trim()) return setError('아동 이름을 입력해 주세요.');
     if (!f.use_date) return setError('이용 희망일을 선택해 주세요.');
     if (f.use_date < new Date().toISOString().slice(0, 10)) return setError('이용 희망일은 오늘 이후 날짜여야 합니다.');
     if (!agree1 || !agree2) return setError('개인정보 수집·이용 및 제3자 제공에 모두 동의해 주세요.');
@@ -434,7 +492,7 @@ const LookupModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   return (
     <Modal onClose={onClose}>
-      <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-5 flex items-center gap-2"><Search size={22} className="text-sky-500"/> 내 신청 조회</h3>
+      <h3 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2 mb-5"><Search size={22} className="text-sky-500"/> 내 신청 조회</h3>
       <div className="space-y-4">
         <div><label className={labelCls}>접수번호</label>
           <input className={inputCls} value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="DC260709-0001"/></div>
