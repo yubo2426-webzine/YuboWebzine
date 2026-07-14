@@ -211,7 +211,7 @@ const CareApply: React.FC = () => {
       const pos = new kakao.maps.LatLng(c.lat, c.lng);
       bounds.extend(pos);
       const marker = new kakao.maps.Marker({
-        map: mapInstance.current, position: pos, title: c.name,
+        map: mapInstance.current, position: pos,
         image: new kakao.maps.MarkerImage(
           markerSvg(TYPE_COLOR[c.center_type] || '#0ea5e9'),
           new kakao.maps.Size(34, 46)),
