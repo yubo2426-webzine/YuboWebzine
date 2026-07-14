@@ -176,7 +176,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   useEffect(() => {
     setRouteState({ loading: false, error: null, distance: null, duration: null });
     setUserLocation(null);
-    setRouteDebug(null);
     if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
   }, [selectedResource?.id]);
