@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircleQuestion, Send, Search, Loader2, CheckCircle2, ShieldCheck, X, Info } from 'lucide-react';
+import { MessageCircleQuestion, Send, Search, Loader2, CheckCircle2, ShieldCheck, X, Info, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const inputCls = "w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all";
@@ -110,10 +110,13 @@ const WriteForm: React.FC = () => {
         <input type="password" className={inputCls} value={f.password} onChange={e => set('password', e.target.value)} placeholder="••••"/></div>
 
       <div className="mt-5 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-2xl px-4 py-3">
-        <label className="flex items-center gap-3 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300">
-          <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="w-5 h-5 accent-indigo-500"/>
+        <button type="button" onClick={() => setAgree(v => !v)}
+          className="flex items-center gap-3 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300 text-left">
+          <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${agree ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-500'}`}>
+            {agree && <Check size={16} className="text-white" strokeWidth={3}/>}
+          </span>
           <ShieldCheck size={16} className="text-emerald-500 shrink-0"/>(필수) 개인정보 수집·이용에 동의합니다.
-        </label>
+        </button>
         <button onClick={() => setShowTerms(v => !v)} className="text-xs font-black text-indigo-500 shrink-0 hover:underline">전문 보기</button>
       </div>
       {showTerms && (
