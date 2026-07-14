@@ -101,7 +101,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 }) => {
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
-  const [isMigrating, setIsMigrating] = useState(false);
   // 💡 카카오톡 등 인앱 브라우저 여부 (앱 이름, 없으면 null)
   const [inAppBrowser] = useState<string | null>(() => detectInAppBrowser());
 
@@ -120,7 +119,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   // 💡 카카오맵 앱 딥링크용: 경로 찾기 성공 시 현재 위치 저장
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   // 💡 임시 진단용: 경로 응답이 실제로 어떤 모양인지 화면에 바로 보여줍니다 (콘솔 접근 없이도 캡처 가능하게).
-  const [routeDebug, setRouteDebug] = useState<string | null>(null);
   
   const [mapLoading, mapError] = useCustomKakaoLoader();
   const mapContainerRefStandalone = useRef<HTMLDivElement>(null);
@@ -154,38 +152,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
     };
     fetchResources();
   }, []);
-
-  const handleGeocodeAll = async () => {
-    if (!confirm("주소를 좌표로 변환합니다. 약 1~2분 걸릴 수 있어요.")) return;
-    setIsMigrating(true);
-
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/geocode-addresses`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText);
-      }
-
-      const result = await res.json();
-      alert(`✅ 완료! ${result.success}/${result.total}개 좌표 변환 성공`);
-      window.location.reload();
-    } catch (e: any) {
-      alert("오류: " + e.message);
-    } finally {
-      setIsMigrating(false);
-    }
-  };
 
   const filteredResources = resources.filter(res => {
     const matchRegion = selectedRegion === '전체' || res.region === selectedRegion;
@@ -387,16 +353,7 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         }
 
         const data = await res.json();
-        // 💡 진단용: 실제 응답이 어떤 모양인지 화면에 남깁니다 (다음 캡처로 정확한 원인 확인용).
-        const pArr = Array.isArray(data.path) ? data.path : [];
-        const sample = pArr[0] ?? null;
-        const cw = mapContainerRefStandalone.current?.offsetWidth ?? -1;
-        const ch = mapContainerRefStandalone.current?.offsetHeight ?? -1;
-        setRouteDebug(
-          `path:${pArr.length}개 첫점:${JSON.stringify(sample)} dist:${data.distance} dur:${data.duration} 컨테이너:${cw}x${ch}`
-        );
-        const { ok: drawOk, isFallback, debugInfo } = drawRoute(latitude, longitude, data.path || []);
-        setRouteDebug(prev => `${prev ?? ''} | ${debugInfo}`);
+        const { ok: drawOk, isFallback } = drawRoute(latitude, longitude, data.path || []);
         setUserLocation({ lat: latitude, lng: longitude });
         setRouteState({
           loading: false,
@@ -414,15 +371,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         if (drawOk) {
           // 💡 경로가 그려지면 지도 영역이 보이도록 맨 위로 스크롤
           mapContainerRefStandalone.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          // 💡 진단용: 스크롤 후 실제 지도 상태를 읽기만 합니다(추가로 setBounds를 다시
-          //    호출하지 않습니다 — 이 중복 재보정 호출 자체가 줌을 깨뜨리는 원인이었습니다).
-          setTimeout(() => {
-            const m = mapInstance.current;
-            if (m) {
-              const c = m.getCenter();
-              setRouteDebug(prev => `${prev ?? ''} | 0.5초후(보정없음) level:${m.getLevel()} center:${c.getLat().toFixed(3)},${c.getLng().toFixed(3)}`);
-            }
-          }, 500);
         }
       } catch (e: any) {
         setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
@@ -508,13 +456,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-2xl flex items-center justify-center shadow-inner"><MapPin size={24}/></div>
                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2>
                </div>
-               
-               {role === 'admin' && (
-                 <button onClick={handleGeocodeAll} disabled={isMigrating} className="bg-emerald-500 text-white px-3 py-2 rounded-xl text-sm font-black shadow-sm flex items-center gap-1.5 hover:bg-emerald-600 transition-colors disabled:opacity-50">
-                   {isMigrating ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                   <span className="hidden sm:inline">좌표 변환</span>
-                 </button>
-               )}
              </div>
 
              <div className="relative mb-4 z-10 flex gap-2">
@@ -653,13 +594,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                     {routeState.loading ? <Loader2 size={16} className="animate-spin"/> : <Navigation size={16}/>}
                     {routeState.loading ? '경로 찾는 중...' : '지도에서 경로 보기'}
                   </button>
-
-                  {/* 💡 임시 진단용: 경로 응답 원본 데이터를 화면에 작게 표시 (문제 추적용, 확인 후 제거 예정) */}
-                  {routeDebug && (
-                    <p className="mt-2 text-[10px] leading-relaxed text-slate-300 dark:text-slate-600 text-center break-all px-2 select-all">
-                      🔍 {routeDebug}
-                    </p>
-                  )}
 
                   {/* 경로 성공: 거리/시간 + 경로 지우기 */}
                   {routeState.distance !== null && routeState.duration !== null && (
