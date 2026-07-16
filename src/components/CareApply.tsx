@@ -39,11 +39,18 @@ interface CareCenter {
   center_type: string;
   name: string;
   address: string;
+  region: string | null;
   phone: string | null;
   care_hours: string | null;
   lat: number | null;
   lng: number | null;
   is_bookable: boolean;
+}
+
+// 잔여 정원 정보 (약국지도식 마커 색상용)
+interface Availability {
+  capacity: number | null;   // null = 정원 미설정 (제한 없음)
+  remaining: number | null;
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -53,7 +60,7 @@ const TYPE_COLOR: Record<string, string> = {
   '총괄': '#94a3b8',
 };
 
-const CARE_TYPES = ['오전', '저녁', '휴일·방학'] as const;
+const CARE_TYPES = ['오전', '저녁', '휴일'] as const;
 
 const markerSvg = (color: string) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
@@ -93,7 +100,10 @@ const CareApply: React.FC = () => {
   const [selected, setSelected] = useState<CareCenter | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showLookup, setShowLookup] = useState(false);
-  const [typeFilter, setTypeFilter] = useState('전체');
+  const [regionFilter, setRegionFilter] = useState('전체');          // 지역: 시군
+  const [careTypeFilter, setCareTypeFilter] = useState<string>('오전'); // 시간대: 오전/저녁/휴일
+  const [dateFilter, setDateFilter] = useState(() => new Date().toISOString().slice(0, 10));
+  const [avail, setAvail] = useState<Record<number, Availability>>({});
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
@@ -107,14 +117,29 @@ const CareApply: React.FC = () => {
       if (!supabase) { setLoading(false); return; }
       const { data, error } = await supabase
         .from('care_centers')
-        .select('id, seq, center_type, name, address, phone, care_hours, lat, lng, is_bookable')
+        .select('id, seq, center_type, name, address, region, phone, care_hours, lat, lng, is_bookable')
         .eq('is_active', true)
-        .eq('center_type', '거점')
+        .eq('is_bookable', true)
         .order('seq');
       if (!error && data) setCenters(data as CareCenter[]);
       setLoading(false);
     })();
   }, []);
+
+  // ── 잔여 정원 조회 (시간대·날짜가 바뀔 때마다)
+  useEffect(() => {
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase.rpc('get_center_availability', {
+        p_care_type: careTypeFilter, p_date: dateFilter,
+      });
+      if (data) {
+        const map: Record<number, Availability> = {};
+        (data as any[]).forEach(r => { map[r.center_id] = { capacity: r.capacity, remaining: r.remaining }; });
+        setAvail(map);
+      }
+    })();
+  }, [careTypeFilter, dateFilter]);
 
   // ── 현재 위치 가져오기 (Geolocation API - 카카오맵 API 아님, 추가 비용 없음)
   useEffect(() => {
@@ -188,9 +213,20 @@ const CareApply: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
+  // ── 약국지도식 마커 색상: 잔여 정원 기준
+  const availColor = (c: CareCenter): string => {
+    const a = avail[c.id];
+    if (!a || a.capacity === null) return '#0ea5e9';        // 정원 미설정 → 하늘색
+    if (a.remaining === 0) return '#f43f5e';                 // 마감 → 빨강
+    if ((a.remaining ?? 0) <= 2) return '#f59e0b';           // 잔여 적음 → 주황
+    return '#10b981';                                        // 여유 → 초록
+  };
+
   // ── 마커 렌더링 (필터 반영) + 사용자 위치 표시
   const filtered = centers.filter(c => c.is_bookable &&
-    (typeFilter === '전체' || c.center_type.startsWith(typeFilter)));
+    (regionFilter === '전체' || c.region === regionFilter));
+
+  const regions = Array.from(new Set(centers.map(c => c.region).filter(Boolean))) as string[];
 
   useEffect(() => {
     const kakao = (window as any).kakao;
@@ -204,7 +240,7 @@ const CareApply: React.FC = () => {
     const bounds = new kakao.maps.LatLngBounds();
     let hasPoint = false;
 
-    // 기관 마커
+    // 기관 마커 (잔여 정원 색상)
     filtered.forEach(c => {
       if (!c.lat || !c.lng) return;
       hasPoint = true;
@@ -213,7 +249,7 @@ const CareApply: React.FC = () => {
       const marker = new kakao.maps.Marker({
         map: mapInstance.current, position: pos,
         image: new kakao.maps.MarkerImage(
-          markerSvg(TYPE_COLOR[c.center_type] || '#0ea5e9'),
+          markerSvg(availColor(c)),
           new kakao.maps.Size(34, 46)),
       });
       kakao.maps.event.addListener(marker, 'click', () => setSelected(c));
@@ -235,7 +271,7 @@ const CareApply: React.FC = () => {
 
     if (hasPoint) mapInstance.current.setBounds(bounds, 40);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centers, typeFilter, userLocation]);
+  }, [centers, regionFilter, avail, userLocation]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -248,12 +284,23 @@ const CareApply: React.FC = () => {
             지도에서 기관을 선택하고 오전·저녁·휴일 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* 시간대 필터 */}
+          <select value={careTypeFilter} onChange={e => setCareTypeFilter(e.target.value)}
             className="h-12 px-4 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-slate-700 dark:text-slate-200 cursor-pointer">
-            <option value="전체">유형 전체</option>
-            <option value="거점">거점형</option>
+            {CARE_TYPES.map(t => <option key={t} value={t}>{t} 돌봄</option>)}
           </select>
+          {/* 이용 날짜 (잔여 정원 기준일) */}
+          <input type="date" value={dateFilter} min={new Date().toISOString().slice(0,10)}
+            onChange={e => setDateFilter(e.target.value)}
+            className="h-12 px-4 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-slate-700 dark:text-slate-200 cursor-pointer"/>
+          {/* 지역 필터 */}
+          <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)}
+            className="h-12 px-4 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="전체">지역 전체</option>
+            {regions.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          {/* 유형 필터는 시간대 필터와 중복되어 제거됨 */}
           <button onClick={() => setShowLookup(true)}
             className="h-12 px-5 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black flex items-center gap-2 hover:bg-slate-700 transition-colors">
             <Search size={16}/> 내 신청 조회
@@ -270,8 +317,11 @@ const CareApply: React.FC = () => {
               <Loader2 className="animate-spin text-sky-500" size={36}/>
             </div>
           )}
-          <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 rounded-2xl px-4 py-2.5 shadow flex gap-4 text-xs font-black">
-            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#0ea5e9'}}/>거점형</span>
+          <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 rounded-2xl px-4 py-2.5 shadow flex flex-wrap gap-3 text-xs font-black">
+            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#10b981'}}/>여유</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#f59e0b'}}/>잔여 적음</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#f43f5e'}}/>마감</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#0ea5e9'}}/>정원 미설정</span>
             {userLocation && <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded-full inline-block" style={{background:'#3b82f6'}}/>내 위치</span>}
           </div>
         </div>
@@ -283,7 +333,15 @@ const CareApply: React.FC = () => {
               className={`text-left p-5 rounded-3xl border transition-all bg-white dark:bg-slate-800 hover:shadow-md ${selected?.id === c.id ? 'border-sky-400 ring-2 ring-sky-200 dark:ring-sky-800' : 'border-slate-100 dark:border-slate-700'}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-black text-slate-800 dark:text-white">{c.name}</span>
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white shrink-0 bg-sky-500">거점</span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {(() => {
+                    const a = avail[c.id];
+                    if (!a || a.capacity === null) return <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white bg-sky-500">신청 가능</span>;
+                    if (a.remaining === 0) return <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white bg-rose-500">마감</span>;
+                    return <span className={`text-[11px] font-black px-2.5 py-1 rounded-full text-white ${(a.remaining ?? 0) <= 2 ? 'bg-amber-500' : 'bg-emerald-500'}`}>잔여 {a.remaining}명</span>;
+                  })()}
+                  <span className="text-[11px] font-black px-2.5 py-1 rounded-full text-white bg-slate-400">{c.center_type.startsWith('거점') ? '거점' : '연계'}</span>
+                </span>
               </div>
               <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 font-bold flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0"/>{c.address}</p>
             </button>
@@ -299,7 +357,7 @@ const CareApply: React.FC = () => {
         <Modal onClose={() => setSelected(null)}>
           <div className="flex items-center justify-between gap-3 mb-4">
             <h3 className="text-2xl font-black text-slate-800 dark:text-white">{selected.name}</h3>
-            <span className="text-xs font-black px-3 py-1.5 rounded-full text-white bg-sky-500">거점형</span>
+            <span className="text-xs font-black px-3 py-1.5 rounded-full text-white bg-sky-500">{selected.center_type}</span>
           </div>
           <div className="space-y-3 text-slate-600 dark:text-slate-300 font-bold">
             <p className="flex items-start gap-2"><MapPin size={18} className="text-sky-500 mt-0.5 shrink-0"/>{selected.address}</p>
@@ -375,7 +433,11 @@ const ApplyForm: React.FC<{ center: any; onClose: () => void }> = ({ center, onC
       privacy_agreed: true,
     }).select('receipt_no').single();
     setSubmitting(false);
-    if (err) { setError('신청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'); return; }
+    if (err) {
+      // 정원 마감 등 서버측 검증 메시지는 그대로 표시
+      if (err.message && err.message.includes('정원')) { setError(err.message); return; }
+      setError('신청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'); return;
+    }
     setReceiptNo(data.receipt_no);
   };
 
