@@ -60,7 +60,7 @@ const TYPE_COLOR: Record<string, string> = {
   '총괄': '#94a3b8',
 };
 
-const CARE_TYPES = ['오전', '오후', '휴일', '방학'] as const;
+const CARE_TYPES = ['오전', '저녁', '휴일', '방학'] as const;
 
 const markerSvg = (color: string) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
@@ -101,7 +101,7 @@ const CareApply: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [showLookup, setShowLookup] = useState(false);
   const [regionFilter, setRegionFilter] = useState('전체');          // 지역: 시군
-  const [careTypeFilter, setCareTypeFilter] = useState<string>('오전'); // 시간대: 오전/오후/휴일/방학
+  const [careTypeFilter, setCareTypeFilter] = useState<string>('오전'); // 시간대: 오전/저녁/휴일/방학
   const [dateFilter, setDateFilter] = useState(() => new Date().toISOString().slice(0, 10));
   const [avail, setAvail] = useState<Record<number, Availability>>({});
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -282,7 +282,7 @@ const CareApply: React.FC = () => {
             <Building2 className="text-sky-500" size={32}/> 거점형 돌봄 신청
           </h2>
           <p className="mt-2 text-slate-500 dark:text-slate-400 font-bold">
-            지도에서 기관을 선택하고 오전·오후·휴일·방학 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
+            지도에서 기관을 선택하고 오전·저녁·휴일·방학 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
