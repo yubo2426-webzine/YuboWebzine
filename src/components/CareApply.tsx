@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin, Phone, Clock, X, Loader2, CheckCircle2, Search,
-  CalendarDays, Users, Baby, ShieldCheck, ChevronRight, Building2, Navigation
+  CalendarDays, Users, Baby, ShieldCheck, ChevronRight, Building2, Navigation, Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -60,7 +60,7 @@ const TYPE_COLOR: Record<string, string> = {
   '총괄': '#94a3b8',
 };
 
-const CARE_TYPES = ['오전', '저녁', '휴일'] as const;
+const CARE_TYPES = ['오전', '오후', '휴일', '방학'] as const;
 
 const markerSvg = (color: string) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
@@ -101,7 +101,7 @@ const CareApply: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [showLookup, setShowLookup] = useState(false);
   const [regionFilter, setRegionFilter] = useState('전체');          // 지역: 시군
-  const [careTypeFilter, setCareTypeFilter] = useState<string>('오전'); // 시간대: 오전/저녁/휴일
+  const [careTypeFilter, setCareTypeFilter] = useState<string>('오전'); // 시간대: 오전/오후/휴일/방학
   const [dateFilter, setDateFilter] = useState(() => new Date().toISOString().slice(0, 10));
   const [avail, setAvail] = useState<Record<number, Availability>>({});
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -120,6 +120,7 @@ const CareApply: React.FC = () => {
         .select('id, seq, center_type, name, address, region, phone, care_hours, lat, lng, is_bookable')
         .eq('is_active', true)
         .eq('is_bookable', true)
+        .eq('center_type', '거점')
         .order('seq');
       if (!error && data) setCenters(data as CareCenter[]);
       setLoading(false);
@@ -281,7 +282,7 @@ const CareApply: React.FC = () => {
             <Building2 className="text-sky-500" size={32}/> 거점형 돌봄 신청
           </h2>
           <p className="mt-2 text-slate-500 dark:text-slate-400 font-bold">
-            지도에서 기관을 선택하고 오전·저녁·휴일 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
+            지도에서 기관을 선택하고 오전·오후·휴일·방학 돌봄을 신청하세요. 기관에서 확인 후 연락드립니다.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -495,10 +496,13 @@ const ApplyForm: React.FC<{ center: any; onClose: () => void }> = ({ center, onC
         {[{v: agree1, s: setAgree1, n: 1 as const, t: '(필수) 개인정보 수집·이용에 동의합니다.'},
           {v: agree2, s: setAgree2, n: 2 as const, t: '(필수) 신청 기관에 대한 개인정보 제3자 제공에 동의합니다.'}].map(a => (
           <div key={a.n} className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-2xl px-4 py-3">
-            <label className="flex items-center gap-3 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300">
-              <input type="checkbox" checked={a.v} onChange={e => a.s(e.target.checked)} className="w-5 h-5 accent-sky-500"/>
+            <button type="button" onClick={() => a.s(!a.v)}
+              className="flex items-center gap-3 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300 text-left">
+              <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${a.v ? 'bg-sky-500 border-sky-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-500'}`}>
+                {a.v && <Check size={16} className="text-white" strokeWidth={3}/>}
+              </span>
               <ShieldCheck size={16} className="text-emerald-500 shrink-0"/>{a.t}
-            </label>
+            </button>
             <button onClick={() => setShowTerms(a.n)} className="text-xs font-black text-sky-500 shrink-0 hover:underline">전문 보기</button>
           </div>
         ))}
