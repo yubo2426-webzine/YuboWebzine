@@ -100,7 +100,7 @@ const LoginForm: React.FC = () => {
 };
 
 const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAdmin }) => {
-  const [tab, setTab] = useState<'apps' | 'inquiries'>('apps');
+  const [tab, setTab] = useState<'apps' | 'inquiries' | 'slots'>('apps');
   const [apps, setApps] = useState<AppRow[]>([]);
   const [centers, setCenters] = useState<Record<number, string>>({});
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -174,17 +174,19 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
         </div>
       </div>
 
-      {isAdmin && (
-        <div className="flex gap-2 mb-6">
-          {([['apps', '돌봄 신청', <ClipboardList key="i" size={15}/>], ['inquiries', '문의 관리', <MessageCircleQuestion key="i" size={15}/>]] as const).map(([k, label, icon]) => (
-            <button key={k} onClick={() => setTab(k)}
-              className={`px-6 h-12 rounded-full font-black text-sm flex items-center gap-2 border transition-all ${tab === k ? 'bg-sky-500 text-white border-sky-500 shadow' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-sky-300'}`}>{icon}{label}{k === 'inquiries' && inquiries.filter(i => i.status === '접수').length > 0 && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">{inquiries.filter(i => i.status === '접수').length}</span>}</button>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-2 mb-6">
+        {([['apps', '돌봄 신청', <ClipboardList key="i" size={15}/>],
+           ...(isAdmin ? [['inquiries', '문의 관리', <MessageCircleQuestion key="i" size={15}/>] as const] : []),
+           ['slots', '정원 설정', <Building2 key="i" size={15}/>]] as const).map(([k, label, icon]) => (
+          <button key={k} onClick={() => setTab(k as any)}
+            className={`px-6 h-12 rounded-full font-black text-sm flex items-center gap-2 border transition-all ${tab === k ? 'bg-sky-500 text-white border-sky-500 shadow' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-sky-300'}`}>{icon}{label}{k === 'inquiries' && inquiries.filter(i => i.status === '접수').length > 0 && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">{inquiries.filter(i => i.status === '접수').length}</span>}</button>
+        ))}
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-24"><Loader2 className="animate-spin text-sky-500" size={36}/></div>
+      ) : tab === 'slots' ? (
+        <SlotSettings isAdmin={isAdmin} centers={centers}/>
       ) : tab === 'apps' ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -271,6 +273,119 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// 정원 설정: 기관별 요일×시간대 정원 그리드
+// 관리자는 기관 선택 가능, 기관 계정은 자기 기관만
+// ─────────────────────────────────────────────
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const SLOT_TYPES = ['오전', '저녁', '휴일'] as const;
+
+const SlotSettings: React.FC<{ isAdmin: boolean; centers: Record<number, string> }> = ({ isAdmin, centers }) => {
+  const [centerId, setCenterId] = useState<number | null>(null);
+  const [grid, setGrid] = useState<Record<string, number>>({});   // key: `${type}-${weekday}`
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [allowedIds, setAllowedIds] = useState<number[]>([]);
+
+  // 접근 가능한 기관 목록 결정
+  useEffect(() => {
+    (async () => {
+      if (!supabase) return;
+      if (isAdmin) {
+        setAllowedIds(Object.keys(centers).map(Number));
+      } else {
+        const { data: s } = await supabase.auth.getSession();
+        if (!s.session) return;
+        const { data } = await supabase.from('care_center_contacts').select('center_id').eq('auth_user_id', s.session.user.id);
+        setAllowedIds((data || []).map((r: any) => r.center_id));
+      }
+    })();
+  }, [isAdmin, centers]);
+
+  useEffect(() => {
+    if (allowedIds.length > 0 && centerId === null) setCenterId(allowedIds[0]);
+  }, [allowedIds, centerId]);
+
+  // 선택 기관의 정원 로드
+  useEffect(() => {
+    (async () => {
+      if (!supabase || centerId === null) return;
+      const { data } = await supabase.from('care_center_slots')
+        .select('care_type, weekday, capacity').eq('center_id', centerId);
+      const g: Record<string, number> = {};
+      (data || []).forEach((r: any) => { g[`${r.care_type}-${r.weekday}`] = r.capacity; });
+      setGrid(g);
+      setSaved(false);
+    })();
+  }, [centerId]);
+
+  const save = async () => {
+    if (!supabase || centerId === null) return;
+    setBusy(true);
+    const rows = SLOT_TYPES.flatMap(t => WEEKDAYS.map((_, w) => ({
+      center_id: centerId, care_type: t, weekday: w,
+      capacity: grid[`${t}-${w}`] ?? 0,
+    })));
+    await supabase.from('care_center_slots').upsert(rows, { onConflict: 'center_id,care_type,weekday' });
+    setBusy(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 p-7 md:p-9">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <h3 className="text-xl font-black text-slate-800 dark:text-white">요일·시간대별 정원 설정</h3>
+        {allowedIds.length > 1 && (
+          <select value={centerId ?? ''} onChange={e => setCenterId(Number(e.target.value))}
+            className="h-11 px-4 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 font-black text-sm text-slate-700 dark:text-slate-200">
+            {allowedIds.map(id => <option key={id} value={id}>{centers[id] || `기관 ${id}`}</option>)}
+          </select>
+        )}
+      </div>
+      <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-6">
+        해당 요일·시간대에 받을 수 있는 최대 아동 수를 입력하세요. <b>0 = 해당 시간대 마감(운영 안 함)</b>.
+        정원을 한 번도 저장하지 않은 기관은 "제한 없음"으로 동작합니다.
+      </p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm font-bold text-slate-700 dark:text-slate-200">
+          <thead>
+            <tr>
+              <th className="text-left p-2 font-black">시간대</th>
+              {WEEKDAYS.map(d => <th key={d} className={`p-2 font-black ${d === '일' ? 'text-rose-500' : d === '토' ? 'text-sky-500' : ''}`}>{d}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {SLOT_TYPES.map(t => (
+              <tr key={t} className="border-t border-slate-100 dark:border-slate-700">
+                <td className="p-2 font-black whitespace-nowrap">{t}</td>
+                {WEEKDAYS.map((_, w) => (
+                  <td key={w} className="p-1.5">
+                    <input type="number" min={0} max={999}
+                      value={grid[`${t}-${w}`] ?? ''}
+                      placeholder="-"
+                      onChange={e => setGrid(prev => ({ ...prev, [`${t}-${w}`]: Math.max(0, Number(e.target.value)) }))}
+                      className="w-14 h-11 text-center rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 font-black focus:outline-none focus:ring-2 focus:ring-sky-400"/>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-6 flex items-center gap-3">
+        <button onClick={save} disabled={busy || centerId === null}
+          className="h-12 px-8 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black flex items-center justify-center gap-2 hover:from-sky-600 hover:to-blue-700 disabled:opacity-60 shadow-lg">
+          {busy ? <Loader2 className="animate-spin" size={20}/> : '정원 저장'}
+        </button>
+        {saved && <span className="font-black text-emerald-500 flex items-center gap-1.5"><CheckCircle2 size={18}/> 저장되었습니다</span>}
+      </div>
     </div>
   );
 };
