@@ -282,7 +282,7 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
 // 관리자는 기관 선택 가능, 기관 계정은 자기 기관만
 // ─────────────────────────────────────────────
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-const SLOT_TYPES = ['오전', '저녁', '휴일'] as const;
+const SLOT_TYPES = ['오전', '오후', '휴일', '방학'] as const;
 
 const SlotSettings: React.FC<{ isAdmin: boolean; centers: Record<number, string> }> = ({ isAdmin, centers }) => {
   const [centerId, setCenterId] = useState<number | null>(null);
