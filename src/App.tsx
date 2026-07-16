@@ -221,14 +221,8 @@ const MainApp = () => {
     return Math.floor(Math.random() * randomTexts.length);
   });
 
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const today = new Date().toISOString().split('T')[0];
-      const lastHiddenDate = localStorage.getItem('welcomeModalHiddenDate');
-      return lastHiddenDate !== today;
-    }
-    return true;
-  });
+  // 환영 팝업 사용 중지 (요청에 따라 비활성화 — 코드 블록은 남겨두어 필요 시 복원 가능)
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     document.title = '함께누리웹진';
