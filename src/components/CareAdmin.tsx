@@ -604,7 +604,7 @@ const AdminOps: React.FC = () => {
   const [period, setPeriod] = useState({ start: '', end: '' });
   const [periodBusy, setPeriodBusy] = useState(false);
   const [periodMsg, setPeriodMsg] = useState('');
-  const [accounts, setAccounts] = useState<{ center_id: number; center_name: string; contact_email: string | null }[]>([]);
+  const [accounts, setAccounts] = useState<{ center_id: number; center_name: string; contact_email: string | null; notify_email: string | null; is_linked: boolean }[]>([]);
   const [linkEmail, setLinkEmail] = useState('');
   const [linkCenter, setLinkCenter] = useState<number | ''>('');
   const [linkBusy, setLinkBusy] = useState(false);
@@ -695,11 +695,16 @@ const AdminOps: React.FC = () => {
 
         <div className="space-y-2">
           {accounts.map(a => (
-            <div key={a.center_id} className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-2xl px-5 py-3">
+            <div key={a.center_id} className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 rounded-2xl px-5 py-3">
               <span className="font-black text-sm text-slate-700 dark:text-slate-200">{a.center_name}</span>
-              {a.contact_email
-                ? <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{a.contact_email}</span>
-                : <span className="text-xs font-black text-slate-400">미연결</span>}
+              <span className="flex flex-wrap items-center gap-2 text-xs font-black">
+                {a.notify_email && (
+                  <span className="text-slate-400" title="신청 알림 메일 주소">✉ {a.notify_email}</span>
+                )}
+                {a.is_linked
+                  ? <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">로그인 연결됨{a.contact_email ? ` · ${a.contact_email}` : ''}</span>
+                  : <span className="px-2.5 py-1 rounded-full bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300">로그인 미연결</span>}
+              </span>
             </div>
           ))}
         </div>
