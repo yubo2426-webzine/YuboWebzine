@@ -456,25 +456,23 @@ const ApplyForm: React.FC<{ center: any; onClose: () => void; initial?: any }> =
     if (!supabase) return setError('서버 연결에 실패했습니다.');
 
     setSubmitting(true);
-    const { data, error: err } = await supabase.from('care_applications').insert({
-      center_id: center.id,
-      guardian_name: f.guardian_name.trim(),
-      guardian_phone: f.guardian_phone.trim(),
-      child_names: f.child_names.trim(),
-      child_count: Number(f.child_count),
-      care_type: f.care_type,
-      use_date: f.use_date,
-      use_time: f.use_time.trim() || null,
-      memo: f.memo.trim() || null,
-      privacy_agreed: true,
-    }).select('receipt_no').single();
-    setSubmitting(false);
-    if (err) {
-      // 정원 마감 등 서버측 검증 메시지는 그대로 표시
-      if (err.message && err.message.includes('정원')) { setError(err.message); return; }
-      setError('신청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'); return;
-    }
-    setReceiptNo(data.receipt_no);
+   const { data, error: err } = await supabase.rpc('submit_care_application', {
+  p_center_id: center.id,
+  p_guardian_name: f.guardian_name.trim(),
+  p_guardian_phone: f.guardian_phone.trim(),
+  p_child_names: f.child_names.trim(),
+  p_child_count: Number(f.child_count),
+  p_care_type: f.care_type,
+  p_use_date: f.use_date,
+  p_use_time: f.use_time.trim() || null,
+  p_memo: f.memo.trim() || null,
+});
+setSubmitting(false);
+if (err) {
+  if (err.message && err.message.includes('정원')) { setError(err.message); return; }
+  setError('신청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'); return;
+}
+setReceiptNo(data);   // ← RPC는 receipt_no 문자열 자체를 바로 반환
   };
 
   if (receiptNo) return (
