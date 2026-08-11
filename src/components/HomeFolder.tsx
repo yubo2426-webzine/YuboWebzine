@@ -6,6 +6,8 @@ import {
 import { supabase } from '../lib/supabase';
 import ResourceMap from './ResourceMap';
 import CareApply from './CareApply';
+import VideoEmbed from './VideoEmbed';
+import { promoVideos } from '../data/promoVideos';
 
 // ─────────────────────────────────────────────
 // 5개 사업주제 인덱스 (폴더 탭)
@@ -55,12 +57,12 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
               <button key={t.key} role="tab" aria-selected={isActive} onClick={() => setActive(t.key)}
                 className={`rounded-t-3xl border border-b-0 px-2 md:px-3 pt-6 md:pt-8 pb-7 md:pb-9 transition-all text-center relative flex flex-col items-center justify-center
                   ${isActive
-                    ? `bg-white dark:bg-slate-800 text-slate-800 dark:text-white border-amber-400 dark:border-amber-600 shadow-[0_-12px_30px_rgba(245,158,11,0.2)] z-10 -mb-px`
-                    : 'bg-amber-100 dark:bg-amber-950/40 text-slate-700 dark:text-slate-300 border-amber-200 dark:border-amber-900 hover:bg-amber-200 dark:hover:bg-amber-900/60 hover:-translate-y-2'}`}>
-                <span className="font-black text-xl md:text-2xl lg:text-3xl leading-tight text-center">
+                    ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-amber-400 dark:border-amber-600 shadow-[0_-12px_30px_rgba(245,158,11,0.2)] z-10 -mb-px`
+                    : 'bg-amber-100 dark:bg-amber-950/40 text-slate-800 dark:text-slate-200 border-amber-200 dark:border-amber-900 hover:bg-amber-200 dark:hover:bg-amber-900/60 hover:-translate-y-2'}`}>
+                <span className="font-black text-xl md:text-3xl lg:text-4xl leading-tight text-center">
                   {t.index}
                 </span>
-                <span className="block text-xs md:text-sm font-bold text-amber-700 dark:text-amber-600 mt-2.5 leading-snug text-center whitespace-pre-wrap">
+                <span className="block text-sm md:text-base lg:text-lg font-bold text-amber-800 dark:text-amber-500 mt-2.5 leading-snug text-center whitespace-pre-wrap">
                   {t.sub}
                 </span>
               </button>
@@ -96,9 +98,9 @@ const HomeFolder: React.FC<HomeFolderProps> = ({ setView, role, resourceMapProps
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => setView(t.id)}
-              className="flex-1 min-h-[130px] lg:min-h-40 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900 rounded-3xl shadow-[0_25px_60px_rgba(245,158,11,0.12)] flex flex-col items-center justify-center gap-4 font-black text-slate-700 dark:text-slate-200 hover:-translate-x-0 lg:hover:-translate-x-3 hover:-translate-y-2 lg:hover:translate-y-0 hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-2xl hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all group px-6 py-8 text-center">
-              <Icon size={44} className={`${t.color} group-hover:scale-130 transition-transform`}/>
-              <span className="text-lg md:text-xl lg:text-2xl leading-tight font-black">{t.label}</span>
+              className="flex-1 min-h-[150px] lg:min-h-44 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900 rounded-3xl shadow-[0_25px_60px_rgba(245,158,11,0.12)] flex flex-col items-center justify-center gap-4 font-black text-slate-800 dark:text-slate-100 hover:-translate-x-0 lg:hover:-translate-x-3 hover:-translate-y-2 lg:hover:translate-y-0 hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-2xl hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all group px-6 py-8 text-center">
+              <Icon size={52} className={`${t.color} group-hover:scale-130 transition-transform`}/>
+              <span className="text-xl md:text-2xl lg:text-3xl leading-tight font-black">{t.label}</span>
             </button>
           );
         })}
@@ -130,32 +132,36 @@ const TopicFolder: React.FC<{ topicKey: string; title: string }> = ({ topicKey, 
 
   return (
     <div className="h-[740px] overflow-y-auto p-8 md:p-12">
-      <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white flex items-center gap-4 mb-8">
-        <FolderOpen className="text-amber-500" size={32}/> {title}
+      <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8">
+        <FolderOpen className="text-amber-500" size={40}/> {title}
       </h3>
+
+      {/* 사업별 홍보영상 (promoVideos.ts에 등록된 사업만 표시) */}
+      {promoVideos[topicKey] && <VideoEmbed {...promoVideos[topicKey]} />}
+
       {loading ? (
-        <div className="flex justify-center py-24"><Loader2 className="animate-spin text-slate-400" size={40}/></div>
+        <div className="flex justify-center py-24"><Loader2 className="animate-spin text-slate-400" size={48}/></div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <FolderOpen size={72} className="text-slate-200 dark:text-slate-600 mb-5"/>
-          <p className="font-black text-slate-400 text-lg">콘텐츠를 준비 중입니다.</p>
-          <p className="font-bold text-base text-slate-300 dark:text-slate-500 mt-2">곧 알찬 내용으로 찾아뵐게요!</p>
+          <FolderOpen size={80} className="text-slate-200 dark:text-slate-600 mb-5"/>
+          <p className="font-black text-slate-500 dark:text-slate-400 text-2xl">콘텐츠를 준비 중입니다.</p>
+          <p className="font-bold text-lg text-slate-400 dark:text-slate-500 mt-3">곧 알찬 내용으로 찾아뵐게요!</p>
         </div>
       ) : (
         <div className="space-y-6">
           {items.map(it => (
             <div key={it.id} className="bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-700 p-7 md:p-10">
-              <h4 className="font-black text-xl md:text-2xl text-slate-800 dark:text-white mb-4">{it.title}</h4>
+              <h4 className="font-black text-2xl md:text-3xl text-slate-900 dark:text-white mb-4">{it.title}</h4>
               {it.image_url && (
                 <img src={it.image_url} alt={it.title} className="w-full rounded-3xl mb-5 border border-slate-100 dark:border-slate-700" loading="lazy"/>
               )}
               {it.content && (
-                <p className="font-bold text-base md:text-lg leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line">{it.content}</p>
+                <p className="font-bold text-lg md:text-2xl leading-loose text-slate-700 dark:text-slate-200 whitespace-pre-line">{it.content}</p>
               )}
               {it.link_url && (
                 <a href={it.link_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-5 px-6 h-12 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black text-base hover:bg-slate-700 transition-colors">
-                  {it.link_label || '자세히 보기'} <ExternalLink size={16}/>
+                  className="inline-flex items-center gap-2 mt-6 px-8 h-14 rounded-full bg-slate-800 dark:bg-slate-700 text-white font-black text-lg md:text-xl hover:bg-slate-700 transition-colors">
+                  {it.link_label || '자세히 보기'} <ExternalLink size={20}/>
                 </a>
               )}
             </div>
@@ -170,43 +176,47 @@ const TopicFolder: React.FC<{ topicKey: string; title: string }> = ({ topicKey, 
 // 거점형 돌봄 설명 및 신청 시작 화면
 // ─────────────────────────────────────────────
 const CareIntroduction: React.FC<{ onApply: () => void }> = ({ onApply }) => (
-  <div className="h-full flex items-center justify-center p-8 md:p-12 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-slate-900">
-    <div className="max-w-2xl text-center">
+  <div className="min-h-full flex items-center justify-center p-8 md:p-12 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-slate-900">
+    <div className="max-w-3xl text-center">
+
+      {/* 거점형 돌봄 홍보영상 */}
+      {promoVideos['거점돌봄'] && <VideoEmbed {...promoVideos['거점돌봄']} />}
+
       <div className="mb-8">
-        <HeartHandshake size={80} className="text-amber-600 dark:text-amber-500 mx-auto mb-6"/>
-        <h2 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-4">
+        <HeartHandshake size={88} className="text-amber-600 dark:text-amber-500 mx-auto mb-6"/>
+        <h2 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white mb-4">
           거점형 돌봄이란?
         </h2>
       </div>
-      <p className="text-lg md:text-2xl font-bold text-slate-700 dark:text-slate-200 leading-relaxed mb-8">
-        전북특별자치도교육청에서 운영하는 <span className="text-amber-600 dark:text-amber-400">거점형 돌봄기관</span>은 유아의 안전하고 건강한 성장을 지원합니다.
+      <p className="text-xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed mb-8">
+        전북특별자치도교육청에서 운영하는 <span className="text-amber-700 dark:text-amber-400">거점형 돌봄기관</span>은 유아의 안전하고 건강한 성장을 지원합니다.
       </p>
-      <div className="space-y-4 mb-10 text-left bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-10 border border-amber-200 dark:border-amber-800">
+      <div className="space-y-6 mb-10 text-left bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-10 border border-amber-200 dark:border-amber-800">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">1</div>
+          <div className="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-xl shrink-0">1</div>
           <div>
-            <p className="font-black text-lg text-slate-800 dark:text-white">오전 돌봄 (아침 시간 지원)</p>
-            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">등원 전 아침 시간에 아이를 안전하게 돌봐드립니다.</p>
+            <p className="font-black text-xl md:text-2xl text-slate-900 dark:text-white">오전 돌봄 (아침 시간 지원)</p>
+            <p className="font-bold text-lg md:text-xl leading-relaxed text-slate-700 dark:text-slate-200 mt-2">등원 전 아침 시간에 아이를 안전하게 돌봐드립니다.</p>
           </div>
         </div>
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">2</div>
+          <div className="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-xl shrink-0">2</div>
           <div>
-            <p className="font-black text-lg text-slate-800 dark:text-white">저녁 돌봄 (방과 후 시간 지원)</p>
-            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">방과 후 저녁 시간에 아이를 안전하게 돌봐드립니다.</p>
+            <p className="font-black text-xl md:text-2xl text-slate-900 dark:text-white">저녁 돌봄 (방과 후 시간 지원)</p>
+            <p className="font-bold text-lg md:text-xl leading-relaxed text-slate-700 dark:text-slate-200 mt-2">방과 후 저녁 시간에 아이를 안전하게 돌봐드립니다.</p>
           </div>
         </div>
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black shrink-0">3</div>
+          <div className="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-xl shrink-0">3</div>
           <div>
-            <p className="font-black text-lg text-slate-800 dark:text-white">휴일·방학 돌봄</p>
-            <p className="font-bold text-slate-600 dark:text-slate-300 mt-1">휴일과 방학 기간 중에도 안정적인 돌봄을 제공합니다.</p>
+            <p className="font-black text-xl md:text-2xl text-slate-900 dark:text-white">휴일·방학 돌봄</p>
+            <p className="font-bold text-lg md:text-xl leading-relaxed text-slate-700 dark:text-slate-200 mt-2">휴일과 방학 기간 중에도 안정적인 돌봄을 제공합니다.</p>
           </div>
         </div>
       </div>
       <button onClick={onApply}
-        className="w-full h-16 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xl md:text-2xl flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl">
-        <HeartHandshake size={28}/> 거점형 돌봄 신청하기
+        className="w-full h-20 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-2xl md:text-3xl flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl">
+        <HeartHandshake size={32}/> 거점형 돌봄 신청하기
       </button>
     </div>
   </div>
