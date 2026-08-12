@@ -20,7 +20,8 @@ import CareApply from './components/CareApply';
 import FaqBoard from './components/FaqBoard';
 import InquiryBoard from './components/InquiryBoard';
 import CareAdmin from './components/CareAdmin';
-import HomeFolder from './components/HomeFolder';
+import HomeHero from './components/HomeHero';
+import TopicPage from './components/TopicPage';
 
 const globalStyles = `
   @keyframes float-rotate {
@@ -725,23 +726,22 @@ const MainApp = () => {
        
        <main className="flex-1 w-full pb-24">
           
+          {/* ✅ 개편: 첫 화면 = 대표 홍보영상 + 5개 사업 인덱스 버튼 */}
           {view === 'home' && (
             <div className="w-full animate-in fade-in">
                <section className="relative w-full py-10 md:py-14 bg-gradient-to-br from-[#e0f2fe] via-[#ecfdf5] to-[#f0f9ff] dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 px-4 transition-colors">
-                 <HomeFolder
-                   setView={setView}
-                   role={role}
-                   resourceMapProps={{
-                     resources,
-                     searchKeyword, setSearchKeyword,
-                     selectedRegion, setSelectedRegion,
-                     selectedType, setSelectedType,
-                   }}
-                 />
+                 <HomeHero setView={setView} />
                </section>
-
             </div>
           )}
+
+          {/* ✅ 개편: 사업별 상세 화면 (topics.ts의 view 값과 일치) */}
+          {view === 'care_intro' && (
+            <TopicPage topicKey="거점돌봄" onHome={() => setView('home')} onApply={() => setView('care_apply')} />
+          )}
+          {view === 'topic_dev' && <TopicPage topicKey="유아발달" onHome={() => setView('home')} />}
+          {view === 'topic_emotion' && <TopicPage topicKey="정서심리" onHome={() => setView('home')} />}
+          {view === 'topic_bridge' && <TopicPage topicKey="이음교육" onHome={() => setView('home')} />}
 
           {view === 'resource_map' && (
              <ResourceMap 
