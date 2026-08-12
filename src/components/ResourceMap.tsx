@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Phone, X, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw, ExternalLink, BookOpen, ChevronLeft, List, Map as MapIcon } from 'lucide-react';
+import { MapPin, Search, Phone, X, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw, ExternalLink, BookOpen, ChevronLeft } from 'lucide-react';
 // 💡 싱글톤으로 만들어둔 supabase 인스턴스를 불러옵니다.
 import { supabase } from '../lib/supabase';
 
@@ -98,8 +98,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
 }) => {
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any>(null);
-  // 💡 모바일 전용 화면 전환. PC(md 이상)에서는 좌우로 함께 보이므로 이 값을 쓰지 않습니다.
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   // 💡 카카오톡 등 인앱 브라우저 여부 (앱 이름, 없으면 null)
   const [inAppBrowser] = useState<string | null>(() => detectInAppBrowser());
 
@@ -169,19 +167,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
         mapInstance.current = new (window as any).kakao.maps.Map(mapContainerRefStandalone.current, { center: centerPos, level: 10 });
     }
   }, [mapLoading, mapError]);
-
-  // 💡 지도를 숨겼다가(display:none) 다시 켜면 카카오맵이 컨테이너 크기를 0으로 기억하고 있어
-  //    타일이 깨지거나 회색으로 남습니다. 지도 탭으로 돌아올 때 크기를 다시 계산시켜 줍니다.
-  useEffect(() => {
-    if (viewMode !== 'map' || !mapInstance.current) return;
-    const id = window.setTimeout(() => {
-      mapInstance.current.relayout();
-      if (selectedResource) {
-        mapInstance.current.setCenter(new (window as any).kakao.maps.LatLng(selectedResource.lat, selectedResource.lng));
-      }
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [viewMode]);
 
   // 💡 길찾기: 선택된 기관이 바뀌거나 팝업이 닫히면 기존 경로선/현위치 마커를 정리합니다.
   useEffect(() => {
@@ -349,11 +334,6 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
           distance: data.distance,
           duration: data.duration,
         });
-        // 💡 경로를 그려놓고도 목록 화면에 머물러 있으면 볼 수가 없으므로 지도 화면으로 넘겨줍니다.
-        if (drawOk) {
-          setSelectedResource(null);
-          setViewMode('map');
-        }
       } catch (e: any) {
         setRouteState({ loading: false, error: e.message || '경로를 찾는 중 오류가 발생했습니다.', distance: null, duration: null });
       }
@@ -424,274 +404,247 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
   }, [selectedResource]);
 
   return (
-    <div className="flex flex-col w-full h-[calc(100dvh-80px)] bg-white dark:bg-slate-900 animate-in fade-in">
+    <div className="flex flex-col-reverse md:flex-row w-full h-[calc(100dvh-80px)] relative bg-white dark:bg-slate-900 animate-in fade-in">
 
-       {/* ── 모바일 전용: 목록 / 지도 전환 ── */}
-       <div className="md:hidden flex gap-2 px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 shrink-0 bg-white dark:bg-slate-800">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex-1 h-10 rounded-xl font-black text-sm flex items-center justify-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
-          >
-            <List size={16}/> 목록 {filteredResources.length}
-          </button>
-          <button
-            onClick={() => { setSelectedResource(null); setViewMode('map'); }}
-            className={`flex-1 h-10 rounded-xl font-black text-sm flex items-center justify-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
-          >
-            <MapIcon size={16}/> 지도
-          </button>
-       </div>
+       {/* ── 검색 + 목록 패널 (모바일: 하단 68% / PC: 좌측 고정폭) ── */}
+       <div className="w-full md:w-[420px] h-[68%] md:h-full min-h-0 bg-white dark:bg-slate-800 flex flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:shadow-xl">
+          <div className="absolute top-3 right-8 text-emerald-100 dark:text-emerald-900/30 opacity-60 pointer-events-none"><Rabbit size={26} strokeWidth={1.5}/></div>
 
-       <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-
-          {/* ── 검색 + 목록 패널 (PC: 좌측 고정 / 모바일: 목록 탭일 때 전체) ── */}
-          <div className={`${viewMode === 'list' ? 'flex' : 'hidden'} md:flex w-full md:w-[420px] h-full min-h-0 bg-white dark:bg-slate-800 flex-col border-r border-slate-100 dark:border-slate-700 z-10 shrink-0 relative md:shadow-xl`}>
-             <div className="absolute top-3 right-8 text-emerald-100 dark:text-emerald-900/30 opacity-60 pointer-events-none"><Rabbit size={26} strokeWidth={1.5}/></div>
-
-             <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 z-20 relative shrink-0">
-                <div className="hidden md:flex items-center gap-2.5 mb-3.5 relative z-10">
-                  <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-xl flex items-center justify-center shadow-inner"><MapPin size={18}/></div>
-                  <h2 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2>
-                </div>
-
-                <div className="relative mb-2.5 z-10 flex gap-2">
-                   <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
-                     <option value="전체">지역 전체</option>
-                     {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
-                   </select>
-                   <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
-                     <option value="전체">형태 전체</option>
-                     {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                   </select>
-                </div>
-
-                <div className="relative z-10">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={17}/>
-                  <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-11 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-bold text-sm shadow-inner" />
-                </div>
+          <div className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 z-20 relative shrink-0">
+             <div className="flex items-center gap-2.5 mb-3 relative z-10">
+               <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800 rounded-xl flex items-center justify-center shadow-inner shrink-0"><MapPin size={16}/></div>
+               <h2 className="text-base md:text-lg font-black text-slate-800 dark:text-white tracking-tight">체험자원 지도</h2>
+               <span className="ml-auto font-black text-xs text-slate-500 dark:text-slate-400">총 <span className="text-emerald-600 dark:text-emerald-400 text-sm">{filteredResources.length}</span>건</span>
              </div>
 
-             <div className="hidden md:block px-4 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 shrink-0">
-                <span className="font-black text-sm text-slate-700 dark:text-slate-300">총 <span className="text-emerald-600 dark:text-emerald-400 text-base">{filteredResources.length}</span>건</span>
+             <div className="relative mb-2 z-10 flex gap-2">
+                <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-9 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
+                  <option value="전체">지역 전체</option>
+                  {jeonbukRegions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
+                </select>
+                <select value={selectedType} onChange={(e) => { setSelectedType(e.target.value); setSelectedResource(null); }} className="flex-1 h-9 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
+                  <option value="전체">형태 전체</option>
+                  {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
              </div>
 
-             <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 flex flex-col gap-2.5 custom-scrollbar bg-slate-50/20 dark:bg-slate-900/20">
-               {filteredResources.length === 0 && (
-                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                   <MapPin size={44} className="text-slate-200 dark:text-slate-600 mb-3"/>
-                   <p className="font-black text-slate-400 text-base">조건에 맞는 체험처가 없습니다.</p>
+             <div className="relative z-10">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16}/>
+               <input type="text" placeholder="체험처명 또는 주소 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} className="w-full h-10 pl-9 pr-4 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-400 transition-all font-bold text-sm shadow-inner" />
+             </div>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 flex flex-col gap-2.5 custom-scrollbar bg-slate-50/20 dark:bg-slate-900/20">
+            {filteredResources.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <MapPin size={44} className="text-slate-200 dark:text-slate-600 mb-3"/>
+                <p className="font-black text-slate-400 text-base">조건에 맞는 체험처가 없습니다.</p>
+              </div>
+            )}
+            {filteredResources.map(res => (
+              <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-4 rounded-2xl cursor-pointer transition-all border bg-white dark:bg-slate-800 group shrink-0 ${selectedResource?.id === res.id ? 'border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-50 dark:ring-emerald-900/30' : 'border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-sm'}`}>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-100/50 dark:border-emerald-800 px-2 py-0.5 rounded-full">#{res.category}</span>
+                   <span className="text-[10px] font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/40 border border-sky-100/50 dark:border-sky-800 px-2 py-0.5 rounded-full">#누리과정</span>
+                </div>
+                <h4 className="font-black text-base md:text-lg text-slate-800 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">{res.name}</h4>
+                <ul className="flex flex-col gap-1.5">
+                   <li className="flex items-start gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <MapPin size={14} className="text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"/>
+                      <span className="leading-snug">{res.address}</span>
+                   </li>
+                   <li className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <Phone size={14} className="text-slate-400 dark:text-slate-500 shrink-0"/>
+                      <span>{res.phone || '연락처 정보 없음'}</span>
+                   </li>
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* ── 상세정보: 지도를 덮지 않고 이 패널 안에서만 열립니다 ── */}
+          <div className={`absolute inset-0 z-30 bg-white dark:bg-slate-800 flex flex-col transition-transform duration-300 ${selectedResource ? 'translate-y-0' : 'translate-y-full pointer-events-none'}`}>
+             {selectedResource && (
+               <>
+                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 shrink-0">
+                   <button onClick={() => setSelectedResource(null)} className="flex items-center gap-1 h-9 px-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                     <ChevronLeft size={16}/> 목록
+                   </button>
+                   <button onClick={() => setSelectedResource(null)} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                     <X size={18}/>
+                   </button>
                  </div>
-               )}
-               {filteredResources.map(res => (
-                 <div key={res.id} onClick={() => setSelectedResource(res)} className={`p-4 rounded-2xl cursor-pointer transition-all border bg-white dark:bg-slate-800 group shrink-0 ${selectedResource?.id === res.id ? 'border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-50 dark:ring-emerald-900/30' : 'border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-sm'}`}>
-                   <div className="flex flex-wrap gap-1.5 mb-2">
-                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-100/50 dark:border-emerald-800 px-2 py-0.5 rounded-full">#{res.category}</span>
-                      <span className="text-[10px] font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/40 border border-sky-100/50 dark:border-sky-800 px-2 py-0.5 rounded-full">#누리과정</span>
-                   </div>
-                   <h4 className="font-black text-base md:text-lg text-slate-800 dark:text-white mb-2.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">{res.name}</h4>
-                   <ul className="flex flex-col gap-1.5">
-                      <li className="flex items-start gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                         <MapPin size={14} className="text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"/>
-                         <span className="leading-snug">{res.address}</span>
-                      </li>
-                      <li className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                         <Phone size={14} className="text-slate-400 dark:text-slate-500 shrink-0"/>
-                         <span>{res.phone || '연락처 정보 없음'}</span>
-                      </li>
-                   </ul>
-                 </div>
-               ))}
-             </div>
 
-             {/* ── 상세정보: 지도를 덮지 않고 이 패널 안에서만 열립니다 ── */}
-             <div className={`absolute inset-0 z-30 bg-white dark:bg-slate-800 flex flex-col transition-transform duration-300 ${selectedResource ? 'translate-y-0' : 'translate-y-full pointer-events-none'}`}>
-                {selectedResource && (
-                  <>
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700 shrink-0">
-                      <button onClick={() => setSelectedResource(null)} className="flex items-center gap-1 h-9 px-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                        <ChevronLeft size={16}/> 목록
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setViewMode('map')} className="md:hidden flex items-center gap-1 h-9 px-3 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-sm hover:bg-emerald-100 transition-colors">
-                          <MapIcon size={15}/> 지도에서 보기
-                        </button>
-                        <button onClick={() => setSelectedResource(null)} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                          <X size={18}/>
-                        </button>
-                      </div>
-                    </div>
+                 <div className="flex-1 min-h-0 overflow-y-auto p-5 custom-scrollbar">
+                    <div className="flex gap-2 mb-3"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
+                    <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white mb-2.5 tracking-tight leading-tight">{selectedResource.name}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm flex items-start gap-2 mb-5"><MapPin size={16} className="text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5"/> {selectedResource.address}</p>
 
-                    <div className="flex-1 min-h-0 overflow-y-auto p-5 custom-scrollbar">
-                       <div className="flex gap-2 mb-3"><KRDSBadge variant="success">{selectedResource.category}</KRDSBadge><KRDSBadge variant="primary">누리과정 연계</KRDSBadge></div>
-                       <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white mb-2.5 tracking-tight leading-tight">{selectedResource.name}</h3>
-                       <p className="text-slate-500 dark:text-slate-400 font-bold text-sm flex items-start gap-2 mb-5"><MapPin size={16} className="text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5"/> {selectedResource.address}</p>
-
-                       <div className="grid grid-cols-3 gap-2">
-                          {/* 프로그램 보기: 체험프로그램 컬럼 내용을 모달로 표시 */}
-                          <button
-                            onClick={() => {
-                              if (!selectedResource.program) return;
-                              setProgramModalOpen(true);
-                            }}
-                            disabled={!selectedResource.program}
-                            className="bg-emerald-500 dark:bg-emerald-600 text-white py-3 rounded-xl font-black text-xs md:text-sm shadow-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            <BookOpen size={16}/> 프로그램
-                          </button>
-                          {/* 사이트 연결: 비고 컬럼 URL로 새 탭 열기 */}
-                          <button
-                            onClick={() => {
-                              if (!selectedResource.note) return;
-                              const url = /^https?:\/\//i.test(selectedResource.note) ? selectedResource.note : `https://${selectedResource.note}`;
-                              window.open(url, '_blank', 'noopener,noreferrer');
-                            }}
-                            disabled={!selectedResource.note}
-                            className="bg-sky-500 dark:bg-sky-600 text-white py-3 rounded-xl font-black text-xs md:text-sm shadow-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            <ExternalLink size={16}/> 사이트
-                          </button>
-                          {/* 전화 연결 */}
-                          <button
-                            onClick={() => {
-                              if (!selectedResource.phone) return;
-                              window.location.href = `tel:${selectedResource.phone}`;
-                            }}
-                            disabled={!selectedResource.phone}
-                            className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-black text-xs md:text-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            <Phone size={16}/> 전화
-                          </button>
-                       </div>
-
-                       {(!selectedResource.program || !selectedResource.note || !selectedResource.phone) && (
-                         <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2.5 text-center font-bold">
-                           {[
-                             !selectedResource.program && '프로그램 정보',
-                             !selectedResource.note && '사이트 링크',
-                             !selectedResource.phone && '연락처',
-                           ].filter(Boolean).join(' · ')} 정보가 없는 기관입니다
-                         </p>
-                       )}
-
-                       {/* 카카오맵 앱 길찾기 (메인 버튼 - 위치 권한 없어도 동작) */}
+                    <div className="grid grid-cols-3 gap-2">
+                       {/* 프로그램 보기: 체험프로그램 컬럼 내용을 모달로 표시 */}
                        <button
                          onClick={() => {
-                           const ep = `${selectedResource.lat},${selectedResource.lng}`;
-                           const appUrl = userLocation
-                             ? `kakaomap://route?sp=${userLocation.lat},${userLocation.lng}&ep=${ep}&by=CAR`
-                             : `kakaomap://look?p=${ep}`;
-                           const webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(selectedResource.name)},${selectedResource.lat},${selectedResource.lng}`;
-                           const now = Date.now();
-                           window.location.href = appUrl;
-                           setTimeout(() => {
-                             if (Date.now() - now < 2000) window.open(webUrl, '_blank');
-                           }, 1500);
+                           if (!selectedResource.program) return;
+                           setProgramModalOpen(true);
                          }}
-                         className="mt-3.5 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-base bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-slate-900 transition-colors shadow-sm"
+                         disabled={!selectedResource.program}
+                         className="bg-emerald-500 dark:bg-emerald-600 text-white py-3 rounded-xl font-black text-xs md:text-sm shadow-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                        >
-                         <img
-                           src="https://t1.kakaocdn.net/kakaocorp/kakaocorp/admin/5f39e7c7017800001.png"
-                           alt=""
-                           className="w-5 h-5 rounded"
-                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                         />
-                         카카오맵 앱으로 길찾기
+                         <BookOpen size={16}/> 프로그램
                        </button>
-
-                       {/* 지도에서 경로 보기 (보조 버튼 - 브라우저 위치 권한 필요) */}
+                       {/* 사이트 연결: 비고 컬럼 URL로 새 탭 열기 */}
                        <button
-                         onClick={handleFindRoute}
-                         disabled={routeState.loading}
-                         className="mt-2 w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2.5 rounded-xl font-bold text-sm flex justify-center items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                         onClick={() => {
+                           if (!selectedResource.note) return;
+                           const url = /^https?:\/\//i.test(selectedResource.note) ? selectedResource.note : `https://${selectedResource.note}`;
+                           window.open(url, '_blank', 'noopener,noreferrer');
+                         }}
+                         disabled={!selectedResource.note}
+                         className="bg-sky-500 dark:bg-sky-600 text-white py-3 rounded-xl font-black text-xs md:text-sm shadow-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-sky-600 dark:hover:bg-sky-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                        >
-                         {routeState.loading ? <Loader2 size={15} className="animate-spin"/> : <Navigation size={15}/>}
-                         {routeState.loading ? '경로 찾는 중...' : '지도에서 경로 보기'}
+                         <ExternalLink size={16}/> 사이트
                        </button>
-
-                       {/* 직선 폴백 안내 */}
-                       {routeState.error && routeState.distance !== null && (
-                         <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 text-center px-2">
-                           ⓘ {routeState.error}
-                         </p>
-                       )}
-
-                       {/* 위치 오류 안내 + 다시 시도 / 기본 브라우저로 열기 */}
-                       {routeState.error && routeState.distance === null && (
-                         <div className="mt-2">
-                           <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center px-2">
-                             {routeState.error}
-                           </p>
-                           <div className="flex justify-center mt-1.5">
-                             {inAppBrowser ? (
-                               <button
-                                 onClick={() => {
-                                   const isAndroid = /Android/i.test(navigator.userAgent);
-                                   if (isAndroid) {
-                                     const target = window.location.href.replace(/^https?:\/\//, '');
-                                     window.location.href = `intent://${target}#Intent;scheme=https;package=com.android.chrome;end`;
-                                   } else {
-                                     navigator.clipboard?.writeText(window.location.href).catch(() => {});
-                                     alert("주소가 복사되었어요!\n화면 하단(또는 우측 상단) '공유' 또는 '⋯' 버튼을 눌러 'Safari로 열기'를 선택해주세요.");
-                                   }
-                                 }}
-                                 className="flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
-                               >
-                                 <ExternalLink size={12}/> 기본 브라우저로 열기
-                               </button>
-                             ) : (
-                               <button
-                                 onClick={handleFindRoute}
-                                 className="flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
-                               >
-                                 <RefreshCw size={12}/> 다시 시도
-                               </button>
-                             )}
-                           </div>
-                         </div>
-                       )}
+                       {/* 전화 연결 */}
+                       <button
+                         onClick={() => {
+                           if (!selectedResource.phone) return;
+                           window.location.href = `tel:${selectedResource.phone}`;
+                         }}
+                         disabled={!selectedResource.phone}
+                         className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-black text-xs md:text-sm flex flex-col md:flex-row justify-center items-center gap-1 md:gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                       >
+                         <Phone size={16}/> 전화
+                       </button>
                     </div>
-                  </>
-                )}
-             </div>
-          </div>
 
-          {/* ── 지도 영역 (PC: 우측 / 모바일: 지도 탭일 때 전체) ── */}
-          <div className={`${viewMode === 'map' ? 'block' : 'hidden'} md:block w-full md:flex-1 relative h-full bg-slate-100 dark:bg-slate-950`}>
-             <div className="absolute bottom-8 right-8 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float pointer-events-none z-0"><Compass size={110} strokeWidth={1}/></div>
+                    {(!selectedResource.program || !selectedResource.note || !selectedResource.phone) && (
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2.5 text-center font-bold">
+                        {[
+                          !selectedResource.program && '프로그램 정보',
+                          !selectedResource.note && '사이트 링크',
+                          !selectedResource.phone && '연락처',
+                        ].filter(Boolean).join(' · ')} 정보가 없는 기관입니다
+                      </p>
+                    )}
 
-             {mapLoading ? (
-               <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={36} /></div>
-             ) : mapError ? (
-               <div className="w-full h-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 px-6 text-center">
-                 <MapPin size={44} className="text-slate-200 dark:text-slate-600 mb-3"/>
-                 <p className="font-black text-slate-500 dark:text-slate-400 text-base">지도를 불러오지 못했습니다.</p>
-                 <p className="font-bold text-sm text-slate-400 dark:text-slate-500 mt-1.5">잠시 후 새로고침해 주세요.</p>
-               </div>
-             ) : (
-               <div ref={mapContainerRefStandalone} className="w-full h-full relative z-10" />
+                    {/* 카카오맵 앱 길찾기 (메인 버튼 - 위치 권한 없어도 동작) */}
+                    <button
+                      onClick={() => {
+                        const ep = `${selectedResource.lat},${selectedResource.lng}`;
+                        const appUrl = userLocation
+                          ? `kakaomap://route?sp=${userLocation.lat},${userLocation.lng}&ep=${ep}&by=CAR`
+                          : `kakaomap://look?p=${ep}`;
+                        const webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(selectedResource.name)},${selectedResource.lat},${selectedResource.lng}`;
+                        const now = Date.now();
+                        window.location.href = appUrl;
+                        setTimeout(() => {
+                          if (Date.now() - now < 2000) window.open(webUrl, '_blank');
+                        }, 1500);
+                      }}
+                      className="mt-3.5 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-base bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-slate-900 transition-colors shadow-sm"
+                    >
+                      <img
+                        src="https://t1.kakaocdn.net/kakaocorp/kakaocorp/admin/5f39e7c7017800001.png"
+                        alt=""
+                        className="w-5 h-5 rounded"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                      카카오맵 앱으로 길찾기
+                    </button>
+
+                    {/* 지도에서 경로 보기 (보조 버튼 - 브라우저 위치 권한 필요) */}
+                    <button
+                      onClick={handleFindRoute}
+                      disabled={routeState.loading}
+                      className="mt-2 w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2.5 rounded-xl font-bold text-sm flex justify-center items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                    >
+                      {routeState.loading ? <Loader2 size={15} className="animate-spin"/> : <Navigation size={15}/>}
+                      {routeState.loading ? '경로 찾는 중...' : '지도에서 경로 보기'}
+                    </button>
+
+                    {/* 경로 성공: 거리/시간 + 경로 지우기 */}
+                    {routeState.distance !== null && routeState.duration !== null && (
+                      <div className="mt-2 flex items-center justify-center gap-2">
+                        <span className="text-xs font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full">
+                          자동차 기준 약 {(routeState.distance / 1000).toFixed(1)}km · {Math.round(routeState.duration / 60)}분
+                        </span>
+                        <button
+                          onClick={() => {
+                            setRouteState({ loading: false, error: null, distance: null, duration: null });
+                            setUserLocation(null);
+                            if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
+                            if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
+                          }}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          title="경로 지우기"
+                        >
+                          <RotateCcw size={15}/>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 직선 폴백 안내 */}
+                    {routeState.error && routeState.distance !== null && (
+                      <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 text-center px-2">
+                        ⓘ {routeState.error}
+                      </p>
+                    )}
+
+                    {/* 위치 오류 안내 + 다시 시도 / 기본 브라우저로 열기 */}
+                    {routeState.error && routeState.distance === null && (
+                      <div className="mt-2">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center px-2">
+                          {routeState.error}
+                        </p>
+                        <div className="flex justify-center mt-1.5">
+                          {inAppBrowser ? (
+                            <button
+                              onClick={() => {
+                                const isAndroid = /Android/i.test(navigator.userAgent);
+                                if (isAndroid) {
+                                  const target = window.location.href.replace(/^https?:\/\//, '');
+                                  window.location.href = `intent://${target}#Intent;scheme=https;package=com.android.chrome;end`;
+                                } else {
+                                  navigator.clipboard?.writeText(window.location.href).catch(() => {});
+                                  alert("주소가 복사되었어요!\n화면 하단(또는 우측 상단) '공유' 또는 '⋯' 버튼을 눌러 'Safari로 열기'를 선택해주세요.");
+                                }
+                              }}
+                              className="flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                            >
+                              <ExternalLink size={12}/> 기본 브라우저로 열기
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleFindRoute}
+                              className="flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                            >
+                              <RefreshCw size={12}/> 다시 시도
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                 </div>
+               </>
              )}
-
-             {/* 경로 결과 배지 (지도 위) */}
-             {routeState.distance !== null && routeState.duration !== null && (
-               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur px-3 py-2 rounded-full shadow-lg">
-                 <span className="text-xs font-black text-sky-600 dark:text-sky-400">
-                   자동차 기준 약 {(routeState.distance / 1000).toFixed(1)}km · {Math.round(routeState.duration / 60)}분
-                 </span>
-                 <button
-                   onClick={() => {
-                     setRouteState({ loading: false, error: null, distance: null, duration: null });
-                     setUserLocation(null);
-                     if (routePolylineRef.current) { routePolylineRef.current.setMap(null); routePolylineRef.current = null; }
-                     if (userMarkerRef.current) { userMarkerRef.current.setMap(null); userMarkerRef.current = null; }
-                   }}
-                   className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                   title="경로 지우기"
-                 >
-                   <RotateCcw size={14}/>
-                 </button>
-               </div>
-             )}
           </div>
+       </div>
+
+       {/* ── 지도 영역 (모바일: 상단 32% / PC: 우측 전체) ── */}
+       <div className="w-full md:flex-1 relative h-[32%] md:h-full bg-slate-100 dark:bg-slate-950">
+          <div className="absolute bottom-8 right-8 text-sky-100 dark:text-sky-900/30 opacity-60 animate-float pointer-events-none z-0"><Compass size={110} strokeWidth={1}/></div>
+
+          {mapLoading ? (
+            <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900"><Loader2 className="animate-spin text-emerald-500" size={36} /></div>
+          ) : mapError ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 px-6 text-center">
+              <MapPin size={40} className="text-slate-200 dark:text-slate-600 mb-2"/>
+              <p className="font-black text-slate-500 dark:text-slate-400 text-sm">지도를 불러오지 못했습니다.</p>
+              <p className="font-bold text-xs text-slate-400 dark:text-slate-500 mt-1">잠시 후 새로고침해 주세요.</p>
+            </div>
+          ) : (
+            <div ref={mapContainerRefStandalone} className="w-full h-full relative z-10" />
+          )}
        </div>
 
        {/* 💡 체험프로그램 내용 모달 */}
