@@ -34,27 +34,25 @@ const HomeHero: React.FC<HomeHeroProps> = ({ setView }) => {
           </div>
         )}
 
-        {/* 5개 사업 인덱스 — PC에서는 우측 세로 목록 */}
-        <nav className="w-full lg:w-[340px] shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-3">
-          {TOPICS.map((t, i) => {
+        {/* 5개 사업 인덱스 — 항상 1열 세로 목록 */}
+        <nav className="w-full lg:w-[340px] shrink-0 flex flex-col gap-3">
+          {TOPICS.map(t => {
             const Icon = t.icon;
-            const isLastOdd = i === TOPICS.length - 1 && TOPICS.length % 2 === 1;
             return (
               <button
                 key={t.key}
                 onClick={() => setView(t.view)}
-                className={`group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl
-                  px-4 py-5 lg:px-5 lg:py-4
-                  flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4 text-center lg:text-left
-                  hover:border-amber-400 dark:hover:border-amber-600 hover:-translate-y-1 lg:hover:-translate-y-0 lg:hover:-translate-x-1.5
-                  hover:shadow-[0_16px_36px_rgba(245,158,11,0.16)] transition-all duration-200
-                  ${isLastOdd ? 'col-span-2 lg:col-span-1' : ''}`}
+                className="group w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl
+                  px-4 py-4 lg:px-5
+                  flex flex-row items-center gap-4 text-left
+                  hover:border-amber-400 dark:hover:border-amber-600 lg:hover:-translate-x-1.5
+                  hover:shadow-[0_16px_36px_rgba(245,158,11,0.16)] transition-all duration-200"
               >
                 <span className={`w-12 h-12 rounded-xl ${t.accent} flex items-center justify-center shrink-0`}>
                   <Icon size={24} className={t.iconColor} />
                 </span>
 
-                <span className="flex-1 min-w-0 flex flex-col lg:items-start">
+                <span className="flex-1 min-w-0 flex flex-col">
                   <span className="font-black text-lg lg:text-xl text-slate-800 dark:text-white leading-tight">
                     {t.sub}
                   </span>
@@ -65,7 +63,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ setView }) => {
 
                 <ChevronRight
                   size={20}
-                  className="hidden lg:block shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors"
+                  className="shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors"
                 />
               </button>
             );
@@ -74,22 +72,27 @@ const HomeHero: React.FC<HomeHeroProps> = ({ setView }) => {
       </div>
 
       {/* ── 하단: 자료실 / 뉴스 / FAQ / 문의하기 ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="flex flex-col md:grid md:grid-cols-4 gap-3 md:gap-4">
         {SIDE_TABS.map(t => {
           const Icon = t.icon;
           return (
             <button
               key={t.id}
               onClick={() => setView(t.id)}
-              className="min-h-[104px] md:min-h-[116px] bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 rounded-2xl
+              className="bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 rounded-2xl
                 shadow-[0_16px_40px_rgba(245,158,11,0.1)]
-                flex flex-col items-center justify-center gap-2.5 px-4 py-6 text-center
-                font-black text-slate-800 dark:text-slate-100
+                px-4 py-4 md:py-6
+                flex flex-row md:flex-col items-center justify-start md:justify-center gap-4 md:gap-2.5
+                text-left md:text-center font-black text-slate-800 dark:text-slate-100
+                md:min-h-[116px]
                 hover:border-amber-400 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20
-                hover:-translate-y-1 hover:shadow-xl transition-all duration-200 group"
+                hover:shadow-xl transition-all duration-200 group"
             >
-              <Icon size={30} className={`${t.color} group-hover:scale-110 transition-transform`} />
-              <span className="text-base lg:text-lg leading-tight break-keep">{t.label}</span>
+              <span className="w-12 h-12 md:w-auto md:h-auto rounded-xl bg-slate-50 dark:bg-slate-900 md:bg-transparent md:dark:bg-transparent flex items-center justify-center shrink-0">
+                <Icon size={26} className={`${t.color} group-hover:scale-110 transition-transform`} />
+              </span>
+              <span className="flex-1 md:flex-none text-base lg:text-lg leading-tight break-keep">{t.label}</span>
+              <ChevronRight size={20} className="md:hidden shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors" />
             </button>
           );
         })}
