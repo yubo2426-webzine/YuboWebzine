@@ -83,17 +83,40 @@ const userMarkerSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
 // ─────────────────────────────────────────────
 // 개인정보 동의 전문
 // ─────────────────────────────────────────────
+const CONSENT_VERSION = 'v2.0-20260813';
+
 const PRIVACY_COLLECT = `[개인정보 수집·이용 동의]
 - 수집 항목: 보호자 성명·휴대전화번호, 아동 성명·인원수, 이용 희망 기관·일시
 - 수집·이용 목적: 돌봄기관 이용 신청 접수, 신청 확인·안내 연락, 이용 현황 관리
-- 보유·이용 기간: 이용일로부터 1년 (기간 경과 시 지체 없이 파기)
+- 보유·이용 기간
+   · 원칙: 이용일 다음 날 자동 파기 (아동 성명, 연락처, 전달사항)
+   · 예외: 동의 사실 증빙을 위해 보호자 성명·접수번호·동의일시에 한하여 1개월 보관 후 파기
+   · 파기 방법: 데이터베이스에서 복구 불가능한 방식으로 영구 삭제
 - 동의를 거부할 권리가 있으며, 거부 시 온라인 신청이 제한됩니다. (해당 기관 전화 신청 가능)`;
 
 const PRIVACY_PROVIDE = `[개인정보 제3자 제공 동의]
 - 제공받는 자: 신청하신 거점형 돌봄기관
-- 제공 항목: 보호자 성명·휴대전화번호, 아동 성명·인원수, 이용 일시
+- 제공 항목: 보호자 성명·휴대전화번호, 아동 성명·인원수, 이용 일시, 기관 전달사항
 - 제공 목적: 돌봄 이용 신청 확인 및 돌봄 서비스 제공
-- 보유·이용 기간: 이용일로부터 1년`;
+- 제공 방법: 접수 즉시 기관 담당자 이메일로 통보
+- 보유·이용 기간: 이용일 다음 날까지 (이후 자동 파기)`;
+
+const PRIVACY_SENSITIVE = `[민감정보 수집·이용 동의]
+- 수집 항목: 아동의 건강 관련 정보 (알레르기, 복약 사항, 그 밖에 [기관 전달사항]란에 보호자가 직접 기재한 건강 특이사항)
+- 수집·이용 목적: 돌봄 제공 중 아동의 안전 확보 및 응급상황 대응
+- 제공받는 자: 신청하신 거점형 돌봄기관
+- 보유·이용 기간: 이용일 다음 날 자동 파기
+- 동의를 거부할 권리가 있으며, 거부하셔도 신청이 가능합니다.
+   다만 이 경우 [기관 전달사항]란에 건강 관련 정보를 기재하지 마시고,
+   돌봄기관에 직접 전화로 안내해 주시기 바랍니다.`;
+
+const PRIVACY_STATS = `[안내] 통계자료 생성에 관한 사항
+접수와 동시에 개인을 식별할 수 없는 형태의 통계정보가 별도로 생성됩니다.
+- 생성 항목: 기관, 이용유형, 이용일, 시간대, 아동 인원수, 접수일시
+- 성명·연락처·전달사항 등 식별정보는 일절 포함되지 않습니다
+- 활용 목적: 돌봄 수요 예측 및 신청 접근성 개선
+- 개인정보에 해당하지 않아 별도 보유기간 없이 보관됩니다
+※ 본 안내는 동의 대상이 아니며 별도 체크가 필요하지 않습니다.`;
 
 const inputCls = "w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all";
 const labelCls = "block text-sm font-black text-slate-600 dark:text-slate-300 mb-1.5";
@@ -440,7 +463,8 @@ const ApplyForm: React.FC<{ center: any; onClose: () => void; initial?: any }> =
   const openedAt = useRef(Date.now());                       // 봇 방지: 너무 빠른 제출 차단
   const [agree1, setAgree1] = useState(false);
   const [agree2, setAgree2] = useState(false);
-  const [showTerms, setShowTerms] = useState<null | 1 | 2>(null);
+  const [agree3, setAgree3] = useState(false);   // 민감정보(건강) — 선택
+  const [showTerms, setShowTerms] = useState<null | 1 | 2 | 3 | 4>(null);
   const [submitting, setSubmitting] = useState(false);
   const [receiptNo, setReceiptNo] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -505,6 +529,7 @@ const ApplyForm: React.FC<{ center: any; onClose: () => void; initial?: any }> =
     if (f.use_date < new Date().toISOString().slice(0, 10)) return setError('이용 희망일은 오늘 이후 날짜여야 합니다.');
     if (!f.use_time) return setError('이용 시간을 선택해 주세요.');
     if (!agree1 || !agree2) return setError('개인정보 수집·이용 및 제3자 제공에 모두 동의해 주세요.');
+    if (!agree3 && f.memo.trim()) return setError('건강 관련 정보를 기재하시려면 민감정보 수집·이용에 동의해 주세요. 동의를 원하지 않으시면 [기관 전달사항]란을 비워 주세요.');
     // 봇 방지: 숨은 입력란이 채워졌거나 3초 안에 제출하면 차단
     if (hp || Date.now() - openedAt.current < 3000) return setError('잠시 후 다시 시도해 주세요.');
     if (!supabase) return setError('서버 연결에 실패했습니다.');
@@ -617,7 +642,7 @@ setReceiptNo(data);   // ← RPC는 receipt_no 문자열 자체를 바로 반환
             </p>
           )}
         </div>
-        <div><label className={labelCls}>기관 전달사항 <span className="text-slate-400 font-bold">(선택)</span></label>
+        <div><label className={labelCls}>기관 전달사항 <span className="text-slate-400 font-bold">(선택 · 건강정보 기재 시 아래 민감정보 동의 필요)</span></label>
           <input className={inputCls} value={f.memo} onChange={e => set('memo', e.target.value)} placeholder="알레르기, 특이사항 등"/></div>
       </div>
 
@@ -629,7 +654,8 @@ setReceiptNo(data);   // ← RPC는 receipt_no 문자열 자체를 바로 반환
 
       <div className="mt-5 space-y-2.5">
         {[{v: agree1, s: setAgree1, n: 1 as const, t: '(필수) 개인정보 수집·이용에 동의합니다.'},
-          {v: agree2, s: setAgree2, n: 2 as const, t: '(필수) 신청 기관에 대한 개인정보 제3자 제공에 동의합니다.'}].map(a => (
+          {v: agree2, s: setAgree2, n: 2 as const, t: '(필수) 신청 기관에 대한 개인정보 제3자 제공에 동의합니다.'},
+          {v: agree3, s: setAgree3, n: 3 as const, t: '(선택) 아동 건강 관련 민감정보 수집·이용에 동의합니다.'}].map(a => (
           <div key={a.n} className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-2xl px-4 py-3">
             <button type="button" onClick={() => a.s(!a.v)}
               className="flex items-center gap-3 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300 text-left">
@@ -643,10 +669,20 @@ setReceiptNo(data);   // ← RPC는 receipt_no 문자열 자체를 바로 반환
         ))}
       </div>
 
+      <div className="mt-2.5 px-1">
+        <button onClick={() => setShowTerms(4)}
+          className="text-xs font-black text-slate-400 hover:text-sky-500 hover:underline">
+          접수 시 생성되는 통계자료 안내 보기
+        </button>
+      </div>
+
       {showTerms && (
         <div className="mt-3 bg-slate-100 dark:bg-slate-900 rounded-2xl p-5 text-sm font-bold text-slate-600 dark:text-slate-300 whitespace-pre-line relative">
           <button onClick={() => setShowTerms(null)} className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><X size={14}/></button>
-          {showTerms === 1 ? PRIVACY_COLLECT : PRIVACY_PROVIDE}
+          {showTerms === 1 ? PRIVACY_COLLECT
+           : showTerms === 2 ? PRIVACY_PROVIDE
+           : showTerms === 3 ? PRIVACY_SENSITIVE
+           : PRIVACY_STATS}
         </div>
       )}
 
