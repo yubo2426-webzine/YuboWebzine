@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   LockKeyhole, LogOut, Loader2, ClipboardList, MessageCircleQuestion,
-  CheckCircle2, XCircle, Download, RefreshCw, Building2, Send
+  CheckCircle2, XCircle, Download, RefreshCw, Building2, Send, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -100,7 +100,7 @@ const LoginForm: React.FC = () => {
 };
 
 const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAdmin }) => {
-  const [tab, setTab] = useState<'apps' | 'inquiries' | 'slots' | 'stats' | 'center' | 'ops'>('apps');
+  const [tab, setTab] = useState<'apps' | 'inquiries' | 'slots' | 'stats' | 'center' | 'ops' | 'log' | 'sec'>('apps');
   const [centerFilter, setCenterFilter] = useState<number | '전체'>('전체');
   const [apps, setApps] = useState<AppRow[]>([]);
   const [centers, setCenters] = useState<Record<number, string>>({});
@@ -114,7 +114,7 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
     if (!supabase) return;
     setLoading(true);
     const [{ data: appData }, { data: centerData }] = await Promise.all([
-      supabase.from('care_applications').select('*').order('created_at', { ascending: false }),
+      supabase.rpc('get_applications'),
       supabase.from('care_centers').select('id, name'),
     ]);
     setApps((appData as AppRow[]) || []);
@@ -132,7 +132,9 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
     if (!supabase) return;
     const patch: any = { status };
     if (note !== undefined) patch.status_note = note || null;
-    const { error } = await supabase.from('care_applications').update(patch).eq('id', id);
+    const { error } = await supabase.rpc('update_application_status', {
+      p_id: id, p_status: patch.status ?? null, p_note: patch.status_note ?? null,
+    });
     if (!error) { setNoteEdit(null); load(); }
   };
 
@@ -143,7 +145,13 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
     if (!error) { setAnswerEdit(null); load(); }
   };
 
-  const downloadCsv = () => {
+  const downloadCsv = async () => {
+    if (supabase) {
+      await supabase.rpc('log_export', {
+        p_count: filteredApps.length,
+        p_refs: filteredApps.map(a => a.receipt_no).join(','),
+      });
+    }
     const header = ['접수번호','기관','상태','보호자','연락처','아동','아동수','유형','이용일','희망시간','전달사항','기관안내','신청일시'];
     const rows = filteredApps.map(a => [
       a.receipt_no, centers[a.center_id] || a.center_id, a.status, a.guardian_name, a.guardian_phone,
@@ -181,6 +189,8 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
            ...(isAdmin ? [['inquiries', '문의 관리', <MessageCircleQuestion key="i" size={15}/>] as const] : []),
            ['slots', '정원 설정', <Building2 key="i" size={15}/>],
            ...(isAdmin ? [['stats', '통계', <Download key="i" size={15}/>] as const] : []),
+           ...(isAdmin ? [['log', '접속기록', <LockKeyhole key="l" size={15}/>] as const] : []),
+           ...(isAdmin ? [['sec', '보안점검', <ShieldCheck key="s" size={15}/>] as const] : []),
            ['center', '기관 정보', <Building2 key="i" size={15}/>],
            ...(isAdmin ? [['ops', '운영·계정', <CheckCircle2 key="i" size={15}/>] as const] : [])] as const).map(([k, label, icon]) => (
           <button key={k} onClick={() => setTab(k as any)}
@@ -192,6 +202,10 @@ const Dashboard: React.FC<{ session: any; isAdmin: boolean }> = ({ session, isAd
         <div className="flex justify-center py-24"><Loader2 className="animate-spin text-sky-500" size={36}/></div>
       ) : tab === 'slots' ? (
         <SlotSettings isAdmin={isAdmin} centers={centers}/>
+      ) : tab === 'sec' ? (
+        <SecurityPanel centers={centers}/>
+      ) : tab === 'log' ? (
+        <AccessLog/>
       ) : tab === 'stats' ? (
         <StatsReport centers={centers}/>
       ) : tab === 'center' ? (
@@ -679,6 +693,325 @@ const StatsReport: React.FC<{ centers: Record<number, string> }> = ({ centers })
               </div>
             </div>
           )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// 개인정보 접속기록 (관리자 전용)
+// ─────────────────────────────────────────────
+interface LogRow {
+  id: number; created_at: string; actor_email: string | null; actor_role: string;
+  center_id: number | null; action: string; target_count: number;
+  detail: string | null; target_refs: string | null;
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  list: '목록 조회', detail: '상세 조회', update: '상태 변경',
+  export: 'CSV 내려받기', lookup: '보호자 본인조회', stats: '통계 조회',
+  log_view: '접속기록 열람',
+};
+const ROLE_LABEL: Record<string, string> = {
+  admin: '관리자', center: '기관', guardian: '보호자',
+};
+const ACTION_TONE: Record<string, string> = {
+  export: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+  update: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  log_view: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+};
+
+const AccessLog: React.FC = () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const monthAgo = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  const [from, setFrom] = useState(monthAgo);
+  const [to, setTo] = useState(today);
+  const [action, setAction] = useState('전체');
+  const [rows, setRows] = useState<LogRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    if (!supabase) return;
+    setLoading(true); setError('');
+    const { data, error: e } = await supabase.rpc('get_access_log', {
+      p_from: from, p_to: to, p_action: action === '전체' ? null : action,
+    });
+    if (e) { setError('접속기록을 불러오지 못했습니다.'); setRows([]); }
+    else setRows((data as LogRow[]) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [from, to, action]);
+
+  const exportCount = rows.filter(r => r.action === 'export').length;
+  const totalTouched = rows.filter(r => r.action === 'export' || r.action === 'list')
+    .reduce((a, r) => a + r.target_count, 0);
+
+  const downloadCsv = () => {
+    const header = ['일시', '계정', '구분', '행위', '건수', '비고', '접수번호'];
+    const lines = rows.map(r => [
+      new Date(r.created_at).toLocaleString('ko-KR'),
+      r.actor_email || '-', ROLE_LABEL[r.actor_role] || r.actor_role,
+      ACTION_LABEL[r.action] || r.action, r.target_count,
+      r.detail || '', r.target_refs || '',
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const blob = new Blob(['\uFEFF' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `개인정보접속기록_${from}_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const selCls = "h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold text-sm";
+
+  return (
+    <div className="space-y-5">
+      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
+          개인정보보호법 제29조에 따른 접속기록입니다. 2년간 보관 후 자동 삭제되며,
+          이 화면을 열람한 사실도 함께 기록됩니다.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={selCls}/>
+        <span className="font-black text-slate-400">~</span>
+        <input type="date" value={to} onChange={e => setTo(e.target.value)} className={selCls}/>
+        <select value={action} onChange={e => setAction(e.target.value)} className={selCls}>
+          <option value="전체">전체 행위</option>
+          {Object.entries(ACTION_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <button onClick={downloadCsv} disabled={rows.length === 0}
+          className="h-11 px-4 rounded-xl bg-slate-800 dark:bg-slate-700 text-white font-black text-sm flex items-center gap-2 disabled:opacity-40">
+          <Download size={14}/> 내려받기
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-sky-500" size={32}/></div>
+      ) : error ? (
+        <p className="text-center py-20 font-bold text-rose-500">{error}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            {[['기록 건수', `${rows.length}건`, ''],
+              ['CSV 내려받기', `${exportCount}회`, 'text-rose-500'],
+              ['접근한 신청 건수', `${totalTouched}건`, '']].map(([l, v, tone]) => (
+              <div key={l} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-black text-slate-400 mb-1">{l}</p>
+                <p className={`text-xl font-black ${tone || 'text-slate-800 dark:text-white'}`}>{v}</p>
+              </div>
+            ))}
+          </div>
+
+          {rows.length === 0 ? (
+            <p className="text-center py-20 font-bold text-slate-400">해당 기간의 기록이 없습니다.</p>
+          ) : (
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-black text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                    <th className="py-2 pr-3 whitespace-nowrap">일시</th>
+                    <th className="py-2 pr-3">계정</th>
+                    <th className="py-2 pr-3">구분</th>
+                    <th className="py-2 pr-3">행위</th>
+                    <th className="py-2 pr-3 text-right">건수</th>
+                    <th className="py-2">비고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(r => (
+                    <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                      <td className="py-2 pr-3 whitespace-nowrap text-xs">
+                        {new Date(r.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-2 pr-3 text-xs truncate max-w-[180px]">{r.actor_email || '비로그인'}</td>
+                      <td className="py-2 pr-3 text-xs">{ROLE_LABEL[r.actor_role] || r.actor_role}</td>
+                      <td className="py-2 pr-3">
+                        <span className={`px-2 py-1 rounded-lg text-xs font-black ${ACTION_TONE[r.action] || 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                          {ACTION_LABEL[r.action] || r.action}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-3 text-right">{r.target_count || '-'}</td>
+                      <td className="py-2 text-xs text-slate-500">{r.detail || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// 이상징후 탐지 · 권한 관리 내역 (관리자 전용)
+// 「개인정보의 안전성 확보조치 기준」 제5조③·제6조①
+// ─────────────────────────────────────────────
+interface AnomalyRow {
+  level: string; detected_at: string; actor: string;
+  pattern: string; detail: string;
+}
+interface AuthzRow {
+  id: number; created_at: string; actor_email: string | null;
+  target_email: string | null; center_id: number | null;
+  event: string; detail: string | null;
+}
+
+const EVENT_LABEL: Record<string, string> = {
+  grant: '권한 부여', change: '권한 변경', revoke: '권한 해제',
+};
+
+const SecurityPanel: React.FC<{ centers: Record<number, string> }> = ({ centers }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const yearAgo = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  const [days, setDays] = useState(7);
+  const [anoms, setAnoms] = useState<AnomalyRow[]>([]);
+  const [authz, setAuthz] = useState<AuthzRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      if (!supabase) return;
+      setLoading(true); setError('');
+      const [a, z] = await Promise.all([
+        supabase.rpc('detect_anomalies', { p_days: days }),
+        supabase.rpc('get_authz_log', { p_from: yearAgo, p_to: today }),
+      ]);
+      if (a.error || z.error) {
+        setError('보안 점검 정보를 불러오지 못했습니다. 권한을 확인해 주세요.');
+        setAnoms([]); setAuthz([]);
+      } else {
+        setAnoms((a.data as AnomalyRow[]) || []);
+        setAuthz((z.data as AuthzRow[]) || []);
+      }
+      setLoading(false);
+    })();
+  }, [days]);
+
+  const high = anoms.filter(a => a.level === '높음');
+  const mid  = anoms.filter(a => a.level !== '높음');
+
+  const selCls = "h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold text-sm";
+
+  return (
+    <div className="space-y-5">
+      <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          「개인정보의 안전성 확보조치 기준」 제5조제3항·제6조제1항에 따른 접근권한 관리 내역 및
+          유출 시도 탐지 화면입니다. 권한 관리 내역은 3년간 보관됩니다.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-black text-slate-600 dark:text-slate-300">탐지 기간</span>
+        <select value={days} onChange={e => setDays(Number(e.target.value))} className={selCls}>
+          <option value={7}>최근 7일</option>
+          <option value={30}>최근 30일</option>
+          <option value={90}>최근 90일</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-sky-500" size={32}/></div>
+      ) : error ? (
+        <p className="text-center py-20 font-bold text-rose-500">{error}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div className={`rounded-2xl p-5 border ${high.length > 0
+              ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-800'
+              : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800'}`}>
+              <p className="text-xs font-black text-slate-500 mb-1">주의 필요</p>
+              <p className={`text-2xl font-black ${high.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                {high.length}건
+              </p>
+            </div>
+            <div className="rounded-2xl p-5 border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-black text-slate-500 mb-1">참고 사항</p>
+              <p className="text-2xl font-black text-slate-700 dark:text-slate-200">{mid.length}건</p>
+            </div>
+          </div>
+
+          {high.length === 0 && mid.length === 0 ? (
+            <div className="text-center py-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20">
+              <ShieldCheck className="mx-auto text-emerald-500 mb-2" size={36}/>
+              <p className="font-black text-emerald-700 dark:text-emerald-400">
+                해당 기간에 탐지된 이상징후가 없습니다.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {[...high, ...mid].map((a, i) => (
+                <div key={i} className={`rounded-2xl p-4 border flex items-start gap-3 ${
+                  a.level === '높음'
+                    ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                  <span className={`px-2 py-1 rounded-lg text-xs font-black shrink-0 ${
+                    a.level === '높음'
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200'}`}>
+                    {a.level}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-black text-slate-800 dark:text-white text-sm">{a.pattern}</p>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300 mt-0.5">{a.detail}</p>
+                    <p className="text-xs font-bold text-slate-400 mt-1">
+                      {a.actor} · {new Date(a.detected_at).toLocaleString('ko-KR')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-5">
+            <h4 className="font-black text-slate-800 dark:text-white mb-1">접근권한 관리 내역</h4>
+            <p className="text-xs font-bold text-slate-400 mb-3">최근 1년 · 계정 부여·변경·해제 기록</p>
+            {authz.length === 0 ? (
+              <p className="py-8 text-center font-bold text-slate-400 text-sm">기록이 없습니다.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs font-black text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                      <th className="py-2 pr-3 whitespace-nowrap">일시</th>
+                      <th className="py-2 pr-3">조치자</th>
+                      <th className="py-2 pr-3">대상 계정</th>
+                      <th className="py-2 pr-3">기관</th>
+                      <th className="py-2">구분</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {authz.map(z => (
+                      <tr key={z.id} className="border-b border-slate-100 dark:border-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                        <td className="py-2 pr-3 text-xs whitespace-nowrap">
+                          {new Date(z.created_at).toLocaleDateString('ko-KR')}
+                        </td>
+                        <td className="py-2 pr-3 text-xs truncate max-w-[150px]">{z.actor_email || '-'}</td>
+                        <td className="py-2 pr-3 text-xs truncate max-w-[150px]">{z.target_email || '-'}</td>
+                        <td className="py-2 pr-3 text-xs">{z.center_id ? (centers[z.center_id] || z.center_id) : '-'}</td>
+                        <td className="py-2">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-black ${
+                            z.event === 'revoke'
+                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                              : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'}`}>
+                            {EVENT_LABEL[z.event] || z.event}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
