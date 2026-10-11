@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Phone, X, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw, ExternalLink, BookOpen, ChevronLeft } from 'lucide-react';
+import { MapPin, Search, Phone, X, Compass, Loader2, Rabbit, RefreshCw, Navigation, RotateCcw, ExternalLink, BookOpen, ChevronLeft, Gamepad2 } from 'lucide-react';
 // 💡 싱글톤으로 만들어둔 supabase 인스턴스를 불러옵니다.
 import { supabase } from '../lib/supabase';
 
@@ -417,6 +417,20 @@ const ResourceMap: React.FC<ResourceMapProps> = ({
                <span className="ml-auto font-black text-xs text-slate-500 dark:text-slate-400">총 <span className="text-emerald-600 dark:text-emerald-400 text-sm">{filteredResources.length}</span>건</span>
              </div>
 
+             {/* 전북꼬마탐험대 게임 바로가기 */}
+             <a
+               href="/kids-explorer/"
+               className="mb-3 flex items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/60 dark:from-amber-950/40 dark:to-orange-950/30"
+             >
+               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-white shadow-sm">
+                 <Gamepad2 size={21} />
+               </span>
+               <span className="min-w-0 flex-1">
+                 <span className="block text-sm font-black text-slate-800 dark:text-white">전북꼬마탐험대 게임</span>
+                 <span className="mt-0.5 block text-xs font-bold text-slate-500 dark:text-slate-400">체험자원을 탐험하며 재미있게 알아봐요</span>
+               </span>
+               <span className="shrink-0 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-black text-white">게임하기</span>
+             </a>
              <div className="relative mb-2 z-10 flex gap-2">
                 <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedResource(null); }} className="flex-1 h-9 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none">
                   <option value="전체">지역 전체</option>
