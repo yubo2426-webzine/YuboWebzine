@@ -16,7 +16,7 @@ import CustomPDFViewer from './components/CustomPDFViewer';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ResourceMap from './components/ResourceMap';
-import CareApply from './components/CareApply';
+
 import FaqBoard from './components/FaqBoard';
 import InquiryBoard from './components/InquiryBoard';
 import CareAdmin from './components/CareAdmin';
@@ -756,7 +756,34 @@ const MainApp = () => {
           )}
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
-          {view === 'care_apply' && <CareApply />}
+          {view === 'care_apply' && (
+  <section className="mx-auto flex min-h-[60vh] w-full max-w-3xl items-center justify-center px-4 py-16">
+    <div
+      role="status"
+      className="w-full rounded-3xl border border-sky-100 bg-sky-50 p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-12"
+    >
+      <div className="mb-5 text-5xl" aria-hidden="true">🛠️</div>
+      <p className="mb-3 text-sm font-black tracking-widest text-sky-600 dark:text-sky-400">
+        SERVICE NOTICE
+      </p>
+      <h2 className="mb-4 text-2xl font-black text-slate-800 dark:text-white md:text-3xl">
+        거점형 돌봄 신청 서비스 준비 중
+      </h2>
+      <p className="mx-auto max-w-xl leading-relaxed text-slate-600 dark:text-slate-300">
+        현재 신청 서비스를 준비하고 있어 온라인 신청을 잠시 중단합니다.
+        <br />
+        서비스가 다시 시작되면 안내해 드리겠습니다.
+      </p>
+      <button
+        type="button"
+        onClick={() => setView('home')}
+        className="mt-8 rounded-full bg-sky-600 px-6 py-3 font-black text-white transition hover:bg-sky-700"
+      >
+        웹진 홈으로
+      </button>
+    </div>
+  </section>
+)}
           {view === 'faq' && <FaqBoard />}
           {view === 'inquiry' && <InquiryBoard />}
           {view === 'care_admin' && <CareAdmin />}
