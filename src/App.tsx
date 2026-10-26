@@ -225,6 +225,19 @@ const MainApp = () => {
   // 환영 팝업 사용 중지 (요청에 따라 비활성화 — 코드 블록은 남겨두어 필요 시 복원 가능)
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(false);
 
+  // 틈새돌봄 홍보 팝업: 오늘 하루 보지 않기를 선택한 경우 날짜가 바뀌면 다시 표시
+  const [isGapCarePopupOpen, setIsGapCarePopupOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const hiddenDate = localStorage.getItem('gapCarePopupHiddenDate');
+    return hiddenDate !== new Date().toISOString().slice(0, 10);
+  });
+  const closeGapCarePopup = () => setIsGapCarePopupOpen(false);
+  const hideGapCarePopupToday = () => {
+    localStorage.setItem('gapCarePopupHiddenDate', new Date().toISOString().slice(0, 10));
+    setIsGapCarePopupOpen(false);
+  };
+
+
   useEffect(() => {
     document.title = '함께누리웹진';
   }, []);
@@ -563,6 +576,27 @@ const MainApp = () => {
     <style>{globalStyles}</style>
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors">
        
+       {isGapCarePopupOpen && !isWelcomeModalOpen && view === 'home' && (
+         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" role="presentation"
+           onMouseDown={(event) => { if (event.target === event.currentTarget) closeGapCarePopup(); }}>
+           <section className="relative flex max-h-[94vh] w-full max-w-[min(92vw,680px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+             role="dialog" aria-modal="true" aria-label="우리 동네 틈새돌봄 홍보">
+             <button type="button" onClick={closeGapCarePopup} aria-label="팝업 닫기"
+               className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2 text-slate-700 shadow-md"><X size={22} /></button>
+             <img src="/gap-care-popup.jpg"
+               alt="우리 동네 야간연장 어린이집과 거점형 돌봄기관을 소개합니다. 아침·야간·주말·휴일·방학 틈새돌봄 안내"
+               className="min-h-0 w-full flex-1 object-contain" />
+             <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:px-6">
+               <p className="text-xs text-slate-500 sm:text-sm">우리 동네 틈새돌봄 정보를 확인해 보세요.</p>
+               <div className="flex shrink-0 items-center gap-2">
+                 <button type="button" onClick={closeGapCarePopup} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">닫기</button>
+                 <button type="button" onClick={hideGapCarePopupToday} className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white">오늘 하루 보지 않기</button>
+               </div>
+             </div>
+           </section>
+         </div>
+       )}
+
        {/* 🎊 청첩장 스타일 팝업 시작 */}
        {isWelcomeModalOpen && (
          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
