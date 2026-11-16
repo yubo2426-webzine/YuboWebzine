@@ -23,6 +23,92 @@ import CareAdmin from './components/CareAdmin';
 import HomeHero from './components/HomeHero';
 import TopicPage from './components/TopicPage';
 
+const careInstitutions = [
+  {
+    name: '군산도담유치원',
+    address: '전북특별자치도 군산시 산북동 칠성1길 26',
+    phone: '063-464-9215',
+    hours: ['(월~금) 07:30~08:30', '(월~금) 17:00~20:00', '(방학) 07:30~20:00'],
+  },
+  {
+    name: '익산맑은샘유치원',
+    address: '전북특별자치도 익산시 오산면 항쟁로 129',
+    phone: '063-858-6635',
+    hours: ['(월~금) 07:30~08:30', '(월~금) 17:00~19:30', '(방학) 07:30~19:30'],
+  },
+  {
+    name: '이튼유치원',
+    address: '전북특별자치도 전주시 틀못1길 6-7',
+    phone: '063-714-3434',
+    hours: ['(월~금) 07:30~08:30', '(월~금) 16:30~19:30', '(방학) 08:30~16:30'],
+  },
+  {
+    name: '성만유치원',
+    address: '전북특별자치도 김제시 요촌동1길 43-4',
+    phone: '0507-1409-0013',
+    hours: ['(월~금) 07:30~09:00', '(월~금) 16:30~19:30', '(방학) 07:00~17:00'],
+  },
+  {
+    name: '하나유치원',
+    address: '전북특별자치도 전주시 정여립로 1114-10',
+    phone: '0507-1320-4892',
+    hours: ['(토) 08:30~16:30'],
+  },
+  {
+    name: '소율어린이집',
+    address: '전북특별자치도 전주시 완산구 삼천천변3길 20',
+    phone: '063-228-0162',
+    hours: ['(월~금) 07:30~08:30', '(월~금) 16:30~20:30', '(방학) 07:30~16:30'],
+  },
+  {
+    name: '숲아띠어린이집',
+    address: '전북특별자치도 익산시 부송로3길 27',
+    phone: '063-838-0000',
+    hours: ['(월~금) 07:00~09:00', '(월~금) 16:30~19:30', '(방학) 07:00~19:30'],
+  },
+];
+
+function CareDirectory({ onHome }: { onHome: () => void }) {
+  return (
+    <section aria-labelledby="care-directory-title" className="mx-auto w-full max-w-5xl px-4 py-10 md:py-14">
+      <h1 id="care-directory-title" className="text-2xl font-black text-slate-900 dark:text-white md:text-3xl">
+        거점형 돌봄기관 안내
+      </h1>
+      <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-800 dark:border-amber-800 dark:bg-slate-800 dark:text-slate-200">
+        온라인 신청은 잠시 중단되었습니다. 돌봄 이용과 운영시간은 해당 기관에 문의해 주세요.
+      </p>
+
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+        {careInstitutions.map(({ name, address, phone, hours }) => (
+          <li key={name} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">{name}</h2>
+            <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+              <dt className="font-bold">주소</dt>
+              <dd>{address}</dd>
+              <dt className="font-bold">전화번호</dt>
+              <dd>
+                <a className="font-semibold text-sky-700 underline underline-offset-2 dark:text-sky-300" href={`tel:${phone}`} aria-label={`${name} 전화 ${phone}`}>
+                  {phone}
+                </a>
+              </dd>
+              <dt className="font-bold">운영시간</dt>
+              <dd>
+                <ul>
+                  {hours.map((time) => <li key={time}>{time}</li>)}
+                </ul>
+              </dd>
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <button type="button" onClick={onHome} className="mt-8 rounded-full bg-sky-700 px-6 py-3 font-bold text-white hover:bg-sky-800">
+        웹진 홈으로
+      </button>
+    </section>
+  );
+}
+
 const globalStyles = `
   @keyframes float-rotate {
     0% { transform: translateY(0px) rotate(0deg); }
@@ -704,7 +790,7 @@ const MainApp = () => {
                  }}
                  className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold rounded-sm transition-all shadow-lg hover:shadow-xl dark:from-amber-700 dark:to-amber-800 dark:hover:from-amber-600 dark:hover:to-amber-700"
                >
-                 돌봄 신청 바로가기
+                 돌봄기관 안내 바로가기
                </button>
              </div>
 
@@ -736,7 +822,7 @@ const MainApp = () => {
                <ul className="flex flex-col gap-3">
                  {[
                    { id: 'home', icon: <Home size={24} className="text-sky-500 dark:text-sky-400" />, label: '홈' },
-                   { id: 'care_apply', icon: <MapIcon size={24} className="text-sky-500 dark:text-sky-400" />, label: '거점형·연계형 돌봄 신청' },
+                   { id: 'care_apply', icon: <MapIcon size={24} className="text-sky-500 dark:text-sky-400" />, label: '거점형 돌봄기관 안내' },
                    { id: 'issue_list', icon: <Book size={24} className="text-teal-500 dark:text-teal-400"/>, label: '자료실' },
                    { id: 'notice', icon: <CalendarIcon size={24} className="text-amber-500 dark:text-amber-400"/>, label: '소식' },
                    { id: 'news', icon: <Newspaper size={24} className="text-rose-500 dark:text-rose-400"/>, label: '뉴스' },
@@ -790,34 +876,7 @@ const MainApp = () => {
           )}
 
           {view === 'news' && <NewsFeed isAdmin={role === 'admin'} />}
-          {view === 'care_apply' && (
-  <section className="mx-auto flex min-h-[60vh] w-full max-w-3xl items-center justify-center px-4 py-16">
-    <div
-      role="status"
-      className="w-full rounded-3xl border border-sky-100 bg-sky-50 p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-12"
-    >
-      <div className="mb-5 text-5xl" aria-hidden="true">🛠️</div>
-      <p className="mb-3 text-sm font-black tracking-widest text-sky-600 dark:text-sky-400">
-        SERVICE NOTICE
-      </p>
-      <h2 className="mb-4 text-2xl font-black text-slate-800 dark:text-white md:text-3xl">
-        거점형 돌봄 신청 서비스 준비 중
-      </h2>
-      <p className="mx-auto max-w-xl leading-relaxed text-slate-600 dark:text-slate-300">
-        현재 신청 서비스를 준비하고 있어 온라인 신청을 잠시 중단합니다.
-        <br />
-        서비스가 다시 시작되면 안내해 드리겠습니다.
-      </p>
-      <button
-        type="button"
-        onClick={() => setView('home')}
-        className="mt-8 rounded-full bg-sky-600 px-6 py-3 font-black text-white transition hover:bg-sky-700"
-      >
-        웹진 홈으로
-      </button>
-    </div>
-  </section>
-)}
+          {view === 'care_apply' && <CareDirectory onHome={() => setView('home')} />}
           {view === 'faq' && <FaqBoard />}
           {view === 'inquiry' && <InquiryBoard />}
           {view === 'care_admin' && <CareAdmin />}
