@@ -114,7 +114,7 @@ const TopicPage: React.FC<TopicPageProps> = ({ topicKey, onHome, onApply }) => {
 };
 
 // ─────────────────────────────────────────────
-// 거점형 돌봄 안내 + 신청 버튼
+// 거점형 돌봄 안내 및 기관 목록 버튼
 // ─────────────────────────────────────────────
 const CareIntro: React.FC<{ onApply?: () => void }> = ({ onApply }) => (
   <div className="mb-8">
@@ -145,7 +145,7 @@ const CareIntro: React.FC<{ onApply?: () => void }> = ({ onApply }) => (
       onClick={onApply}
       className="w-full h-16 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-lg md:text-2xl flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-2xl"
     >
-      <HeartHandshake size={26} /> 거점형 돌봄 신청하기
+      <HeartHandshake size={26} /> 거점형 돌봄기관 보기
     </button>
   </div>
 );
