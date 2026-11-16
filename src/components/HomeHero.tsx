@@ -3,8 +3,11 @@ import { Book, Newspaper, HelpCircle, MessageCircleQuestion, ChevronRight } from
 import { TOPICS } from '../data/topics';
 import { promoVideos } from '../data/promoVideos';
 import VideoEmbed from './VideoEmbed';
+import ShortDrama from './ShortDrama';
 
 interface HomeHeroProps {
+
+
   setView: (v: string) => void;
 }
 
@@ -20,6 +23,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ setView }) => {
 
   return (
     <div className="max-w-[1400px] mx-auto w-full flex flex-col gap-5">
+      <ShortDrama />
 
       {/* ── 상단: 대표영상(좌) + 사업 인덱스(우) ── */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
